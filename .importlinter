@@ -1,0 +1,78 @@
+; ─────────────────────────────────────────────────────────────────────
+; import-linter —— 三条依赖禁令（v6 附录 A / CLAUDE.md 铁律 2、3）
+;
+; 这三条是「100% 合规」这个交付承诺的**证据基础**。禁令一尤其重要：
+; import-linter 只能查出 import，**查不出「我瞄了一眼 solver 怎么写的然后
+; 照着实现」**——所以它同时是对开发窗口行为的约束，写 validator/ 的窗口
+; 不许打开 backend/solver/ 下任何文件。
+; ─────────────────────────────────────────────────────────────────────
+
+[importlinter]
+root_packages =
+    backend
+include_external_packages = True
+
+; ── 禁令一：validator 禁止 import solver ──────────────────────────────
+; 保障双通道校验不被悄悄合流。共用约束表达代码 = 自己给自己判卷。
+[importlinter:contract:1]
+name = 禁令一 validator 不得 import solver
+type = forbidden
+source_modules =
+    backend.validator
+forbidden_modules =
+    backend.solver
+
+; ── 禁令二：solver / compile_spec / validator 禁止 import skills_loader ─
+; 保障 Skill 永远影响不到排班结果（v6 §12.5.3 S1：故意把规则解释写错，
+; 排班结果一个字节都不变）。
+[importlinter:contract:2]
+name = 禁令二 求解链路不得 import skills_loader
+type = forbidden
+; v6 附录 A ② 原文点名的是 nodes/compile_spec.py；这里对**整个 backend.nodes 包**
+; 设禁，是更严的口径 —— CLAUDE.md 铁律 4 要求六个确定性节点全都不读 Skill，
+; 不止 compile_spec 一个。（compile_spec.py 本身由 M2 窗口交付。）
+source_modules =
+    backend.solver
+    backend.nodes
+    backend.validator
+forbidden_modules =
+    backend.skills_loader
+
+; ── 禁令三：除 core.http 外全仓库禁止 import requests/httpx/urllib.request ─
+; egress 收口（v6 §11.5 E2 / §12.5.4）。core.http 是唯一允许出网的受限工厂。
+[importlinter:contract:3]
+name = 禁令三 egress 收口于 core.http
+type = forbidden
+; 只禁**直接** import。经由 backend.core.http 的间接依赖正是本禁令想要的形态
+; ——全仓库出网收口到那一个受限工厂，而它自己当然要 import httpx。
+allow_indirect_imports = True
+source_modules =
+    backend.api
+    backend.agents
+    backend.components
+    backend.routing
+    backend.nodes
+    backend.graph
+    backend.solver
+    backend.validator
+    backend.ingestion
+    backend.memory
+    backend.retrieval
+    backend.report
+    backend.harness
+    backend.planner
+    backend.training
+    backend.skills_loader
+    backend.llm
+    backend.models
+    backend.schemas
+    backend.core.config
+    backend.core.errors
+    backend.core.logging
+; import-linter 不接受外部包的子模块（urllib.request），故对整个 urllib 设禁 ——
+; 更严的口径。urllib.request 的文本形态另由 deploy/scripts/check_egress.sh 的
+; E2 静态扫描把关（v6 §12.5.4）。
+forbidden_modules =
+    requests
+    httpx
+    urllib

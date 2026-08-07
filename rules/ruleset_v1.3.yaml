@@ -1,0 +1,318 @@
+# ─────────────────────────────────────────────────────────────────────
+# rules/ruleset_v1.3.yaml —— 14 条规则的机器可读定义（v6 §3.2 / §3.10）
+#
+# 本文件是 solver/model.py 与 validator/checks.py **两套独立实现的共同依据**。
+# 两边分别实现、互不引用代码（CLAUDE.md 铁律 2）——共用约束表达代码等于
+# 自己给自己判卷，由 import-linter 在 CI 强制。
+#
+# v6 相对 v5.2 的两处修订，已合入本文件：
+#   ① 约束6 更名「资源有效性与容量」，并含空域同时段容量（S-10，不新增第 15 条）
+#   ② 约束9 的 20 分钟窗口按跑道分组、7 分钟间隔全场统一（S-05 / D-2）
+#
+# SolveIntent 穿过 compile_spec 后与本文件合并，**冲突时以本文件为准**
+# （v6 §7.3.2）。
+# ─────────────────────────────────────────────────────────────────────
+
+ruleset_version: "1.3.0"
+source: "data/origin/rules.pdf"
+effective_from: "2026-08-07"
+rule_count: 14
+
+# ── 松弛分级（v6 §3.10）──────────────────────────────────────────────
+# 无论松弛到哪一级，R0 恒满足。这是 §0.3「输出方案 100% 合规」在松弛场景下
+# 依然成立的依据——松弛只发生在 R1/R2，且欠账 100% 显式披露。
+tiers:
+  R0: {name: 安全刚性, relaxable: false, note: 涉及飞行安全与法定资质，代码层硬编码禁止，UI 不提供选项}
+  R1: {name: 管理刚性, relaxable: true, authority: 训练主任, note: 需二次确认并记审计}
+  R2: {name: 进度弹性, relaxable: true, authority: 排班员, note: 允许本周欠账，欠账量写入长期记忆，下周优先补}
+  R3: {name: 偏好,     relaxable: true, authority: 排班员, note: 目标函数项（含跑道均衡），不影响可行性}
+
+relaxation_ladder:
+  - {tier: 0, name: 全硬约束, relaxes: []}
+  - {tier: 1, name: 频率窗口软化, relaxes: [13], note: 约束13 的频率窗口降级为软目标（允许欠账，最大化完成度）}
+  - {tier: 2, name: 每周必飞软化, relaxes: [13, 3], note: "D-6 重定义：约束3 整体降级为软目标（允许某些学员本周完全不飞 A 类，欠账显式披露）"}
+  - {tier: 3, name: 授权放宽 R1, relaxes: [13, 3, 10, 11, 12], authority: 训练主任, note: 需人工审批后执行}
+
+# ── 14 条规则 ────────────────────────────────────────────────────────
+rules:
+
+  - id: 1
+    check_id: C01
+    title: 时间一致性
+    tier: R0
+    type: 结构性
+    statement: 着陆时刻 = 起飞时刻 + 课目时长；架次必须落在训练窗内且不跨日。
+    params:
+      window_start: "06:00"
+      window_end: "18:00"
+      cross_day_allowed: false
+    solver_encoding: >-
+      区间变量构造保证 end = start + dur；域 [0, 720−dur]；按 day 分离。
+      时间以「当日 06:00 起的分钟数」编码，本条在建模上结构性成立，无需额外约束。
+    validator_check: >-
+      逐条重算 land == takeoff + duration，比对训练窗 06:00-18:00，检查 day 一致。
+
+  - id: 2
+    check_id: C02
+    title: 人员可用性
+    tier: R0
+    type: 预筛
+    statement: >-
+      人员在不可用日期不得排班；资质复训到期日之后，该资质对应课目不得安排
+      （到期日当日仍可执行复训课目）。
+    semantics_refs: [S-11]
+    params:
+      expiry_inclusive: true          # 到期日当日保留
+      mature_pilot_override: S-11     # 成熟飞行员按 S-11 转复训，不剔除
+    solver_encoding: >-
+      候选枚举剔除 day ∈ person.unavailable、day > qual.expiry。
+      **S-11 例外**：成熟飞行员的到期资质不剔除，标 is_recurrent。
+    validator_check: >-
+      遍历架次×人员，查不可用表与资质到期表；**对成熟飞行员按 S-11 判定而非
+      字面约束2**，并在报告中显式标注该条为授权改写。
+
+  - id: 3
+    check_id: C03
+    title: 角色配置
+    tier: R2
+    type: 结构+线性
+    statement: >-
+      带飞架次由 1 教员 + 1 学员组成，单飞架次 1 人；每名学员每周至少飞 1 次 A 类课目。
+    semantics_refs: [S-02, S-08, S-13]
+    params:
+      weekly_a_class_min: 1
+      a_class_scope: [missionA-1, missionA-2]   # S-02：A 类整体合并计数
+      applies_to: 全部学员                       # S-13：不论完成状态
+    solver_encoding: >-
+      带飞候选构造为 (1 教员, 1 学员)，单飞候选为 (1 人)，编成由 §3.1.1 判定式决定；
+      Σ x[c] ≥ 1 for c ∈ 学员 p 的全部 A 类候选（A-1 与 A-2 合并计数）。
+    validator_check: >-
+      统计每个带飞架次教员数==1、学员数==1；单飞架次人数==1；
+      对每名学员统计其 A 类（A-1+A-2）周计数 ≥1。
+
+  - id: 4
+    check_id: C04
+    title: 资质匹配与岗位互斥
+    tier: R0
+    type: 预筛 + NoOverlap
+    statement: 执行人须持该课目所属类别资质；同一人同一时刻只能在一个架次上。
+    solver_encoding: >-
+      候选枚举保证资质；AddNoOverlap([itv[c] for c 含人员 p]) 保证同一人（含教员）
+      同刻只在一个架次。
+    validator_check: 查资质表；对每人做区间两两相交检测；断言学员未担任教员岗。
+
+  - id: 5
+    check_id: C05
+    title: 机型与机组编成
+    tier: R0
+    type: 预筛
+    statement: 机组每人须持该机型资质；机组人数不得超过座位数。
+    semantics_refs: [S-08, S-09]
+    params:
+      seats: 2
+      crew_size_dual: 2       # 带飞
+      crew_size_solo: 1       # 单飞 / 复训
+      dual_required_rule: "需带飞 = (mission.带飞 == 是) ∧ (person.身份 == 学员)"
+    solver_encoding: >-
+      候选枚举保证：机组每人持机型资质；带飞人数=2、单飞/复训人数=1；人数 ≤ 座位数(2)。
+    validator_check: >-
+      查机型资质、人数、座位数，按 §3.1.1 判定式重算期望人数并比对。
+
+  - id: 6
+    check_id: C06
+    title: 资源有效性与容量        # ★ v6 更名（原「飞机ID有效性」）
+    tier: R0
+    type: 预筛 + Cumulative
+    statement: >-
+      机号须在册且机型适配该课目；**同一空域同时存在的飞机架数不可超过该空域的
+      同时段容量**。
+    semantics_refs: [S-10]
+    params:
+      # 空域同时段容量（v6 §1.3.4）
+      airspace_capacity:
+        SAA: 2    # Small Area A —— missionA-1, missionE-1, missionE-2
+        SAB: 2    # Small Area B —— missionA-2, missionF-1, missionG-1
+        IFR: 1    # IFR Route    —— missionC-1, missionC-2
+        RT1: 1    # Route 1      —— missionB-2, missionH-1
+        RT2: 1    # Route 2      —— missionB-1
+        RNG: 1    # Range Area   —— missionD-1
+      airspace_closure_semantics: capacity_to_zero   # 空域关闭 = 容量降为 0（外部扰动，非松弛）
+    solver_encoding: >-
+      ① 机号 ∈ 在册列表 且 机型 ∈ 课目适配（预筛）
+      ② 空域容量：对每个空域，用该空域全部候选的**完整飞行区间** [start, start+dur]
+         做 AddCumulative(intervals, demands=[1]*n, capacity=cap)。
+      注意与约束9 的区别：约束9 约束**起飞时刻**的密度（人造区间），本条约束
+      **占用时段**的并发（真实飞行区间）——两套独立的 Cumulative。
+    validator_check: >-
+      ① 机号与机型比对；② **按空域分组做扫描线**（起飞 +1、着陆 −1，按时刻排序后
+      取前缀最大值），断言任意时刻并发架次 ≤ 容量。**禁止复用 solver 的区间对象。**
+
+  - id: 7
+    check_id: C07
+    title: 飞机排期冲突与周转时间
+    tier: R0
+    type: 析取
+    statement: 同一架飞机的相邻架次之间须满足周转时间；维护时段内不得排班。
+    semantics_refs: [S-06]
+    params:
+      basis: landing_to_takeoff        # S-06
+      turnaround_min:
+        JL-8: 30
+        JL-9: 40
+    solver_encoding: >-
+      同机候选两两 reified：x[a]∧x[b] → (s[b] ≥ e[a]+T) ∨ (s[a] ≥ e[b]+T)，
+      T 按 S-06 从上一架次着陆算到下一架次起飞；维护时段作为固定区间加入该机 NoOverlap。
+    validator_check: >-
+      按机分组排序，逐对检查 takeoff[b] − landing[a] ≥ T（JL-8=30 / JL-9=40）与维护窗重叠。
+
+  - id: 8
+    check_id: C08
+    title: 人员冲突与休息
+    tier: R0
+    type: 析取 + 序
+    statement: 同一人相邻架次间隔不少于 10 分钟；连续 2 架次后需休息 30 分钟。
+    semantics_refs: [S-07]
+    params:
+      min_gap_min: 10
+      rest_after_n: 2
+      rest_min: 30
+      accumulation: same_day_only      # S-07：跨日不累计
+    solver_encoding: >-
+      同人同日两两间隔 ≥10；因约束12 限单日 ≤3，用序变量 pos[c] ∈ {1,2,3}，
+      令 pos=3 者与 pos=2 者间隔 ≥30。
+    validator_check: >-
+      按人按日排序，检查相邻间隔 ≥10、第 2→第 3 间隔 ≥30；**跨日不累计**。
+
+  - id: 9
+    check_id: C09
+    title: 起降密度限制
+    tier: R0
+    type: Cumulative
+    statement: >-
+      **同一跑道**任意 20 分钟滑动窗口内起飞次数不得超过 2 次；
+      任意两架次起飞时刻间隔不少于 7 分钟。
+    semantics_refs: [S-04, S-05]
+    params:
+      window_min: 20
+      window_max_takeoffs: 2
+      window_boundary: half_open       # S-04：[t, t+20)
+      window_scope: per_runway         # ★ D-2：20 分钟窗口按跑道分组
+      separation_min: 7
+      separation_scope: airport_wide   # ★ D-2：7 分钟间隔全场统一，不分跑道
+      runways:
+        RWY-1: [JL-8, JL-9]
+        RWY-2: [JL-8]
+    solver_encoding: >-
+      ① 跑道分配变量：每个被选中的候选恰好占用一条允许的跑道（AddExactlyOne）；
+      ② 20 分钟窗口按 (day, runway) 分组做 AddCumulative(len=20, cap=2)；
+      ③ 7 分钟间隔全场按 day 做 AddCumulative(len=7, cap=1)。
+      Cumulative 表达「任意时刻并发数 ≤ cap」，与 S-04 的半开窗完全等价。
+    validator_check: >-
+      **按日、按跑道**分组做 20 分钟滑窗计数 ≤2；**按日全场**排序检查相邻起飞
+      时刻差 ≥7。⚠️ 把 7 分钟实现成「按跑道」即违反 D-2。
+
+  - id: 10
+    check_id: C10
+    title: 每日飞行时长上限
+    tier: R1
+    type: 线性
+    statement: 单人单日飞行时长不得超过上限。
+    params:
+      default_min: 480
+      student_min: 240
+    solver_encoding: "Σ x[c]·dur[c] ≤ 480（学员 240），按 (person, day) 分组"
+    validator_check: 分组求和比对
+
+  - id: 11
+    check_id: C11
+    title: 每周架次上限
+    tier: R1
+    type: 线性
+    statement: 单人单周架次数不得超过上限。
+    params:
+      default_sorties: 12
+      student_sorties: 10
+    solver_encoding: "Σ x[c] ≤ 12（学员 10），按 person 分组"
+    validator_check: 分组计数
+
+  - id: 12
+    check_id: C12
+    title: 每日架次上限
+    tier: R1
+    type: 线性
+    statement: 单人单日架次数、单机单日架次数不得超过上限。
+    params:
+      per_person_per_day: 3
+      per_aircraft_per_day: 6
+    solver_encoding: "Σ x[c] ≤ 3 per (person, day)；≤ 6 per (aircraft, day)"
+    validator_check: 分组计数
+
+  - id: 13
+    check_id: C13
+    title: 任务完成度
+    tier: R2
+    type: 滑动窗口 + 跨周锚点
+    statement: >-
+      未完成且先修满足的课目，须按各自 freq_days 的滑动窗口安排；
+      先修未满足的课目不得安排。
+    semantics_refs: [S-01, S-03, S-11, S-12]
+    params:
+      freq_days:
+        missionA-1: 3
+        missionA-2: 3
+        missionB-1: 7
+        missionB-2: 7
+        missionC-1: 7
+        missionC-2: 7
+        missionD-1: 7
+        missionE-1: 7
+        missionE-2: 7
+        missionF-1: 7
+        missionG-1: 14
+        missionH-1: 14
+      recurrent_window_days: 7      # S-11：成熟飞行员到期资质
+      anchor: last_done_date
+      missing_anchor: from_week_monday   # S-12
+    solver_encoding: >-
+      对每个 (学员, 未完成且先修满足的课目)：**任意连续 freq_days 天窗口内 Σ x ≥ 1**
+      （不用总量约束——总量约束表达不了分布要求，会排出「周一连飞三次」这种解）；
+      跨周锚点见 §3.5.3；先修未满足者不生成候选，记入 blocked_items；
+      已完成课目（S-03）不受本条约束。S-11：成熟飞行员的到期资质按 7 天滑窗同样受本条约束。
+    validator_check: >-
+      独立重算窗口约束（从 PG 读 last_done_date 与完成状态），逐窗口比对；
+      并断言「先修未满足的课目在方案中出现次数 = 0」。
+
+  - id: 14
+    check_id: C14
+    title: 任务唯一性
+    # v6 §3.10 的分级表只列了 R0(1,2,4,5,6,7,8,9) / R1(10,11,12) / R2(3,13)，
+    # **漏了约束14**。业务方于 2026-08-07 补裁：**约束14 定级 R0**。
+    # 理由：req_max 由 freq_days 唯一确定（ceil(7/freq_days)），放宽它等于允许
+    # 无意义的重复安排，不存在可协商的管理弹性。
+    # 这与本窗口交付时的临时取值（不可松弛）行为一致，不改变任何排班结果——
+    # 松弛阶梯 Tier0~3 从未松弛过它。
+    tier: R0
+    relaxable: false
+    type: 线性 + 去重
+    statement: >-
+      同一人员与同一课目子任务的组合，在满足频率要求后不得重复安排。
+    semantics_refs: [S-13]
+    params:
+      req_max_formula: "ceil(7 / freq_days)"
+      req_max:
+        missionA-1: 3
+        missionA-2: 3
+        missionB-1: 1
+        missionB-2: 1
+        missionC-1: 1
+        missionC-2: 1
+        missionD-1: 1
+        missionE-1: 1
+        missionE-2: 1
+        missionF-1: 1
+        missionG-1: 1
+        missionH-1: 1
+    solver_encoding: >-
+      Σ x[c] ≤ req_max per (person, mission)；候选集按 (person, mission, day) 唯一。
+    validator_check: >-
+      输出记录完全重复检测 + 每 (person, mission) 计数上界检测，req_max 独立重算。

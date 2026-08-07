@@ -1,0 +1,181 @@
+# ─────────────────────────────────────────────────────────────────────
+# rules/semantics.yaml —— 语义假设开关（v6 §1.1 S-01 ~ S-13）
+#
+# 本表已封闭：S-01~S-09 由业务方于 2026-08-06 裁定（SPEC_DECISIONS §A），
+# S-10~S-13 于 2026-08-07 裁定。**实现时直接采用，不再询问。**
+#
+# 每条做成可切换开关，便于现场演示不同解读下的结果差异。`value` 列即 v6
+# §1.1 表的「裁定」列；`options` 列出该开关的合法取值，切换任何一条都会
+# 改变排班结果，因此 semantics_version 参与 content_sha256（v6 附录 B）。
+#
+# ⚠️ 新增任何一条未裁定的开关都会触发 FTS-1002 并阻断排班（v6 §9.3）。
+# ─────────────────────────────────────────────────────────────────────
+
+semantics_version: "1.0.0"
+decided_on: "2026-08-07"
+decided_by: "业务方 Alps"
+
+switches:
+
+  # ── S-01 先修「X类」的达标条件 ──────────────────────────────────────
+  S-01:
+    topic: 先修写「A类/B类/C类/F类」时的达标条件
+    value: all_missions_completed
+    options: [all_missions_completed, any_mission_completed]
+    rationale: >-
+      该类全部课目完成。A 类需 A-1 且 A-2；B 类需 B-1 且 B-2；C 类需 C-1 且 C-2。
+      基准周下何超（仅完成 A-1）的 B-1/B-2/C-1/F-1 全部 BLOCKED。
+    lands_in: [§3.1 预筛, §3.2 约束13, §1.4.2]
+
+  # ── S-02 约束3「A 类每名学员每周至少 1 次」的粒度 ────────────────────
+  S-02:
+    topic: 约束3「A 类每名学员每周至少 1 次」
+    value: class_level          # A 类整体 ≥1 次（飞 A-1 或 A-2 任一即可）
+    options: [class_level, per_mission]
+    rationale: >-
+      改（v5.2 默认为 A-1、A-2 各 1 次）。4 名学员 → 每周至少 4 个 A 类架次。
+    lands_in: [§3.2 约束3, §3.5.4]
+
+  # ── S-03 已完成课目是否仍按频率复训 ─────────────────────────────────
+  S-03:
+    topic: 已完成课目是否仍按频率复训
+    value: incomplete_only      # 仅「未完成」课目受约束13
+    options: [incomplete_only, all_missions]
+    rationale: >-
+      已由约束13 原文消解。已完成课目仅受约束3（每周必飞）约束。
+    lands_in: [§3.2 约束13, §3.5.3, §3.5.4]
+
+  # ── S-04 约束9「20 分钟滑动窗口」边界 ───────────────────────────────
+  S-04:
+    topic: 约束9「20 分钟滑动窗口」边界
+    value: half_open            # [t, t+20)
+    options: [half_open, closed]
+    rationale: >-
+      与 AddCumulative(len=20, cap=2) 完全等价。
+    lands_in: [§3.3, §4.2 check_c09]
+
+  # ── S-05 约束9「同一跑道」→ 双跑道模型（v6 §1.1.1 原样照抄）─────────
+  S-05:
+    topic: 约束9「同一跑道」
+    value: dual_runway
+    options: [dual_runway, single_runway]
+    model: dual_runway
+    runways:
+      RWY-1: {aircraft_types: [JL-8, JL-9]}
+      RWY-2: {aircraft_types: [JL-8]}
+    density_scope:
+      window_20min: per_runway       # 20 分钟内 ≤2 次起飞，按跑道分别计数
+      separation_7min: airport_wide  # 任意两次起飞间隔 ≥7 分钟，全场统一
+    rationale: >-
+      D-2 裁定。rules.pdf 约束9 原文「**同一跑道**任意 20 分钟滑动窗口内起飞
+      次数不得超过 2 次；任意两架次起飞时刻间隔不少于 7 分钟」——前半句限定了
+      「同一跑道」，后半句没有。SPEC_DECISIONS §B.2 把两组都按跑道分组，与原文
+      字面不符，业务方裁定按原文实现。
+      JL-9 架次固定 RWY-1；JL-8 架次的跑道是求解决策变量。
+    lands_in: [§1.3.5, §3.3, §4.2 check_c09, §10.4 区块7, 附录B runway_id]
+
+  # ── S-06 约束7 周转时间基准 ─────────────────────────────────────────
+  S-06:
+    topic: 约束7 周转时间基准
+    value: landing_to_takeoff   # gap = takeoff[b] − landing[a] ≥ turnaround
+    options: [landing_to_takeoff, takeoff_to_takeoff]
+    lands_in: [§3.2 约束7, §4.2 check_c07]
+
+  # ── S-07 约束8「连续 2 架次后休息 30 分」的累计范围 ─────────────────
+  S-07:
+    topic: 约束8「连续 2 架次后休息 30 分」
+    value: same_day_only        # 跨日不累计
+    options: [same_day_only, rolling_24h]
+    rationale: >-
+      用序变量 pos ∈ {1,2,3}，令 pos=3 者与 pos=2 者间隔 ≥30。
+    lands_in: [§3.2 约束8]
+
+  # ── S-08 missions「带飞 = 是」的适用对象 ────────────────────────────
+  S-08:
+    topic: missions 表「带飞 = 是」的适用对象
+    value: students_only        # 教员与成熟飞行员可单飞
+    options: [students_only, everyone]
+    rationale: >-
+      与 D-1 叠加后：A 类（带飞=否）学员亦单飞。
+      判定式：需带飞 = (mission.带飞 == 是) ∧ (person.身份 == 学员)。
+    lands_in: [§3.1.1]
+
+  # ── S-09 教员/成熟飞行员是否需按频率排课目 ──────────────────────────
+  S-09:
+    topic: 教员/成熟飞行员是否需按频率排课目
+    value: instructors_exempt_mature_recurrent
+    options:
+      - instructors_exempt_mature_recurrent  # 教员不排；成熟飞行员到期资质按复训排
+      - all_exempt                            # v5.2 默认：一律不排
+      - all_scheduled
+    rationale: >-
+      教员仅作为带飞教员岗位出现，不生成受训候选。成熟飞行员的已到期资质
+      按 S-11 处理。
+    lands_in: [§3.1 预筛, §3.1.1, §3.1.2]
+
+  # ── S-10 空域同时段容量是否为硬约束 ─────────────────────────────────
+  S-10:
+    topic: 空域同时段容量是否为硬约束
+    value: hard_constraint
+    options: [hard_constraint, soft_objective]
+    merged_into_rule: 6         # 并入约束6 实现，不新增条文编号，对外仍称 14 条
+    rationale: >-
+      rules.pdf 约束6 原文标题即为「资源有效性和容量」，正文明写「同一空域
+      同时存在的飞机架数不可超过该空域的同时段容量」。归 R0，不可松弛。
+      空域**关闭**（容量降为 0）是外部扰动输入，不是松弛动作，两者不要混淆。
+    lands_in: [§1.3.4, §3.2 约束6, §3.4, §4.2 check_c06, §10.4 区块5]
+
+  # ── S-11 成熟飞行员资质到期后的处置（v6 §1.1.2 原样照抄）───────────
+  S-11:
+    topic: 成熟飞行员资质到期后的处置
+    value: convert_to_recurrent
+    options: [convert_to_recurrent, forbid_after_expiry]
+    enabled: true
+    applies_to_identities: [成熟飞行员]   # 学员与教员不适用
+    window_days: 7
+    start_offset_days: 1                  # 自到期次日起
+    cross_week_anchor: last_done_date
+    rationale: >-
+      **对 rules.pdf 约束2 字面语义的业务方授权改写，不是实现 bug**（必须写进
+      验收报告，否则会被当成校验器漏判）。到期资质对应课目转为复训课目，自到期
+      次日起按每 7 天滑动窗口至少 1 次强制安排，不受自然周边界限制。
+      学员与教员对约束2 按字面执行（到期日当日保留，次日起剔除）。
+      建模落点：候选不剔除，标记 is_recurrent=True；该标记同时决定机组编成
+      （复训架次机组人数为 1）与 Sheet 4 呈现措辞。
+    lands_in: [§1.2.4, §3.1.2, §3.2 约束2/13, §10.4 区块6, R17]
+
+  # ── S-12 last_done_date 缺失时频率窗口的起算 ────────────────────────
+  S-12:
+    topic: last_done_date 缺失时频率窗口的起算
+    value: from_week_monday     # first_exec_day ≤ freq_days − 1，且不计欠账
+    options: [from_week_monday, treat_as_overdue]
+    count_as_debt: false
+    rationale: >-
+      D-5 裁定。原始 PDF 只提供「已完成课目」列表，不含任何 last_done_date。
+      v5.2 的 gap=999 写法会让所有未完成课目 deadline=0，全压在周一；基准周下
+      张勇有 4 门未完成课目，周一需 4 架次，直接违反约束12（单人单日 ≤3）
+      —— 这是**数据初始化造成的假不可行**，不是真实资源冲突。
+    lands_in: [§3.5.3, §10.4 区块3, R19]
+
+  # ── S-13 约束3「每周必飞」是否只对未完成者生效 ──────────────────────
+  S-13:
+    topic: 约束3「每周必飞」是否只对未完成者生效
+    value: all_students         # 对全部 4 名学员生效，不论完成状态
+    options: [all_students, incomplete_only]
+    rationale: >-
+      D-3 裁定。语义是「保持熟练度」，与约束13 的「推进进度」分离。
+      req_max 随之定义为 ceil(7 / freq_days)（§3.2 约束14）。
+    lands_in: [§3.2 约束3, §3.2 约束14, §3.5.4]
+
+# ─────────────────────────────────────────────────────────────────────
+# 跨周锚点公式（D-4 统一取通式；SPEC_DECISIONS §B.4 第二分支的 −1 为笔误）
+# ─────────────────────────────────────────────────────────────────────
+frequency_anchor:
+  formula: "first_exec_day <= max(0, freq_days - gap)"
+  gap_definition: "(week_monday - last_done_date).days"
+  is_debt_when: "gap >= freq_days"
+  missing_anchor_deadline: "freq_days - 1"   # S-12
+  derivation: >-
+    令周一为 day 0，last_done 位于 day −gap；长度为 F 的窗口中，起点为
+    −gap+1 的那个窗口 [−gap+1, −gap+F] 是第一个不含 last_done 的窗口，
+    其右端对应 day F − gap，故 first_exec_day ≤ F − gap。

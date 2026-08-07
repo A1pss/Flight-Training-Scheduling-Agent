@@ -1,0 +1,17 @@
+{
+  "rules": [
+    {
+      "when_contains": ["意图", "排班"],
+      "response": "{\"intent\": \"schedule\", \"confidence\": 0.95}"
+    },
+    {
+      "when_contains": ["求解意图"],
+      "response": "{\"scope_persons\": \"ALL\", \"scope_missions\": \"ALL\", \"freeze_policy\": \"BALANCED\", \"freeze_reason\": \"首轮排班，无既有方案需保护\", \"objective_weights\": {\"progress\": 1.0, \"disruption\": 0.3, \"balance\": 0.2}, \"estimated_blast_radius\": 0}"
+    },
+    {
+      "when_contains": ["查询改写"],
+      "response": "{\"original_query\": \"\", \"sub_queries\": [], \"keyword_terms\": [], \"semantic_query\": \"\", \"ambiguities\": []}"
+    }
+  ],
+  "default": "MOCK_DEFAULT_RESPONSE"
+}
