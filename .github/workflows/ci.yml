@@ -1,0 +1,110 @@
+name: CI
+
+# 跑 CLAUDE.md §6 的六条质量门禁。
+# **LLM_PROVIDER=mock，不依赖 Ollama、不依赖 GPU、不依赖 Docker。**
+# PG/Redis 按 v6 §12.1 以**裸装**方式起（本项目不用 testcontainers）。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  LLM_PROVIDER: mock
+  APP_ENV: ci
+  PG_HOST: 127.0.0.1
+  PG_PORT: "5433"
+  PG_USER: fts
+  PG_PASSWORD: fts
+  PG_DATABASE: fts
+  REDIS_HOST: 127.0.0.1
+  REDIS_PORT: "6380"
+
+jobs:
+  gates:
+    name: 质量门禁六条
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 PostgreSQL 16 与 Redis 7（裸装，非容器）
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-16 redis-server
+          echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
+
+      - name: 起 PG 独立实例（用户态，端口 5433）
+        run: |
+          export PATH="/usr/lib/postgresql/16/bin:$PATH"
+          PGDATA="$GITHUB_WORKSPACE/.data/pg"
+          mkdir -p "$PGDATA" "$GITHUB_WORKSPACE/.data/logs"
+          initdb -D "$PGDATA" -U "$PG_USER" --auth-local=trust --auth-host=trust -E UTF8
+          pg_ctl -D "$PGDATA" -l "$GITHUB_WORKSPACE/.data/logs/pg.log" \
+            -o "-p $PG_PORT -k $PGDATA -c listen_addresses=127.0.0.1" start
+          for i in $(seq 1 30); do
+            pg_isready -h 127.0.0.1 -p "$PG_PORT" -U "$PG_USER" && break
+            sleep 1
+          done
+          createdb -h 127.0.0.1 -p "$PG_PORT" -U "$PG_USER" "$PG_DATABASE"
+          psql -h 127.0.0.1 -p "$PG_PORT" -U "$PG_USER" -d "$PG_DATABASE" -c 'SELECT version();'
+
+      - name: 起 Redis 实例（用户态，端口 6380）
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/.data/redis"
+          redis-server --port "$REDIS_PORT" --bind 127.0.0.1 --daemonize yes \
+            --dir "$GITHUB_WORKSPACE/.data/redis" --save ''
+          for i in $(seq 1 30); do
+            redis-cli -h 127.0.0.1 -p "$REDIS_PORT" ping && break
+            sleep 1
+          done
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: 安装依赖
+        run: |
+          python -m pip install -U pip
+          pip install -r requirements.txt
+
+      # ── CLAUDE.md §6 六条 ──────────────────────────────────────────
+      - name: 1/6 ruff check
+        run: ruff check .
+
+      - name: 2/6 ruff format --check
+        run: ruff format --check .
+
+      - name: 3/6 mypy --strict
+        run: mypy backend --strict
+
+      - name: 4/6 bandit
+        run: bandit -r backend -ll
+
+      - name: 5/6 lint-imports（三条依赖禁令）
+        run: lint-imports
+
+      - name: 6/6 pytest + 覆盖率门禁
+        run: pytest -q --cov=backend --cov-report=term-missing --cov-fail-under=80
+
+      # ── 铁律 1 与 v6 §12.5.4 E2/E3 的静态扫描 ──────────────────────
+      - name: 铁律 1 —— 无 TODO / NotImplementedError
+        run: bash deploy/scripts/check_no_placeholders.sh
+
+      - name: E2/E3 —— egress 静态扫描
+        run: bash deploy/scripts/check_egress.sh
+
+      - name: 收尾停服
+        if: always()
+        run: |
+          export PATH="/usr/lib/postgresql/16/bin:$PATH"
+          pg_ctl -D "$GITHUB_WORKSPACE/.data/pg" stop || true
+          redis-cli -h 127.0.0.1 -p "$REDIS_PORT" shutdown nosave || true

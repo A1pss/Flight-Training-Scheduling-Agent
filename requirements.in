@@ -1,0 +1,68 @@
+# FTS 直接依赖清单（人工维护）。锁定版本见 requirements.txt。
+# 安装：pip install -r requirements.in   → 锁定：pip freeze > requirements.txt
+
+# ── 求解内核 ─────────────────────────────────────────────────────────
+ortools
+
+# ── 编排 ─────────────────────────────────────────────────────────────
+langgraph
+langgraph-checkpoint-postgres
+langchain-core
+
+# ── Web / API / 前端 ─────────────────────────────────────────────────
+fastapi
+uvicorn[standard]
+streamlit
+python-multipart
+
+# ── 契约与配置 ───────────────────────────────────────────────────────
+pydantic>=2
+pydantic-settings
+PyYAML
+
+# ── 存储 ─────────────────────────────────────────────────────────────
+sqlalchemy
+alembic
+psycopg[binary]
+redis
+rq
+chromadb
+
+# ── 检索 ─────────────────────────────────────────────────────────────
+rank-bm25
+FlagEmbedding
+# FlagEmbedding 1.4.0 调用的 tokenizer.prepare_for_model 在 transformers 5.x 中已移除
+# （AttributeError: XLMRobertaTokenizer has no attribute prepare_for_model），必须锁 4.x
+transformers>=4.44,<5
+
+# ── 文档摄取 ─────────────────────────────────────────────────────────
+pdfplumber
+openpyxl
+pandas
+python-docx
+paddleocr
+paddlepaddle
+
+# ── 日志 ─────────────────────────────────────────────────────────────
+structlog
+
+# ── HTTP（仅 backend/core/http.py 可 import，见 .importlinter 禁令三）──
+httpx
+
+# ── 测试 ─────────────────────────────────────────────────────────────
+pytest
+pytest-cov
+pytest-regressions
+hypothesis
+schemathesis
+playwright
+
+# ── 静态工具链 ───────────────────────────────────────────────────────
+ruff
+mypy
+bandit
+import-linter
+pre-commit
+
+# ── mypy --strict 所需的类型桩 ───────────────────────────────────────
+types-PyYAML

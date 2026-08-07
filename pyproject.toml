@@ -1,0 +1,131 @@
+[project]
+name = "fts"
+version = "0.1.0"
+description = "FTS 飞行训练排班系统 —— 全离线内网部署，CP-SAT 求解 + 独立校验器双通道"
+requires-python = ">=3.11"
+readme = "README.md"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["backend"]
+
+# ─────────────────────────────────────────────────────────────────────
+# ruff
+# ─────────────────────────────────────────────────────────────────────
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [".data", ".tools", "alembic/versions", "traces"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle
+    "W",
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # bugbear
+    "C4",   # comprehensions
+    "SIM",  # simplify
+    "RUF",  # ruff-specific
+    "ARG",  # unused arguments
+    "PTH",  # use pathlib
+    "TID",  # tidy imports
+    "S",    # bandit-ish
+]
+ignore = [
+    "E501",    # 行长由 formatter 保证；中文注释按显示宽度算会误报
+    "RUF001",  # 全角标点在中文文档字符串里是正确的
+    "RUF002",
+    "RUF003",
+    "S101",    # assert 在测试与后置断言中是刻意用法
+]
+
+[tool.ruff.lint.per-file-ignores]
+# pydantic-settings 的配置类字段必须用大写常量名（对应环境变量名）；
+# computed_field 派生出的 DATABASE_URL / REDIS_URL 同理，故一并豁免 N802/N815。
+"backend/core/config.py" = ["N802", "N815"]
+# 测试里允许硬编码测试用的假地址与 assert
+# S608：集成测试用 f-string 拼临时 schema 名建/删表。名字来自 uuid4，不含外部
+#       输入；且 PG 的标识符（schema/表名）本就不能用参数占位符传。
+"tests/**" = ["S105", "S106", "S311", "S608", "ARG001", "ARG002"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["backend", "frontend"]
+
+# ─────────────────────────────────────────────────────────────────────
+# mypy —— backend 全量 strict（CLAUDE.md §6）
+# ─────────────────────────────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unreachable = true
+show_error_codes = true
+pretty = true
+exclude = ['^\.data/', '^\.tools/', '^alembic/versions/']
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+# 无类型标注的第三方库：只关掉「缺 stub」，不放宽本仓库代码的严格度
+module = [
+    "ortools.*",
+    "chromadb.*",
+    "rank_bm25.*",
+    "pdfplumber.*",
+    "paddleocr.*",
+    "paddle.*",
+    "FlagEmbedding.*",
+    "rq.*",
+    "streamlit.*",
+    "langgraph.*",
+]
+ignore_missing_imports = true
+
+[tool.pydantic-mypy]
+init_typed = true
+warn_required_dynamic_aliases = true
+
+# ─────────────────────────────────────────────────────────────────────
+# pytest
+# ─────────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q --strict-markers --strict-config"
+markers = [
+    "integration: 需要真实 PG/Redis 实例（裸装，端口 5433/6380）",
+    "ollama: 需要真实 Ollama 服务与 GPU，CI 不跑",
+    "property: Hypothesis 属性测试",
+    "golden: 黄金用例，逐字节比对",
+    "guardrail: 护栏测试（越权/预算/egress/Skill 隔离）",
+    "e2e: 端到端，需要全栈在线",
+]
+filterwarnings = ["error::DeprecationWarning:backend.*"]
+
+# ─────────────────────────────────────────────────────────────────────
+# coverage
+# ─────────────────────────────────────────────────────────────────────
+[tool.coverage.run]
+source = ["backend"]
+branch = true
+omit = ["backend/*/__init__.py", "alembic/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "\\.\\.\\.$",
+]
+
+# ─────────────────────────────────────────────────────────────────────
+# bandit（`bandit -r backend -ll` 用命令行参数，这里只排除测试目录）
+# ─────────────────────────────────────────────────────────────────────
+[tool.bandit]
+exclude_dirs = ["tests", ".data", ".tools"]

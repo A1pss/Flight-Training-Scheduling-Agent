@@ -1,0 +1,61 @@
+# pre-commit —— 本地提交前跑 CLAUDE.md §6 质量门禁的静态部分。
+# 完整六条（含 pytest 覆盖率门禁）由 CI 与收工检查单负责。
+#
+# 安装：conda run -n schedule pre-commit install
+
+default_language_version:
+  python: python3.11
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=2048]
+      - id: detect-private-key
+      - id: no-commit-to-branch
+        args: [--branch, main]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.6
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      # mypy / bandit / import-linter 用本地 conda 环境跑，避免 pre-commit
+      # 自建虚拟环境导致与 CI 用的不是同一套依赖。
+      - id: mypy
+        name: mypy --strict backend
+        entry: conda run -n schedule mypy backend --strict
+        language: system
+        pass_filenames: false
+        types: [python]
+
+      - id: bandit
+        name: bandit -r backend -ll
+        entry: conda run -n schedule bandit -r backend -ll
+        language: system
+        pass_filenames: false
+        types: [python]
+
+      - id: import-linter
+        name: lint-imports（三条依赖禁令）
+        entry: conda run -n schedule lint-imports
+        language: system
+        pass_filenames: false
+        types: [python]
+
+      - id: no-placeholders
+        name: 禁止 TODO/FIXME/NotImplementedError（铁律 1）
+        entry: bash deploy/scripts/check_no_placeholders.sh
+        language: system
+        pass_filenames: false

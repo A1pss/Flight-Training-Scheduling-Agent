@@ -1,0 +1,59 @@
+# ── 运行时数据与二进制（体积大，禁止入库，CLAUDE.md §11）──────────────
+.data/
+.tools/
+traces/
+data/plans/
+*.sqlite
+*.db
+
+# ── 机密 ──────────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ── 模型权重 ─────────────────────────────────────────────────────────
+*.gguf
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.onnx
+*.pdparams
+*.pdmodel
+
+# ── Python ───────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# ── 测试与工具缓存 ───────────────────────────────────────────────────
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# ── 日志与临时产物 ───────────────────────────────────────────────────
+*.log
+logs/
+tmp/
+.DS_Store
+
+# ── 编辑器 ───────────────────────────────────────────────────────────
+.idea/
+.vscode/
+!.vscode/settings.json
+
+# Claude Code 本地设置与临时文件
+.claude/settings.local.json
+.claude/*.tmp.*
