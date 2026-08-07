@@ -203,23 +203,26 @@ def test_rule14_req_max_is_ceil_seven_over_freq(ruleset: dict[str, Any]) -> None
     assert req_max["missionB-1"] == 1
 
 
-def test_rule14_tier_is_explicitly_pending(ruleset: dict[str, Any]) -> None:
-    """v6 §3.10 未给约束14 分级 —— 实现为不可松弛，并显式标注待裁定。
+def test_rule14_tier_is_r0(ruleset: dict[str, Any]) -> None:
+    """约束14 定级 R0（业务方 2026-08-07 补裁，v6 §3.10 原表漏列）。
 
-    松弛阶梯 Tier0~3 从未松弛过它，所以这个取值不改变任何排班结果。
+    `req_max` 由 `freq_days` 唯一确定，放宽它等于允许无意义的重复安排，
+    不存在可协商的管理弹性。
     """
     r14 = next(r for r in ruleset["rules"] if r["id"] == 14)
-    assert r14["tier"] is None
+    assert r14["tier"] == "R0"
     assert r14["relaxable"] is False
-    assert r14["tier_pending_decision"] is True
+    # 补裁已落地，不应再残留「待裁定」标记
+    assert "tier_pending_decision" not in r14
 
 
 # ─── 松弛分级（§3.10）───────────────────────────────────────────────
 
 
 def test_r0_rules_are_exactly_v6_list(ruleset: dict[str, Any]) -> None:
+    """R0 = v6 §3.10 的 (1,2,4,5,6,7,8,9) + 补裁的约束14（2026-08-07）。"""
     r0 = sorted(r["id"] for r in ruleset["rules"] if r.get("tier") == "R0")
-    assert r0 == [1, 2, 4, 5, 6, 7, 8, 9]
+    assert r0 == [1, 2, 4, 5, 6, 7, 8, 9, 14]
 
 
 def test_r1_and_r2_rules(ruleset: dict[str, Any]) -> None:
