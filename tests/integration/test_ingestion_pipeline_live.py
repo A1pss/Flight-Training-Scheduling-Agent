@@ -383,10 +383,64 @@ def test_prepare_is_reproducible() -> None:
     assert first.content_sha256 == second.content_sha256
 
 
-def test_baseline_snapshot_exists_from_cli() -> None:
-    """`python -m backend.ingestion.cli --baseline` 的产物应当在库里且为 ACTIVE。"""
+def test_cli_baseline_run_produces_an_active_snapshot() -> None:
+    """`python -m backend.ingestion.cli --baseline` 端到端跑通并留下 ACTIVE 快照。
+
+    **本用例自己把前置条件建起来**（直接调 `cli.main`），不假设「有人在测试之外
+    先跑过一遍」—— 上一版就是那么写的，本地绿、CI 红，因为 CI 上没人跑过。
+    测试断言的必须是它自己建立的事实。
+
+    顺带这是 `backend/ingestion/cli.py` 唯一的覆盖来源。
+    `--no-vectors`：本用例验的是 PG 侧的端到端，向量另有专门用例。
+    """
+    from backend.ingestion.cli import main as cli_main
+
     with session_scope() as session:
-        row = session.execute(
+        previous_active = session.execute(
             text("SELECT snapshot_id FROM data_snapshots WHERE status = 'ACTIVE'")
-        ).first()
-        assert row is not None, "未找到 ACTIVE 快照，请先跑 --baseline"
+        ).scalar_one_or_none()
+
+    exit_code = cli_main(["--baseline", "--no-vectors"])
+    assert exit_code == 0, "--baseline 应当一路跑通（冲突按 §5.5 裁定表、问题按既有回答）"
+
+    with session_scope() as session:
+        snapshot_id, confirmed_by = session.execute(
+            text("SELECT snapshot_id, confirmed_by FROM data_snapshots WHERE status = 'ACTIVE'")
+        ).one()
+        assert confirmed_by.startswith("baseline"), confirmed_by
+
+        # 落库规模与 v6 §1.3 的实体全景一致
+        counts = {
+            table: session.execute(
+                text(f"SELECT count(*) FROM {table} WHERE snapshot_id = :s"),
+                {"s": snapshot_id},
+            ).scalar_one()
+            for table in ("persons", "aircraft", "missions", "airspaces", "runways")
+        }
+        assert counts == {
+            "persons": 8,
+            "aircraft": 8,
+            "missions": 12,
+            "airspaces": 6,
+            "runways": 2,
+        }
+
+        # X1 裁定值确实落库
+        expiry = session.execute(
+            text(
+                "SELECT expiry_date FROM person_qualifications "
+                "WHERE snapshot_id = :s AND person_id = 'P04' AND mission_class = 'C'"
+            ),
+            {"s": snapshot_id},
+        ).scalar_one()
+        assert expiry.isoformat() == "2026-01-07"
+
+        # 收尾：本用例若挤掉了原先的 ACTIVE 快照，把它恢复回去
+        if previous_active is not None and previous_active != snapshot_id:
+            session.execute(
+                text("UPDATE data_snapshots SET status = 'SUPERSEDED' WHERE status = 'ACTIVE'")
+            )
+            session.execute(
+                text("UPDATE data_snapshots SET status = 'ACTIVE' WHERE snapshot_id = :s"),
+                {"s": previous_active},
+            )

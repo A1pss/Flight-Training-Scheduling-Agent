@@ -2375,6 +2375,23 @@ fts-release-v1.0.0/
 
 > **v5.2 写的是 testcontainers，v6 改为直连裸装实例**——无 Docker 环境下 testcontainers 不可用。集成测试用 `pytest` fixture 在 5433/6380 上建临时 schema/db，测完 drop。CI 同样以裸装方式起 PG/Redis，`LLM_PROVIDER=mock`，**不依赖 Ollama、不依赖 GPU**。
 
+> ⚠️ **集成测试的环境前置：库里必须先有表。**
+>
+> 直连裸装实例的代价是**测试不自带 schema** —— 起完 PG 还要跑
+> `alembic upgrade head`，否则集成测试会以
+> `relation "data_snapshots" does not exist` 全线失败。这一步在本地由开工检查单
+> （`healthcheck.sh` 会检查 `alembic_version`）把关，在 CI 里是 six gates 之前的
+> 一个独立步骤。**M1 的首个 PR 就是栽在这里**：本地手工迁移过所以全绿，CI 是全新库
+> 所以全红。
+>
+> 与之配套的两条 CI 约定：
+> - `EMBED_PROVIDER=hash` —— `.data/` 已 gitignore，CI 上没有 bge-m3 权重。
+>   检索质量指标（§12.4）一律用真模型跑，那是 M5 的事，不进 CI。
+> - **集成测试不许断言「环境外状态」**。「库里应当已经有一个 ACTIVE 快照」这种断言
+>   等于假设有人在测试之外先跑过某个命令 —— 本地绿、CI 红。要断言什么，就在用例里
+>   自己把它建起来（M1 的 `test_cli_baseline_run_produces_an_active_snapshot` 直接
+>   调 `cli.main(["--baseline"])`，顺带成了 CLI 的唯一覆盖来源）。
+
 **属性测试是本系统的杀手锏**：
 
 ```python

@@ -124,7 +124,16 @@ conda run -n schedule pytest -q --cov=backend --cov-report=term-missing --cov-fa
 
 一条不过就不许推。**不许通过放宽配置来让它过** —— 配置文件（`pyproject.toml` / `.importlinter` / `setup.cfg`）的任何放宽都要在收工报告里单列一条说明理由，并等用户确认。
 
-CI（GitHub Actions）跑同一套命令，`LLM_PROVIDER=mock`，**不依赖 Ollama、不依赖 GPU**。
+CI（GitHub Actions）跑同一套命令，`LLM_PROVIDER=mock`、`EMBED_PROVIDER=hash`，**不依赖 Ollama、不依赖 GPU**。
+
+⚠️ **跑 pytest 之前必须先 `alembic upgrade head`。** 集成测试按 v6 §12.1 直连裸装 PG，
+**测试不自带 schema**；库里没表就会以 `relation "data_snapshots" does not exist` 全线失败。
+CI 在六条门禁之前有一个独立的迁移步骤，本地则由开工检查单的 `healthcheck.sh` 把关
+（它会检查 `alembic_version`）。
+**M1 的首个 PR 就是栽在这条上**：本地手工迁移过所以全绿，CI 是全新库所以全红。
+
+⚠️ **集成测试不许断言「环境外状态」**——「库里应当已经有一个 ACTIVE 快照」这类断言
+等于假设有人在测试之外先跑过某个命令，本地绿、CI 红。要断言什么就在用例里自己建起来。
 
 ---
 
@@ -199,7 +208,18 @@ export CUDA_VISIBLE_DEVICES=3
 bash deploy/native/start_pg.sh      # PG16, 127.0.0.1:5433
 bash deploy/native/start_redis.sh   # Redis7, 127.0.0.1:6380
 bash deploy/native/start_ollama.sh  # Ollama, 127.0.0.1:11434, 绑 GPU 3
-bash deploy/native/healthcheck.sh   # 全栈体检
+bash deploy/native/healthcheck.sh   # 全栈体检（含 alembic 版本检查）
+
+# 数据库迁移（**跑集成测试前必须先做**，见 §6）
+alembic upgrade head                # 建/升到最新 schema
+alembic current                     # 看当前版本
+alembic downgrade base              # 清空全部表（回滚验证用，会删数据）
+
+# 摄取基准数据（把 data/origin/ 四份 PDF 跑成基准 snapshot）
+python -m backend.ingestion.cli --baseline
+python -m backend.ingestion.cli --baseline --dry-run     # 只看 Diff 不落库
+python -m backend.ingestion.cli <文件...> --approver <人> \
+    --cycle-start YYYY-MM-DD --resolve "<冲突id>=<取值>"  # 上传路径
 
 # 应用
 uvicorn backend.api.main:app --host 0.0.0.0 --port 8000
