@@ -17,6 +17,9 @@ concurrency:
 
 env:
   LLM_PROVIDER: mock
+  # 嵌入走确定性哈希实现：`.data/` 已 gitignore，CI 上没有 bge-m3 那 2.2GB 权重。
+  # 检索质量指标（v6 §12.4）一律用真模型跑，那是 M5 窗口的事，不在 CI 里。
+  EMBED_PROVIDER: hash
   APP_ENV: ci
   PG_HOST: 127.0.0.1
   PG_PORT: "5433"
@@ -75,6 +78,15 @@ jobs:
         run: |
           python -m pip install -U pip
           pip install -r requirements.txt
+
+      # ── 集成测试的前置：建库 ────────────────────────────────────────
+      # v6 §12.1 的集成测试**直连裸装 PG**（不用 testcontainers），所以库里必须
+      # 先有表。这一步是部署流程（deploy/native + alembic）的如实镜像；
+      # 少了它，集成测试会以 `relation "data_snapshots" does not exist` 全线失败。
+      - name: 应用数据库迁移（alembic upgrade head）
+        run: |
+          alembic upgrade head
+          alembic current
 
       # ── CLAUDE.md §6 六条 ──────────────────────────────────────────
       - name: 1/6 ruff check

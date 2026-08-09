@@ -126,8 +126,18 @@ if "$FTS_SVC_BIN/pg_isready" -h "$PG_HOST" -p "$PG_PORT" -q 2>/dev/null; then
            -tAc "SELECT version_num FROM alembic_version" 2>/dev/null || true)
   if [ -n "$SCHEMA" ]; then
     fts_info "alembic schema 版本：$SCHEMA"
+    # 事实表在不在，比 alembic_version 有没有更能说明问题
+    TABLES=$("$FTS_SVC_BIN/psql" -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DATABASE" \
+             -tAc "SELECT count(*) FROM pg_tables WHERE schemaname='public'" 2>/dev/null || echo 0)
+    if [ "${TABLES:-0}" -ge 30 ]; then
+      ok "PG schema 已建（public 下 $TABLES 张表）"
+    else
+      bad "alembic 有版本号但 public 下只有 $TABLES 张表 —— schema 不完整，请跑 alembic upgrade head"
+    fi
   else
-    warn "alembic_version 表不存在 —— 迁移内容由 M1 窗口交付，M0 属预期状态"
+    # M1 起迁移已交付：没表就是真问题，集成测试会以
+    # `relation "data_snapshots" does not exist` 全线失败。
+    bad "alembic_version 表不存在 —— 数据库尚未迁移，请先跑：alembic upgrade head"
   fi
 else
   bad "PG 不可连（先跑 start_pg.sh）"

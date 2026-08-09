@@ -104,12 +104,25 @@ class Settings(BaseSettings):
     RULESET_PATH: Path = PROJECT_ROOT / "rules" / "ruleset_v1.3.yaml"
     SEMANTICS_PATH: Path = PROJECT_ROOT / "rules" / "semantics.yaml"
 
+    # ── 训练周期起点 ─────────────────────────────────────────────────
+    # 这里**刻意没有** `DEFAULT_CYCLE_START` 之类的配置项。
+    #
+    # `training_progress.cycle_start` 只有两个来源：课目文件的「课程开始日期」列，
+    # 或用户对 `Q_cycle_start` 的回答。都没有时管线**向用户提问并阻断**，不兜底。
+    # 加一个默认值配置就等于给「悄悄填一个日期」开了后门，而这个值进主键、
+    # 填错要迁移全表。详见 :mod:`backend.ingestion.questions`。
+
     # ── 检索与嵌入（§6.5 / §11.3）───────────────────────────────────
     BGE_M3_PATH: Path = PROJECT_ROOT / ".data" / "models" / "bge-m3"
     BGE_RERANKER_PATH: Path = PROJECT_ROOT / ".data" / "models" / "bge-reranker-v2-m3"
     CHROMA_PATH: Path = PROJECT_ROOT / ".data" / "chroma"
     RRF_K: int = 60
     RERANK_TOP_K: int = 5
+    #: 嵌入实现。`bge` = 真模型（.data/models/bge-m3）；`hash` = 确定性哈希嵌入，
+    #: 给 CI 用（那里没有 2.2GB 权重）。检索质量指标一律用 `bge` 跑。
+    EMBED_PROVIDER: Literal["bge", "hash"] = "bge"
+    #: **摄取期固定 CPU**：GPU 3 上常驻 Ollama，语料极小没必要抢显存（M1 隔离方案）
+    EMBED_DEVICE: str = "cpu"
 
     # ── 摄取（§5 / §11.5）──────────────────────────────────────────
     PADDLEOCR_HOME: Path = PROJECT_ROOT / ".data" / "paddleocr"

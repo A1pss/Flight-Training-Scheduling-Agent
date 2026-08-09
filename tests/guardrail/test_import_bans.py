@@ -10,6 +10,8 @@ contract（写错模块名、source 写空）同样会「全绿」，那种绿�
 
 from __future__ import annotations
 
+import importlib.util
+import re
 import shutil
 import subprocess
 import sys
@@ -119,3 +121,32 @@ def test_no_probe_files_left_behind() -> None:
     """收尾断言：仓库里不许残留任何护栏探针文件。"""
     for rel, _stmt, _name in INJECTIONS:
         assert not (PROJECT_ROOT / rel).exists(), f"{rel} 残留未清理"
+
+
+# ─────────────────────────────────────────────────────────────────────
+# 第四条护栏：pypdf 禁令（CLAUDE.md §11 反模式「用 pypdf 做 PDF 处理」）
+#
+# import-linter 管不到这条——它只在依赖装了的时候才有意义，而我们的做法是
+# 「压根不装」。所以用两条静态断言把它钉住：仓库里没有 pypdf 的 import，
+# 环境里也没装 pypdf。任何一条破了都说明有人绕过了 pdfplumber。
+# ─────────────────────────────────────────────────────────────────────
+PYPDF_IMPORT_RE = re.compile(r"^\s*(?:import\s+pypdf|from\s+pypdf[\s.])", re.MULTILINE)
+
+
+def test_no_pypdf_import_anywhere_in_backend() -> None:
+    offenders: list[str] = []
+    for path in (PROJECT_ROOT / "backend").rglob("*.py"):
+        if PYPDF_IMPORT_RE.search(path.read_text(encoding="utf-8")):
+            offenders.append(str(path.relative_to(PROJECT_ROOT)))
+    assert not offenders, f"这些文件 import 了 pypdf（必须用 pdfplumber）：{offenders}"
+
+
+def test_pypdf_is_not_installed() -> None:
+    """环境里就不该有 pypdf —— 装了迟早有人用。"""
+    assert importlib.util.find_spec("pypdf") is None, "环境里装了 pypdf，请卸载并改用 pdfplumber"
+
+
+def test_pdfplumber_is_the_pdf_adapter() -> None:
+    """反过来正向确认：适配层确实走 pdfplumber。"""
+    source = (PROJECT_ROOT / "backend/ingestion/adapters.py").read_text(encoding="utf-8")
+    assert "import pdfplumber" in source

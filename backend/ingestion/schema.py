@@ -1,0 +1,271 @@
+"""摄取层内部契约。
+
+与 `backend/schemas/`（v6 附录 B 的**对外冻结**契约）分开：这里的模型描述的是
+「从文档里抽出来、还没落库」的中间形态，字段贴着 PDF 的列走。全部
+``extra="forbid"`` —— 多抽出一个没人认识的字段就报错，而不是一路漏到 Excel。
+"""
+
+from __future__ import annotations
+
+from datetime import date, datetime, time
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from backend.models.entities import AIRCRAFT_TYPES, IDENTITIES, QUAL_LEVELS
+
+#: v6 §5.1 文档分类器的六类
+DocumentClass = Literal[
+    "人员档案",
+    "飞机资源",
+    "课目标准",
+    "规则条文",
+    "情况文件",
+    "未知",
+]
+
+#: 身份与资质等级**保留为已知集合**（§3.1.1 的机组编成判定式依赖它们），
+#: 但在契约层用 `str` 承载 —— 出现未登记取值时由校验层给出可操作的阻断说明，
+#: 而不是抛一个 pydantic ValidationError 让人看不懂。
+Identity = str
+QualLevel = str
+#: 机型**完全由上传数据决定**，不是枚举。JL-8 / JL-9 只是基准数据里恰好有的两种。
+#: 一致性由交叉校验保证：人员/课目/跑道引用的机型必须在机队里真实出现过。
+AircraftType = str
+#: 课目类别取自课目编号的字母位，A~Z 皆可（基准数据用到 A~H）
+MissionClass = str
+PrereqRefKind = Literal["mission", "class"]
+
+#: 编号格式（v6 §5.1 ④ 编号正则归一化）。**只固定前缀约定，不限位数** ——
+#: 写死两位就等于把机队上限钉在 99 架、人员上限钉在 99 人。
+PERSON_ID_PATTERN = r"^P\d+$"
+AIRCRAFT_ID_PATTERN = r"^AC\d+$"
+MISSION_ID_PATTERN = r"^mission[A-Z]-\d+$"
+RUNWAY_ID_PATTERN = r"^RWY-\d+$"
+
+
+class SourceFile(BaseModel):
+    """一份参与摄取的源文件。`sha256` 进 snapshot manifest，保证可追溯。"""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    path: str = Field(min_length=1)
+    filename: str = Field(min_length=1)
+    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    size_bytes: int = Field(ge=0)
+    media_type: str = Field(min_length=1)
+    doc_class: DocumentClass
+    classifier: Literal["rule", "llm"] = "rule"
+    pages: int = Field(ge=0, default=0)
+
+
+class IngestedQualification(BaseModel):
+    """课目类别资质。`expiry_date` 为空表示该资质不设到期日。"""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    person_id: str = Field(pattern=PERSON_ID_PATTERN)
+    mission_class: MissionClass = Field(pattern=r"^[A-Z]$")
+    level: QualLevel = Field(min_length=1)
+    expiry_date: date | None = None
+
+
+class IngestedPerson(BaseModel):
+    """一名飞行人员（人员档案的总表 + 明细表合并后的形态）。"""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    person_id: str = Field(pattern=PERSON_ID_PATTERN)
+    name: str = Field(min_length=1)
+    identity: Identity = Field(min_length=1)
+    aircraft_types: tuple[AircraftType, ...]
+    completed_missions: tuple[str, ...] = ()
+    unavailable_dates: tuple[date, ...] = ()
+    qualifications: tuple[IngestedQualification, ...] = ()
+    #: 总表「复训到期」列的原文，形如 `仪表等级(C类):2026-01-07`。X1 冲突的来源 A。
+    recurrent_due_raw: str = ""
+
+    @field_validator("aircraft_types")
+    @classmethod
+    def _nonempty_types(cls, v: tuple[str, ...]) -> tuple[str, ...]:
+        if not v:
+            raise ValueError("机型资质不得为空")
+        return v
+
+
+class IngestedMaintenance(BaseModel):
+    """维护时段。"""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    aircraft_id: str = Field(pattern=AIRCRAFT_ID_PATTERN)
+    start_ts: datetime
+    end_ts: datetime
+    kind: str = "定检维护"
+    all_day: bool = False
+
+    @model_validator(mode="after")
+    def _ordered(self) -> IngestedMaintenance:
+        if self.end_ts <= self.start_ts:
+            raise ValueError(f"维护结束 {self.end_ts} 不得早于或等于开始 {self.start_ts}")
+        return self
+
+
+class IngestedAircraft(BaseModel):
+    """一架飞机。"""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    aircraft_id: str = Field(pattern=AIRCRAFT_ID_PATTERN)
+    aircraft_type: AircraftType = Field(min_length=1)
+    seats: int = Field(gt=0)
+    daily_window_start: time
+    daily_window_end: time
+    turnaround_minutes: int = Field(ge=0)
+    capable_missions: tuple[str, ...]
+    maintenance: tuple[IngestedMaintenance, ...] = ()
+
+    @model_validator(mode="after")
+    def _window_ordered(self) -> IngestedAircraft:
+        if self.daily_window_start >= self.daily_window_end:
+            raise ValueError("每日可用窗起点须早于终点")
+        return self
+
+
+class IngestedAirspace(BaseModel):
+    """空域/航线及其同时段容量。`capacity` 是硬约束（S-10）。"""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    airspace_id: str = Field(min_length=1, max_length=16)
+    name: str = Field(min_length=1)
+    capacity: int = Field(ge=1)
+    #: 「绑定课目」列 —— 与课目表的「空域/航线」列必须互相印证
+    bound_missions: tuple[str, ...] = ()
+
+
+class IngestedPrereq(BaseModel):
+    """先修引用。`class` 类引用按 S-01 展开的动作在 compile_spec，不在这里。"""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    prereq_ref: str = Field(min_length=1)
+    ref_kind: PrereqRefKind
+
+
+class IngestedMission(BaseModel):
+    """一门课目。"""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    mission_id: str = Field(pattern=MISSION_ID_PATTERN)
+    name: str = Field(min_length=1)
+    mission_class: MissionClass = Field(pattern=r"^[A-Z]$")
+    kind: str = Field(min_length=1)
+    duration_minutes: int = Field(gt=0)
+    cycle_weeks: int = Field(gt=0)
+    freq_days: int = Field(gt=0)
+    #: 「（每周必飞）」标记 —— 约束3 的适用面（基准数据里是 A-1/A-2）
+    weekly_required: bool = False
+    #: 「带飞」列。基准数据里 A-1/A-2 为否（D-1）→ 学员 A 类单飞
+    dual_required: bool
+    prereqs: tuple[IngestedPrereq, ...] = ()
+    aircraft_types: tuple[AircraftType, ...]
+    airspace_name: str = Field(min_length=1)
+    frequency_text: str = ""
+    #: 课程周期起点（`training_progress.cycle_start`）。
+    #:
+    #: **来自课目文件的「课程开始日期」列，该列可有可无。** 当前四份基准 PDF 没有
+    #: 这一列，所以这里是 None —— 此时摄取会生成 `Q_cycle_start` 问题并**向用户
+    #: 提问**（不兜底，见 :mod:`backend.ingestion.questions`）。
+    #: 哪天上传的文件带上了这一列，parser 自动读进来、落库自动用它，**不改代码**。
+    cycle_start: date | None = None
+
+    @model_validator(mode="after")
+    def _class_matches_id(self) -> IngestedMission:
+        if self.mission_id[len("mission")] != self.mission_class:
+            raise ValueError(f"{self.mission_id} 的类别应为 {self.mission_id[len('mission')]}")
+        return self
+
+
+class IngestedRunway(BaseModel):
+    """跑道（v6 §1.3.5 / S-05）。
+
+    **跑道不来自上传文件，而来自 `rules/semantics.yaml` 的 S-05 开关。**
+    业务方 2026-08-10 确认：跑道数据基本确定、不随每次上传变化，维持配置形态。
+    换机场时改 S-05 即可，不需要改代码。
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    runway_id: str = Field(pattern=RUNWAY_ID_PATTERN)
+    name: str = Field(min_length=1)
+    aircraft_types: tuple[AircraftType, ...]
+
+    @field_validator("aircraft_types")
+    @classmethod
+    def _nonempty(cls, v: tuple[str, ...]) -> tuple[str, ...]:
+        if not v:
+            raise ValueError("跑道服务机型不得为空")
+        return v
+
+
+class IngestedRule(BaseModel):
+    """一条规则条文（切分单元，**禁止拆分**，v6 §5.3）。"""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    rule_id: int = Field(ge=1)
+    title: str = Field(min_length=1)
+    hard_soft: str = Field(min_length=1)
+    text: str = Field(min_length=1)
+
+
+class IngestedFacts(BaseModel):
+    """一次摄取抽出的全部事实。落库前的最终形态。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    persons: tuple[IngestedPerson, ...] = ()
+    aircraft: tuple[IngestedAircraft, ...] = ()
+    airspaces: tuple[IngestedAirspace, ...] = ()
+    missions: tuple[IngestedMission, ...] = ()
+    runways: tuple[IngestedRunway, ...] = ()
+    rules: tuple[IngestedRule, ...] = ()
+    sources: tuple[SourceFile, ...] = ()
+
+    def merged_with(self, other: IngestedFacts) -> IngestedFacts:
+        """按实体类别合并两次抽取的结果（每份 PDF 只贡献自己那几类）。"""
+        return IngestedFacts(
+            persons=self.persons + other.persons,
+            aircraft=self.aircraft + other.aircraft,
+            airspaces=self.airspaces + other.airspaces,
+            missions=self.missions + other.missions,
+            runways=self.runways + other.runways,
+            rules=self.rules + other.rules,
+            sources=self.sources + other.sources,
+        )
+
+
+__all__ = [
+    "AIRCRAFT_TYPES",
+    "IDENTITIES",
+    "QUAL_LEVELS",
+    "AircraftType",
+    "DocumentClass",
+    "Identity",
+    "IngestedAircraft",
+    "IngestedAirspace",
+    "IngestedFacts",
+    "IngestedMaintenance",
+    "IngestedMission",
+    "IngestedPerson",
+    "IngestedPrereq",
+    "IngestedQualification",
+    "IngestedRule",
+    "IngestedRunway",
+    "MissionClass",
+    "PrereqRefKind",
+    "QualLevel",
+    "SourceFile",
+]

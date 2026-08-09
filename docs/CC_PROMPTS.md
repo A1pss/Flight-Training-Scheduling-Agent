@@ -72,7 +72,7 @@ M0   M1    M2-A   M2-B       M2-C  M3  M4-A M4-B  M5   M6   M8   M9-A   M7   M9-
 按 CLAUDE.md §8 的目录结构建全部目录，每个 Python 包放 __init__.py。
 必须完成（不是占位，是真能跑的）：
 1. backend/core/config.py —— pydantic-settings，覆盖 .env 全部键（DB/Redis/Ollama/LLM_PROVIDER/SOLVER_WORKERS/预算参数等）
-2. backend/core/errors.py —— 全部 FTS-XXXX 错误码枚举 + ErrorResponse 契约（**v6 §9.3 的 13 个码一个不少**：1001/1002/1003/2001/3001~3005/4001~4003/5001）。注意 FTS-2001 在 v6 中的定义已扩展为「数据引用完整性失败**或同一数据源内部的值冲突**」
+2. backend/core/errors.py —— 全部 FTS-XXXX 错误码枚举 + ErrorResponse 契约（**v6 §9.3 的 14 个码一个不少**：1001/1002/1003/**1004**/2001/3001~3005/4001~4003/5001）。注意 FTS-2001 在 v6 中的定义已扩展为「数据引用完整性失败**或同一数据源内部的值冲突**」；**FTS-1004 = 排班必需输入缺失、需人工补充**（M1 新增，v6 §5.1.1）
 3. backend/core/logging.py —— 结构化日志 + trace_id 透传 + **v6 §11.5** 的人员身份脱敏
 4. **backend/core/http.py —— 唯一允许出网的受限 HTTP 工厂**（v6 §11.5 / §12.5.4）。域名 allowlist 仅限 127.0.0.1 与内网段，越界抛 EgressDeniedError。全仓库其他位置禁止直接 import requests/httpx/urllib.request
 5. backend/schemas/ —— **v6 附录 B** 的全部 Pydantic 契约：Sortie、CrewMember、BlockedItem、TrainingDebt、SchedulePlan、SolveIntent、IncrementalConstraint、ObjectiveWeights、ConstraintSpec、ValidationReport、CheckResult、Violation、SchemaCheckReport、SolverStats、ConflictItem、RelaxationProposal、ProbeResult、TraceEvent、ErrorItem、HumanDecision、GroundingReport、RewrittenQuery、EntityRef、DateRange。全部 extra="forbid"，全部带字段级校验，全部有单元测试
@@ -210,7 +210,9 @@ git init（若尚未）、加 remote git@github.com:A1pss/Flight-Training-Schedu
 独立校验器由另一个完全独立的窗口依据同一份 v6 §3.2 规格表分别实现。这是 v6 §4.1 的硬要求：两套代码不共享任何约束表达逻辑，共用即等于自己给自己判卷。
 如果你需要一个「检查某个解是否合规」的工具来自测，**在 tests/ 下写一个只服务于本窗口的临时断言**，不要写进 validator/，也不要试图预判 validator 的接口形状。
 
-【前置】读 CLAUDE.md、docs/SPEC_DECISIONS.md、docs/M0_规格锁定.md、**v6 设计方案 §1.1（S-01~S-13）、§1.3（实体全景）、§1.4（负载推演与阻塞项）、§3 全章（3.1~3.11）、§6.3**。确认 M1 已合入 main。
+【前置】读 CLAUDE.md、docs/SPEC_DECISIONS.md、docs/M0_规格锁定.md、**reports/M1_收工报告.md（上一窗口的唯一交接面，必读 —— 接口约定与踩过的坑只在那里）**、**v6 设计方案 §1.1（S-01~S-13）、§1.3（实体全景 + 开头的告警框）、§1.4（负载推演与阻塞项）、§3 全章（3.1~3.11）、§5.1.1（按上传数据排班、缺输入即提问）、§6.1（先修链 CTE）、§6.3（含 §6.3.1 `cycle_start` 来源、§6.3.2 物化视图语义）**。确认 M1 已合入 main。
+⚠️ **§1.3 的 8 人 / 8 机 / 12 课目是基准数据集的描述，不是系统上限。** 求解器一律从 PG 按 `snapshot_id` 读实体，**不许把这些数字或 `P\d{2}` / `JL-8` / 类别 A~H 写成代码常量**（v6 §5.1.1、CLAUDE.md §11）。基准周的 7 条阻塞项可以拿来自测，但那是**测试期望值**，不是代码常量。
+⚠️ **`training_progress` 是物化视图，主键不含 `snapshot_id`**（v6 §6.3.2）：`compile_spec_node` 重算并覆盖 `prereq_met`/`blocked_reason`/`is_recurrent`/`recurrent_since` 时要按**主键**清旧行。先修判定直接调 `backend.retrieval.prereq_cte.evaluate_prereq`，**不要另写一份**（v6 §6.1）。
 ⚠️ **v6 的 §3 小节号相对 v5.2 整体后移了两位**：目标函数在 **§3.7**（不是 3.5）、局部重排 **§3.8**（不是 3.6）、不可行诊断 **§3.9**（不是 3.7）、松弛分级 **§3.10**（不是 3.8）、求解预算 **§3.11**（不是 3.9）。腾出来的 §3.4 是空域容量、§3.5 是频率滑窗与跨周锚点。
 
 【任务】
@@ -767,7 +769,7 @@ data/origin/image 1~4.png 是版式基准。按 **v6 §1.2.2 / §10.5 / §10.7**
    - **数据脱敏**：日志中人员身份信息按配置脱敏；导出文件按角色控制字段可见性
    - **模型完整性**：Ollama 模型固定 digest，**`healthcheck.sh` 与应用启动时双重校验 SHA256**
    - **机密管理**：`.env` 进 `.gitignore`；模型权重、data/ 下大文件不入 Git
-2. **v6 §9.3** 错误契约完整性核查：**13 个 FTS-XXXX 码**（1001/1002/1003/2001/3001~3005/4001~4003/5001）全部有触发路径、有测试、有面向用户的中文说明与可执行建议。
+2. **v6 §9.3** 错误契约完整性核查：**14 个 FTS-XXXX 码**（1001/1002/1003/**1004**/2001/3001~3005/4001~4003/5001）全部有触发路径、有测试、有面向用户的中文说明与可执行建议。
    注意两条 v6 修订：**FTS-2001 的定义已扩展为「数据引用完整性失败或同一数据源内部的值冲突」**；**FTS-1002（语义歧义未确认）在当前版本下不应被触发** —— S-01~S-13 已全部裁定，触发即意味着有人新增了未裁定的开关，测试要构造这种情形验证它确实会阻断排班
 3. **v6 §11.4** 离线交付包（**native 是主路径，compose 是交付备选**）
 ```
@@ -796,7 +798,7 @@ data/origin/image 1~4.png 是版式基准。按 **v6 §1.2.2 / §10.5 / §10.7**
 □ `pip install --no-index --find-links=./wheels` 全量装通
 □ RBAC：四个角色各自的可达/不可达端点矩阵实测（贴测试输出）
 □ 审计日志：做一次批准操作，贴 audit_log 记录（含前后值 diff）
-□ **13 个错误码全部有测试触发**（贴覆盖表）；FTS-1002 用「新增一条未裁定的语义开关」构造
+□ **14 个错误码全部有测试触发**（贴覆盖表）；FTS-1002 用「新增一条未裁定的语义开关」构造；FTS-1004 用「少传一类必需数据」与「不给 cycle_start」两种构造
 □ 护栏测试 ~70 条全绿
 □ 模型 digest 校验：故意改一个 digest，确认 healthcheck 与应用启动**都**失败
 □ CHECKSUMS.sha256 校验通过

@@ -61,7 +61,7 @@
 
 ## 4. 规格速查（已裁决，直接用，不要再问）
 
-完整版见 `docs/SPEC_DECISIONS.md`（原始裁决）与 **v6 §1.1 语义假设登记表 S-01~S-13**（合并后的最终形态）。以下是最常用的：
+完整版见 `docs/SPEC_DECISIONS.md`（原始裁决）与 **v6 §1.1 语义假设登记表 S-01~S-13**（合并后的最终形态），另有 S-14（`cycle_start` 来源，业务方 2026-08-09/08-10 裁定，落 v6 §6.3.1）。以下是最常用的：
 
 | 项 | 裁定 | v6 落点 |
 |---|---|---|
@@ -82,10 +82,17 @@
 | **约束14 `req_max`** | **`ceil(7 / freq_days)`** —— A类 3，B~F 类 1，G/H 类 1 | §3.2 约束14 |
 | **松弛 Tier 2 (D-6)** | 重定义为「**约束3 整体降级为软目标**」（S-02 之下原定义已成空操作） | §3.10 |
 | 刘斌 C 类到期日 (C.1) | **2026-01-07**（总表），明细表的 02-07 为笔误 | §1.2.1、§5.5 X1 |
+| **`cycle_start` 来源 (S-14)** | ① 课目文件的「课程开始日期」列（可选，逐行读，各课目可不同）→ ② 用户回答 `Q_cycle_start` → ③ 都没有就**提问并阻断**（FTS-1004）。**没有默认值，配置项里也没有** | §6.3.1、§5.1.1 |
 | 基准周 (C.3) | 2026W02，2026-01-05 ~ 2026-01-11 | §1.2.3 |
 
 **实体规模（按 `data/origin/*.pdf` 逐字核对，v6 §1.3）**：**8 人**（3 教员 + 1 成熟飞行员 + 4 学员）· **8 机**（JL-8 六架 AC10/27/34/49/61/73；**JL-9 只有两架 AC84/AC95**）· 12 课目 · 6 空域 · 2 跑道。
 ⚠️ **AC73 是 JL-8，不是 JL-9**；学员只持 JL-8 机型资质与 A/B/C/F 四类资质，故 D/E/G/H 类课目不生成任何学员候选。
+
+> ⚠️ **但这组数字是「基准数据集长什么样」，不是「系统只能处理这么大」。**
+> 生产形态是**用户上传自己的人员/飞机/课目/空域文件**，`data/origin/` 只是数据模板与
+> 基础测试样本。所以 8 人、`P\d{2}`、`JL-8`/`JL-9`、类别 A~H **一个都不许写成代码
+> 常量或校验上限**；它们唯一的合法用途是基准回归护栏（v6 §5.1.1、§1.3 告警框）。
+> 用户少传一类数据时**提示补传**，绝不拿基准数据或上一版快照顶替。
 
 **基准周已知扰动**：吴鹏 01-05 不可用；AC73 01-09 全天定检；刘斌 C 类 01-07 到期。
 
@@ -117,7 +124,16 @@ conda run -n schedule pytest -q --cov=backend --cov-report=term-missing --cov-fa
 
 一条不过就不许推。**不许通过放宽配置来让它过** —— 配置文件（`pyproject.toml` / `.importlinter` / `setup.cfg`）的任何放宽都要在收工报告里单列一条说明理由，并等用户确认。
 
-CI（GitHub Actions）跑同一套命令，`LLM_PROVIDER=mock`，**不依赖 Ollama、不依赖 GPU**。
+CI（GitHub Actions）跑同一套命令，`LLM_PROVIDER=mock`、`EMBED_PROVIDER=hash`，**不依赖 Ollama、不依赖 GPU**。
+
+⚠️ **跑 pytest 之前必须先 `alembic upgrade head`。** 集成测试按 v6 §12.1 直连裸装 PG，
+**测试不自带 schema**；库里没表就会以 `relation "data_snapshots" does not exist` 全线失败。
+CI 在六条门禁之前有一个独立的迁移步骤，本地则由开工检查单的 `healthcheck.sh` 把关
+（它会检查 `alembic_version`）。
+**M1 的首个 PR 就是栽在这条上**：本地手工迁移过所以全绿，CI 是全新库所以全红。
+
+⚠️ **集成测试不许断言「环境外状态」**——「库里应当已经有一个 ACTIVE 快照」这类断言
+等于假设有人在测试之外先跑过某个命令，本地绿、CI 红。要断言什么就在用例里自己建起来。
 
 ---
 
@@ -192,7 +208,18 @@ export CUDA_VISIBLE_DEVICES=3
 bash deploy/native/start_pg.sh      # PG16, 127.0.0.1:5433
 bash deploy/native/start_redis.sh   # Redis7, 127.0.0.1:6380
 bash deploy/native/start_ollama.sh  # Ollama, 127.0.0.1:11434, 绑 GPU 3
-bash deploy/native/healthcheck.sh   # 全栈体检
+bash deploy/native/healthcheck.sh   # 全栈体检（含 alembic 版本检查）
+
+# 数据库迁移（**跑集成测试前必须先做**，见 §6）
+alembic upgrade head                # 建/升到最新 schema
+alembic current                     # 看当前版本
+alembic downgrade base              # 清空全部表（回滚验证用，会删数据）
+
+# 摄取基准数据（把 data/origin/ 四份 PDF 跑成基准 snapshot）
+python -m backend.ingestion.cli --baseline
+python -m backend.ingestion.cli --baseline --dry-run     # 只看 Diff 不落库
+python -m backend.ingestion.cli <文件...> --approver <人> \
+    --cycle-start YYYY-MM-DD --resolve "<冲突id>=<取值>"  # 上传路径
 
 # 应用
 uvicorn backend.api.main:app --host 0.0.0.0 --port 8000
@@ -213,6 +240,10 @@ LLM_PROVIDER=replay REPLAY_TRACE_DIR=./traces/accept_v1      # 回归，零 LLM 
 
 **开工**
 - [ ] 读完 CLAUDE.md + `docs/SPEC_DECISIONS.md` + **v6 设计方案**中本窗口相关章节（章节号见 `docs/CC_PROMPTS.md` 各窗口的【前置】；**不要读 v5.2**）
+- [ ] **读完 `reports/` 下上一个里程碑的收工报告**（M2 读 `M1_收工报告.md`，以此类推）。
+      收工那栏写着「收工报告是唯一的交接面」，那开工就必须真的去读它 ——
+      上一个窗口踩过的坑、留下的接口约定、「我本来想这么做但因为 XX 改成了那样」，
+      只在那份文件里。**不读它 = 那些坑你要重踩一遍。**
 - [ ] `git switch -c <分支名>`
 - [ ] `bash deploy/native/healthcheck.sh` 确认依赖服务在线（M0 窗口除外）
 - [ ] 用 TodoWrite 把本窗口的交付项拆成可勾选的任务列表
@@ -249,6 +280,10 @@ LLM_PROVIDER=replay REPLAY_TRACE_DIR=./traces/accept_v1      # 回归，零 LLM 
 - ❌ 单元测试依赖真实 Ollama
 - ❌ 把 `UNKNOWN` 当 `INFEASIBLE` 处理
 - ❌ 摄取失败时回退到「尽力而为」的部分入库
+- ❌ **给缺失的必需输入设静默默认值**（默认日期、默认规模、默认机型…）—— 缺什么就问什么，`FTS-1004`
+- ❌ **把 v6 §1.3 的基准规模/编号/机型当成系统上限**（8 人、`P\d{2}`、`JL-8`/`JL-9`、类别 A~H）——
+      §1.3 描述的是基准数据集，生产形态是用户上传自己的数据，见 §5.1.1
+- ❌ **用户少传一类数据时拿上一版快照或基准数据顶替** —— 必须提示补传（`resolution="upload"`）
 - ❌ 用 `pypdf` 做 PDF 处理（用 pdfplumber）
 - ❌ 在 artifacts / 前端里用 localStorage
 - ❌ 提交 `.env`、模型权重、`data/` 下的大文件到 Git（写好 `.gitignore`）

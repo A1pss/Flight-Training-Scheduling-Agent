@@ -74,6 +74,10 @@ plugins = ["pydantic.mypy"]
 module = [
     "ortools.*",
     "chromadb.*",
+    # pandas 自带的类型信息要另装 pandas-stubs 才有。摄取层只在 XLSX/CSV 分支
+    # 用它，为一个分支拖进一个额外的类型依赖不划算 —— 与本列表其余各项同一口径：
+    # 只关掉「缺 stub」，不放宽本仓库代码的严格度。
+    "pandas.*",
     "rank_bm25.*",
     "pdfplumber.*",
     "paddleocr.*",
