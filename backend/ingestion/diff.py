@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from backend.ingestion.conflicts import Conflict
+from backend.ingestion.questions import OpenQuestion
 from backend.ingestion.schema import IngestedFacts
 
 ChangeKind = Literal["ADDED", "MODIFIED", "REMOVED"]
@@ -48,10 +49,16 @@ class Change:
 
 @dataclass
 class ChangeSet:
-    """一次摄取相对当前快照的全部变更 + 待裁决冲突。"""
+    """一次摄取相对当前快照的全部变更 + 待裁决冲突 + 待回答问题。
+
+    `conflicts` 与 `questions` 都会阻断落库，但性质不同：冲突是「两个来源打架，
+    选一个」，问题是「必需的值没人给，请直接给」（见
+    :mod:`backend.ingestion.questions`）。
+    """
 
     changes: list[Change] = field(default_factory=list)
     conflicts: list[Conflict] = field(default_factory=list)
+    questions: list[OpenQuestion] = field(default_factory=list)
     base_snapshot_id: str | None = None
 
     @property
@@ -74,6 +81,10 @@ class ChangeSet:
     def is_empty(self) -> bool:
         return not self.changes
 
+    @property
+    def unanswered_questions(self) -> list[OpenQuestion]:
+        return list(self.questions)
+
     def summary(self) -> dict[str, int]:
         return {
             "added": len(self.added),
@@ -81,6 +92,7 @@ class ChangeSet:
             "removed": len(self.removed),
             "conflicts": len(self.conflicts),
             "blocking_conflicts": len(self.blocking_conflicts),
+            "open_questions": len(self.questions),
         }
 
 
@@ -157,6 +169,8 @@ def normalize_facts(facts: IngestedFacts) -> dict[str, dict[str, dict[str, Any]]
             ),
             "aircraft_types": sorted(m.aircraft_types),
             "airspace_name": m.airspace_name,
+            # 文件里给了课程开始日期就进 Diff —— 改了日期必须走人工确认
+            "cycle_start": m.cycle_start.isoformat() if m.cycle_start else None,
         }
 
     for s in facts.airspaces:
@@ -226,12 +240,14 @@ def build_changeset(
     current: Mapping[str, Mapping[str, Mapping[str, Any]]] | None = None,
     *,
     conflicts: Sequence[Conflict] = (),
+    questions: Sequence[OpenQuestion] = (),
     base_snapshot_id: str | None = None,
 ) -> ChangeSet:
     """生成 ChangeSet。`current` 为 None 表示库里还没有基线快照。"""
     return ChangeSet(
         changes=diff_normalized(current or {}, normalize_facts(incoming)),
         conflicts=list(conflicts),
+        questions=list(questions),
         base_snapshot_id=base_snapshot_id,
     )
 

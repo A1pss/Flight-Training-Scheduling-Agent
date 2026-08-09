@@ -3,27 +3,38 @@
 M1 交付**接口与全部判定逻辑**；UI 在 W9（M6 前端窗口）接上去。这不是占位：
 :func:`review` 的每条规则都真的会拒绝不合规的批准请求，并有单测覆盖。
 
-三条硬性判定：
+四条硬性判定：
 
 1. **有 BLOCKING 冲突而未逐条给出裁决 → 拒绝**。X1 这类冲突不允许「整体批准
    一下就过」，必须对每个 `conflict_id` 明确给值。
 2. **裁决值与 §5.5 裁定表不符 → 拒绝**，除非调用方显式 `override_adjudication`
    并给出理由（理由进审计日志）。这条是为了让「按裁定选 2026-01-07」这件事
    由**门禁**保证，而不是靠 parser 或运气。
-3. **ChangeSet 为空 → 无需批准**，直接返回 `NO_CHANGE`，不产生新快照。
+3. **有 `OpenQuestion` 未回答（或答案不合法）→ 拒绝**，并把问题原样放进
+   `GateDecision.pending_questions` 交给调用方展示给用户。**门禁绝不替用户
+   填默认值** —— 铁律 10「有疑问就问，不要猜」在这里是可执行的代码，
+   不是注释（见 :mod:`backend.ingestion.questions`）。
+4. **ChangeSet 为空且无待答问题 → 无需批准**，返回 `NO_CHANGE`，不产生新快照。
 """
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Literal
 
-from backend.core.errors import DataConflictError
+from backend.core.errors import DataConflictError, IngestionError
 from backend.core.logging import get_logger
 from backend.ingestion.conflicts import ADJUDICATIONS, Conflict
 from backend.ingestion.diff import ChangeSet
+from backend.ingestion.questions import (
+    BASELINE_ANSWERS,
+    QID_CYCLE_START,
+    OpenQuestion,
+    QuestionAnswer,
+    parse_answer,
+)
 
 logger = get_logger(__name__)
 
@@ -49,7 +60,11 @@ class GateDecision:
     outcome: GateOutcome
     reasons: list[str] = field(default_factory=list)
     resolutions: dict[str, ConflictResolution] = field(default_factory=dict)
+    #: 用户对 `OpenQuestion` 的回答（缺必需输入时的补充来源）
+    answers: dict[str, QuestionAnswer] = field(default_factory=dict)
     approved_by: str = ""
+    #: 未回答的问题 —— 拒绝时把它们原样带出来，供 CLI / UI 直接向用户展示
+    pending_questions: list[OpenQuestion] = field(default_factory=list)
 
     @property
     def approved(self) -> bool:
@@ -67,13 +82,15 @@ def review(
     changeset: ChangeSet,
     resolutions: Mapping[str, ConflictResolution] | None = None,
     *,
+    answers: Mapping[str, QuestionAnswer] | None = None,
     approver: str = "",
     approve: bool = True,
 ) -> GateDecision:
     """审这一批变更。返回 `GateDecision`，不抛异常（拒绝也是一种结论）。"""
     provided = dict(resolutions or {})
+    given = dict(answers or {})
 
-    if changeset.is_empty and not changeset.blocking_conflicts:
+    if changeset.is_empty and not changeset.blocking_conflicts and not changeset.questions:
         return GateDecision(outcome="NO_CHANGE", reasons=["ChangeSet 为空，无需批准"])
 
     if not approve:
@@ -82,6 +99,20 @@ def review(
     reasons: list[str] = []
     if not approver:
         reasons.append("未提供批准人身份，任何数据变更都必须有署名")
+
+    # ── 待回答问题：必需的输入没人给 → 把问题原样抛回去，绝不替用户填 ──
+    pending: list[OpenQuestion] = []
+    for question in changeset.questions:
+        answer = given.get(question.question_id)
+        if answer is None:
+            pending.append(question)
+            reasons.append(f"问题 {question.question_id}（{question.topic}）尚未回答")
+            continue
+        try:
+            parse_answer(question, answer)
+        except IngestionError as exc:
+            pending.append(question)
+            reasons.append(f"问题 {question.question_id} 的答案不合法：{exc.message}")
 
     for conflict in changeset.blocking_conflicts:
         resolution = provided.get(conflict.conflict_id)
@@ -115,14 +146,21 @@ def review(
                 )
 
     if reasons:
-        return GateDecision(outcome="REJECTED", reasons=reasons, approved_by=approver)
+        return GateDecision(
+            outcome="REJECTED",
+            reasons=reasons,
+            approved_by=approver,
+            pending_questions=pending,
+        )
 
     logger.info(
         "人工确认门禁通过",
         approver=approver,
         **changeset.summary(),
     )
-    return GateDecision(outcome="APPROVED", resolutions=provided, approved_by=approver)
+    return GateDecision(
+        outcome="APPROVED", resolutions=provided, answers=given, approved_by=approver
+    )
 
 
 def baseline_resolutions(changeset: ChangeSet, *, decided_by: str) -> dict[str, ConflictResolution]:
@@ -144,6 +182,48 @@ def baseline_resolutions(changeset: ChangeSet, *, decided_by: str) -> dict[str, 
             reason=ADJUDICATIONS[conflict.kind].note if conflict.kind in ADJUDICATIONS else "",
         )
     return out
+
+
+def baseline_answers(changeset: ChangeSet) -> dict[str, QuestionAnswer]:
+    """为基准数据集里**已经问过、业务方已经答过**的问题取回答案。
+
+    与 :func:`baseline_resolutions` 同一口径：让基准快照能非交互重跑（铁律 9），
+    而不是给系统开一条「没人答就自己填」的后门 —— 换一批新数据时
+    `BASELINE_ANSWERS` 里没有对应记录，门禁照样会把问题抛给用户。
+    """
+    return {
+        q.question_id: BASELINE_ANSWERS[q.question_id]
+        for q in changeset.questions
+        if q.question_id in BASELINE_ANSWERS
+    }
+
+
+def answered_cycle_start(decision: GateDecision) -> date | None:
+    """取用户对「课程周期起点」问题的回答；没问过（文件里有）则返回 None。"""
+    answer = decision.answers.get(QID_CYCLE_START)
+    if answer is None:
+        return None
+    parsed = date.fromisoformat(answer.value.strip())
+    return parsed
+
+
+def format_questions(questions: Sequence[OpenQuestion]) -> str:
+    """把待回答问题渲染成可直接展示给用户的中文文本（CLI 与 W9 共用）。"""
+    if not questions:
+        return ""
+    blocks: list[str] = []
+    for q in questions:
+        lines = [
+            f"【待确认】{q.topic}（{q.question_id}）",
+            q.question,
+            "",
+            f"为什么要问：{q.why_it_matters}",
+        ]
+        if q.hints:
+            lines.append("提示：")
+            lines.extend(f"  - {h}" for h in q.hints)
+        blocks.append("\n".join(lines))
+    return "\n\n".join(blocks)
 
 
 def resolved_expiry_dates(
@@ -171,7 +251,10 @@ __all__ = [
     "ConflictResolution",
     "GateDecision",
     "GateOutcome",
+    "answered_cycle_start",
+    "baseline_answers",
     "baseline_resolutions",
+    "format_questions",
     "resolved_expiry_dates",
     "review",
 ]

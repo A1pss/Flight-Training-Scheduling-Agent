@@ -104,6 +104,14 @@ class Settings(BaseSettings):
     RULESET_PATH: Path = PROJECT_ROOT / "rules" / "ruleset_v1.3.yaml"
     SEMANTICS_PATH: Path = PROJECT_ROOT / "rules" / "semantics.yaml"
 
+    # ── 训练周期起点 ─────────────────────────────────────────────────
+    # 这里**刻意没有** `DEFAULT_CYCLE_START` 之类的配置项。
+    #
+    # `training_progress.cycle_start` 只有两个来源：课目文件的「课程开始日期」列，
+    # 或用户对 `Q_cycle_start` 的回答。都没有时管线**向用户提问并阻断**，不兜底。
+    # 加一个默认值配置就等于给「悄悄填一个日期」开了后门，而这个值进主键、
+    # 填错要迁移全表。详见 :mod:`backend.ingestion.questions`。
+
     # ── 检索与嵌入（§6.5 / §11.3）───────────────────────────────────
     BGE_M3_PATH: Path = PROJECT_ROOT / ".data" / "models" / "bge-m3"
     BGE_RERANKER_PATH: Path = PROJECT_ROOT / ".data" / "models" / "bge-reranker-v2-m3"

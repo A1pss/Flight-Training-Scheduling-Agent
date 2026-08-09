@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 
 from backend.core.config import PROJECT_ROOT
 from backend.core.db import session_scope
-from backend.ingestion.gate import baseline_resolutions, review
+from backend.ingestion.gate import baseline_answers, baseline_resolutions, review
 from backend.ingestion.loader import load_normalized_from_db
 from backend.ingestion.pipeline import build_chunks, commit, prepare
 from backend.memory.chroma import build_client, upsert_chunks
@@ -74,9 +74,12 @@ def committed() -> Iterator[tuple[Session, str]]:
 
         # 隔离：本用例不以任何既有 ACTIVE 快照为基线
         prepared = prepare(BASELINE_PDFS, session=None)
+        # 四份基准 PDF 没有「课程开始日期」列 → 管线会提问；
+        # 这里用 §5.5 同口径的既有裁决（2026-08-09）作答，等价于 `--baseline`。
         decision = review(
             prepared.changeset,
             baseline_resolutions(prepared.changeset, decided_by="pytest"),
+            answers=baseline_answers(prepared.changeset),
             approver="pytest",
         )
         assert decision.approved, decision.reasons

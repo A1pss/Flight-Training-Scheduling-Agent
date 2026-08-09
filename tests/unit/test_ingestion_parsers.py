@@ -330,3 +330,69 @@ def test_runways_blocks_on_missing_switch(tmp_path) -> None:  # type: ignore[no-
     bad.write_text("switches: {}\n", encoding="utf-8")
     with pytest.raises(IngestionError, match="未定义 runways"):
         parse_runways_from_semantics(bad)
+
+
+# ── 「课程开始日期」列：数据驱动，换数据不改代码 ──────────────────────
+def _missions_csv(tmp_path, *, with_start_column: bool):  # type: ignore[no-untyped-def]
+    """把真实 12 门课目写成 CSV，可选带「课程开始日期」列。"""
+    import csv
+
+    missions = parse_missions_document(extract_pdf(ORIGIN / "missions.pdf"))
+    starts = {c: f"2026-{i + 3:02d}-02" for i, c in enumerate("ABCDEFGH")}
+    target = tmp_path / "missions.csv"
+    header = [
+        "课目编号",
+        "名称",
+        "类型",
+        "时长(分)",
+        "课程周期与频率要求",
+        "先修",
+        "带飞",
+        "机型",
+        "空域/航线",
+    ]
+    if with_start_column:
+        header.append("课程开始日期")
+    with target.open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(header)
+        for m in missions:
+            row = [
+                m.mission_id,
+                m.name,
+                m.kind,
+                str(m.duration_minutes),
+                m.frequency_text,
+                "、".join(p.prereq_ref for p in m.prereqs) or "—",
+                "是" if m.dual_required else "否",
+                "/".join(m.aircraft_types),
+                m.airspace_name,
+            ]
+            if with_start_column:
+                row.append(starts[m.mission_class])
+            writer.writerow(row)
+    return target
+
+
+def test_cycle_start_column_is_read_when_present(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    """上传的文件带了「课程开始日期」列 → 逐行读进来，**不需要改代码**。"""
+    from backend.ingestion.adapters import extract_tabular
+
+    doc = extract_tabular(_missions_csv(tmp_path, with_start_column=True), "text/csv")
+    by_id = {m.mission_id: m for m in parse_missions_document(doc)}
+    assert by_id["missionA-1"].cycle_start == date(2026, 3, 2)
+    assert by_id["missionB-1"].cycle_start == date(2026, 4, 2)
+    # 各门课目起点可以不同
+    assert by_id["missionA-1"].cycle_start != by_id["missionB-1"].cycle_start
+
+
+def test_missing_cycle_start_column_is_not_an_error(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    """没有那一列是合法情形：抽取正常，cycle_start 留 None，由门禁去问用户。"""
+    from backend.ingestion.adapters import extract_tabular
+    from backend.ingestion.questions import detect_open_questions
+    from backend.ingestion.schema import IngestedFacts
+
+    doc = extract_tabular(_missions_csv(tmp_path, with_start_column=False), "text/csv")
+    missions = parse_missions_document(doc)
+    assert all(m.cycle_start is None for m in missions)
+    assert detect_open_questions(IngestedFacts(missions=missions))

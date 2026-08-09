@@ -24,8 +24,15 @@ import yaml
 from backend.core.config import PROJECT_ROOT, get_settings
 from backend.core.db import session_scope
 from backend.core.logging import configure_logging, get_logger
-from backend.ingestion.gate import baseline_resolutions, review
+from backend.ingestion.gate import (
+    ConflictResolution,
+    baseline_answers,
+    baseline_resolutions,
+    format_questions,
+    review,
+)
 from backend.ingestion.pipeline import commit, prepare, snapshot_manifest
+from backend.ingestion.questions import QID_CYCLE_START, QuestionAnswer
 
 logger = get_logger(__name__)
 
@@ -56,6 +63,26 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dry-run", action="store_true", help="只跑到 Diff，不落库")
     parser.add_argument("--no-vectors", action="store_true", help="跳过 Chroma 写入")
     parser.add_argument("--approver", default="", help="人工确认的批准人")
+    parser.add_argument(
+        "--cycle-start",
+        default="",
+        metavar="YYYY-MM-DD",
+        help=(
+            "课程周期起点。**只在课目文件里没有「课程开始日期」列时才需要**；"
+            "文件里有就以文件为准。两者都没有时管线会把问题打印出来并以退出码 3 停下。"
+        ),
+    )
+    parser.add_argument(
+        "--resolve",
+        action="append",
+        default=[],
+        metavar="CONFLICT_ID=VALUE",
+        help=(
+            "对某条冲突给出裁决，可重复。例如 "
+            "--resolve P04:C:expiry=2026-01-07。裁决值必须是冲突两侧取值之一，"
+            "且与 §5.5 裁定表一致（否则门禁拒绝）。"
+        ),
+    )
     parser.add_argument("--json", action="store_true", help="以 JSON 输出结果")
     args = parser.parse_args(argv)
 
@@ -81,9 +108,40 @@ def main(argv: list[str] | None = None) -> int:
         resolutions = (
             baseline_resolutions(prepared.changeset, decided_by=approver) if args.baseline else {}
         )
-        decision = review(prepared.changeset, resolutions, approver=approver)
+        for item in args.resolve:
+            conflict_id, sep, value = item.partition("=")
+            if not sep or not conflict_id or not value:
+                parser.error(f"--resolve 需要 CONFLICT_ID=VALUE 形式，收到 {item!r}")
+            resolutions[conflict_id] = ConflictResolution(
+                conflict_id=conflict_id, chosen_value=value, decided_by=approver or "cli"
+            )
+
+        # 问题的答案来源：命令行 `--cycle-start`（= 对话里说了）优先，
+        # 其次是基准数据集的既有裁决；都没有就让门禁把问题抛回给用户。
+        answers: dict[str, QuestionAnswer] = (
+            baseline_answers(prepared.changeset) if args.baseline else {}
+        )
+        if args.cycle_start:
+            answers[QID_CYCLE_START] = QuestionAnswer(
+                question_id=QID_CYCLE_START,
+                value=args.cycle_start,
+                answered_by=approver or "cli",
+                source="prompt",
+                note="由 --cycle-start 提供",
+            )
+
+        decision = review(prepared.changeset, resolutions, answers=answers, approver=approver)
 
         if not decision.approved:
+            # 只是「有问题没答」→ 把问题原样打印给用户，这不是报错，是提问
+            if decision.pending_questions:
+                logger.info("需要用户回答后才能继续", count=len(decision.pending_questions))
+                print(format_questions(decision.pending_questions))
+                print(
+                    "\n请用 --cycle-start YYYY-MM-DD 回答，"
+                    "或在课目文件里补上「课程开始日期」列后重新上传。"
+                )
+                return 3
             logger.error("人工确认门禁未通过", reasons=decision.reasons)
             _emit(
                 {**manifest, "gate": {"outcome": decision.outcome, "reasons": decision.reasons}},

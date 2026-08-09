@@ -160,6 +160,13 @@ class IngestedMission(BaseModel):
     aircraft_types: tuple[AircraftType, ...]
     airspace_name: str = Field(min_length=1)
     frequency_text: str = ""
+    #: 课程周期起点（`training_progress.cycle_start`）。
+    #:
+    #: **来自课目文件的「课程开始日期」列，该列可有可无。** 当前四份基准 PDF 没有
+    #: 这一列，所以这里是 None —— 此时摄取会生成 `Q_cycle_start` 问题并**向用户
+    #: 提问**（不兜底，见 :mod:`backend.ingestion.questions`）。
+    #: 哪天上传的文件带上了这一列，parser 自动读进来、落库自动用它，**不改代码**。
+    cycle_start: date | None = None
 
     @model_validator(mode="after")
     def _class_matches_id(self) -> IngestedMission:

@@ -26,7 +26,6 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -39,9 +38,8 @@ from backend.ingestion.chunkers import Chunk, chunk_entities, chunk_rules
 from backend.ingestion.classify import classify_document
 from backend.ingestion.conflicts import apply_x1_resolution
 from backend.ingestion.diff import ChangeSet, build_changeset, content_sha256, normalize_facts
-from backend.ingestion.gate import GateDecision, resolved_expiry_dates
+from backend.ingestion.gate import GateDecision, answered_cycle_start, resolved_expiry_dates
 from backend.ingestion.loader import (
-    DEFAULT_CYCLE_START,
     activate_snapshot,
     active_snapshot_id,
     create_snapshot,
@@ -58,6 +56,7 @@ from backend.ingestion.parsers import (
     parse_rules_document,
     parse_runways_from_semantics,
 )
+from backend.ingestion.questions import detect_open_questions
 from backend.ingestion.safety import screen_file
 from backend.ingestion.schema import IngestedFacts, SourceFile
 from backend.ingestion.validate import ValidationOutcome, validate_facts
@@ -133,6 +132,7 @@ def prepare(
     provider: LLMProvider | None = None,
     include_runways: bool = True,
     check_counts: bool = True,
+    answered_question_ids: Sequence[str] = (),
 ) -> PreparedIngestion:
     """安全闸 → 分类 → 适配 → 修复 → 抽取 → 校验 → Diff。**不落库。**"""
     facts = IngestedFacts()
@@ -177,8 +177,13 @@ def prepare(
         if session is not None and base_id is not None
         else None
     )
+    questions = detect_open_questions(facts, provided=answered_question_ids)
     changeset = build_changeset(
-        facts, current, conflicts=validation.conflicts, base_snapshot_id=base_id
+        facts,
+        current,
+        conflicts=validation.conflicts,
+        questions=questions,
+        base_snapshot_id=base_id,
     )
 
     logger.info("摄取准备完成", snapshot_id=make_snapshot_id(facts), **changeset.summary())
@@ -206,7 +211,6 @@ def commit(
     session: Session,
     *,
     ruleset_version: str,
-    cycle_start: date = DEFAULT_CYCLE_START,
     embedder: Embedder | None = None,
     write_vectors: bool = True,
 ) -> CommitResult:
@@ -239,15 +243,12 @@ def commit(
     # 裁决改了内容 → snapshot_id 必须跟着变（它由内容哈希决定，铁律 9）
     snapshot_id = make_snapshot_id(facts)
 
-    # ② PG
+    # ② PG。`cycle_start` 逐门课目从文件里取；文件没给才用用户对
+    #    Q_cycle_start 的回答（门禁已保证「两个都没有」走不到这里）。
     create_snapshot(session, facts, snapshot_id=snapshot_id, status="PENDING")
-    table_counts = persist_facts(session, snapshot_id, facts)
-    from backend.ingestion.loader import materialize_training_progress
-
-    if cycle_start != DEFAULT_CYCLE_START:
-        table_counts["training_progress"] = materialize_training_progress(
-            session, snapshot_id, facts, cycle_start=cycle_start
-        )
+    table_counts = persist_facts(
+        session, snapshot_id, facts, answered_cycle_start=answered_cycle_start(decision)
+    )
 
     record_audit(
         session,
@@ -298,6 +299,16 @@ def snapshot_manifest(prepared: PreparedIngestion) -> dict[str, Any]:
         "base_snapshot_id": prepared.base_snapshot_id,
         "content_sha256": prepared.content_sha256,
         "changeset": prepared.changeset.summary(),
+        "open_questions": [
+            {
+                "question_id": q.question_id,
+                "topic": q.topic,
+                "question": q.question,
+                "value_kind": q.value_kind,
+                "applies_to": q.applies_to,
+            }
+            for q in prepared.changeset.questions
+        ],
         "conflicts": [
             {
                 "conflict_id": c.conflict_id,

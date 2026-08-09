@@ -6,8 +6,18 @@
 
 ## `training_progress` 的物化
 
-业务方 2026-08-08 裁定：M1 落数，`cycle_start` 取基准周周一 **2026-01-05**
-（PDF 里没有周期起点字段，这是唯一有依据的取值）。物化规则：
+`cycle_start`（周期起点）**两级来源，没有静默默认值**：
+
+1. **文件**：课目表的「课程开始日期」列 —— 上传的文件带了这一列就直接用，
+   逐门课目可以不同，**不需要改任何代码**
+2. **用户回答**：文件没给时，摄取会生成一条 `OpenQuestion`（`Q_cycle_start`）
+   并**由人工确认门禁拒绝放行**，把问题抛给用户；用户答了才继续
+
+两个都没有 → :func:`resolve_cycle_start` 抛 `IngestionError`，绝不编日期。
+理由：`cycle_start` 是 `training_progress` 主键的一部分（v6 §6.3），填错要迁移
+全表；铁律 5「不假设」与铁律 10「有疑问就问」在这里是同一件事。
+
+其余物化规则：
 
 - `已完成课目` → `status=COMPLETED, completed_count=1, prereq_met=True`
 - 学员在其**可及课目集**内未完成的课目 → `status=NOT_STARTED`，
@@ -28,14 +38,15 @@ from __future__ import annotations
 import hashlib
 from collections.abc import Mapping, Sequence
 from datetime import date, datetime
-from typing import Any, Final
+from typing import Any
 
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
+from backend.core.errors import IngestionError
 from backend.core.logging import get_logger
 from backend.ingestion.diff import content_sha256, normalize_facts
-from backend.ingestion.schema import IngestedFacts, SourceFile
+from backend.ingestion.schema import IngestedFacts, IngestedMission, SourceFile
 from backend.models import (
     Aircraft,
     AircraftMaintenance,
@@ -59,9 +70,28 @@ from backend.retrieval.prereq_cte import evaluate_prereq
 
 logger = get_logger(__name__)
 
-#: 基准周周一（v6 §1.2.3）。`training_progress.cycle_start` 取它 —— 业务方
-#: 2026-08-08 裁定，PDF 无此字段。
-DEFAULT_CYCLE_START: Final[date] = date(2026, 1, 5)
+
+def resolve_cycle_start(mission: IngestedMission, answered: date | None) -> date:
+    """定出这门课目的周期起点。**两级来源，没有第三级兜底。**
+
+    1. **文件**：课目表的「课程开始日期」列（`mission.cycle_start`）
+    2. **用户回答**：`OpenQuestion` `Q_cycle_start` 的答案（对话/命令行/UI）
+
+    两个都没有就是 bug —— 人工确认门禁本该在这之前就把问题抛给用户并拒绝放行，
+    走到这里说明有人绕过了门禁。抛 `IngestionError` 而不是编一个日期。
+    """
+    if mission.cycle_start is not None:
+        return mission.cycle_start
+    if answered is not None:
+        return answered
+    raise IngestionError(
+        f"{mission.mission_id} 的课程周期起点既不在文件里，也没有用户回答",
+        details={"mission_id": mission.mission_id},
+        suggestions=[
+            "在课目文件里加一列「课程开始日期」，或在摄取时回答 Q_cycle_start",
+            "这一步不设默认值：cycle_start 是 training_progress 主键的一部分",
+        ],
+    )
 
 
 def make_snapshot_id(facts: IngestedFacts, *, prefix: str = "snap") -> str:
@@ -114,7 +144,13 @@ def create_snapshot(
     return snapshot
 
 
-def persist_facts(session: Session, snapshot_id: str, facts: IngestedFacts) -> dict[str, int]:
+def persist_facts(
+    session: Session,
+    snapshot_id: str,
+    facts: IngestedFacts,
+    *,
+    answered_cycle_start: date | None = None,
+) -> dict[str, int]:
     """把事实写进 PG。返回每张表的写入行数。
 
     先按 `snapshot_id` 清空再写，保证同一快照重跑是幂等的。
@@ -298,7 +334,9 @@ def persist_facts(session: Session, snapshot_id: str, facts: IngestedFacts) -> d
     counts["runway_aircraft_types"] = runway_type_rows
     session.flush()
 
-    counts["training_progress"] = materialize_training_progress(session, snapshot_id, facts)
+    counts["training_progress"] = materialize_training_progress(
+        session, snapshot_id, facts, answered_cycle_start=answered_cycle_start
+    )
     return counts
 
 
@@ -348,9 +386,19 @@ def materialize_training_progress(
     snapshot_id: str,
     facts: IngestedFacts,
     *,
-    cycle_start: date = DEFAULT_CYCLE_START,
+    answered_cycle_start: date | None = None,
 ) -> int:
-    """物化 `training_progress`。返回写入行数。"""
+    """物化 `training_progress`。返回写入行数。
+
+    `answered_cycle_start` 是用户对 `Q_cycle_start` 的回答，只在**课目文件没给
+    「课程开始日期」列**时才会用到；文件给了就逐门课目用文件里的值。
+
+    ⚠️ **本表主键 `(person_id, mission_id, cycle_start)` 不含 `snapshot_id`**
+    （v6 §6.3 原文如此），所以同一 (人, 课目, 周期起点) 在全库唯一 —— 两个快照
+    没法各存一份。这正好对应它「**物化视图**」的定位：只保留最新一次物化的结果。
+    因此写入前要按**主键**清掉旧行，而不是只按 `snapshot_id` 清 —— 后者在
+    snapshot_id 变了（内容变更）而主键没变时会撞唯一约束。
+    """
     mission_by_id = {m.mission_id: m for m in facts.missions}
     mission_ids = list(mission_by_id)
     prereq_map = {
@@ -358,6 +406,36 @@ def materialize_training_progress(
     }
     now = datetime.now()
     rows = 0
+
+    # 先按主键清掉任何快照下的同键旧行（见上方说明）
+    keys = {
+        (
+            person.person_id,
+            mission_id,
+            resolve_cycle_start(mission_by_id[mission_id], answered_cycle_start),
+        )
+        for person in facts.persons
+        for mission_id in set(person.completed_missions)
+        | (
+            set(
+                reachable_missions(
+                    person.aircraft_types, [q.mission_class for q in person.qualifications], facts
+                )
+            )
+            if person.identity == "学员"
+            else set()
+        )
+        if mission_id in mission_by_id
+    }
+    for person_id, mission_id, cycle in keys:
+        session.execute(
+            delete(TrainingProgress).where(
+                TrainingProgress.person_id == person_id,
+                TrainingProgress.mission_id == mission_id,
+                TrainingProgress.cycle_start == cycle,
+            )
+        )
+    session.flush()
 
     for person in facts.persons:
         completed = set(person.completed_missions)
@@ -370,7 +448,7 @@ def materialize_training_progress(
                 TrainingProgress(
                     person_id=person.person_id,
                     mission_id=mission_id,
-                    cycle_start=cycle_start,
+                    cycle_start=resolve_cycle_start(mission, answered_cycle_start),
                     status="COMPLETED",
                     completed_count=1,
                     last_done_date=None,  # ★ PDF 无此字段，S-12 在求解侧处理
@@ -398,7 +476,7 @@ def materialize_training_progress(
                 TrainingProgress(
                     person_id=person.person_id,
                     mission_id=mission_id,
-                    cycle_start=cycle_start,
+                    cycle_start=resolve_cycle_start(mission, answered_cycle_start),
                     status="NOT_STARTED",
                     completed_count=0,
                     last_done_date=None,
@@ -666,7 +744,6 @@ def source_files_digest(sources: Sequence[SourceFile]) -> str:
 
 
 __all__ = [
-    "DEFAULT_CYCLE_START",
     "activate_snapshot",
     "active_snapshot_id",
     "create_snapshot",
@@ -677,5 +754,6 @@ __all__ = [
     "persist_facts",
     "reachable_missions",
     "record_audit",
+    "resolve_cycle_start",
     "source_files_digest",
 ]
