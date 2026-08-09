@@ -24,8 +24,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -131,7 +132,8 @@ def prepare(
     session: Session | None = None,
     provider: LLMProvider | None = None,
     include_runways: bool = True,
-    check_counts: bool = True,
+    expected_counts: Mapping[str, int] | None = None,
+    reference_period: tuple[date, date] | None = None,
     answered_question_ids: Sequence[str] = (),
 ) -> PreparedIngestion:
     """安全闸 → 分类 → 适配 → 修复 → 抽取 → 校验 → Diff。**不落库。**"""
@@ -169,7 +171,12 @@ def prepare(
     facts = facts.model_copy(update={"sources": tuple(sources)})
 
     doc_texts = [(d.path.name, d.text) for d in documents]
-    validation = validate_facts(facts, doc_texts, check_counts=check_counts)
+    validation = validate_facts(
+        facts,
+        doc_texts,
+        expected_counts=expected_counts,
+        reference_period=reference_period,
+    )
 
     base_id = active_snapshot_id(session) if session is not None else None
     current = (
@@ -177,7 +184,11 @@ def prepare(
         if session is not None and base_id is not None
         else None
     )
-    questions = detect_open_questions(facts, provided=answered_question_ids)
+    # 缺整类必需数据时 `validate_facts` 只返回补传请求、跳过后续校验；
+    # 这种情况下再问 cycle_start 是噪声，先把文件补齐再说。
+    questions = list(validation.questions) or detect_open_questions(
+        facts, provided=answered_question_ids
+    )
     changeset = build_changeset(
         facts,
         current,

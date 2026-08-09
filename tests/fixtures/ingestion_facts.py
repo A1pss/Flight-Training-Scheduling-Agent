@@ -56,6 +56,7 @@ def make_person(
     person_id: str,
     *,
     identity: str,
+    name: str | None = None,
     quals: tuple[tuple[str, str], ...],
     completed: tuple[str, ...] = (),
     aircraft_types: tuple[str, ...] = ("JL-8",),
@@ -66,7 +67,7 @@ def make_person(
     expiry_map = expiries or {}
     return IngestedPerson(
         person_id=person_id,
-        name=f"测试{person_id}",
+        name=name or f"测试{person_id}",
         identity=identity,  # type: ignore[arg-type]
         aircraft_types=aircraft_types,  # type: ignore[arg-type]
         completed_missions=completed,

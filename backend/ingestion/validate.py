@@ -17,19 +17,29 @@ Pydantic 那一层在 :mod:`backend.ingestion.schema` 的模型里就跑完了�
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from datetime import date
+from typing import Final
 
 from backend.core.errors import DataConflictError, IngestionError
 from backend.core.logging import get_logger
 from backend.ingestion.conflicts import Conflict, detect_all, raise_on_fatal
+from backend.ingestion.questions import OpenQuestion, detect_missing_inputs
 from backend.ingestion.repair import assert_no_orphan_tokens
 from backend.ingestion.schema import IngestedFacts
+from backend.models.entities import IDENTITIES, QUAL_LEVELS
 
 logger = get_logger(__name__)
 
-#: v6 §1.3 的实体规模，落库后逐格核对
-EXPECTED_COUNTS = {
+#: **基准数据集**（`data/origin/*.pdf`）的实体规模，v6 §1.3 的实体全景表。
+#:
+#: ⚠️ **这是基准回归护栏，不是系统上限。** 它的用途只有一个：确认那四份 PDF
+#: 没被改坏、抽取没漏行。**绝不能跑在用户上传路径上** —— 用户有 9 个人、
+#: 10 架飞机是完全正常的事，拿基准规模去卡他们，等于宣布这套系统只能排这一批
+#: 人。`validate_facts` 的 `expected_counts` 默认 `None` = 不做这项检查，
+#: 只有基准回归测试才显式传它进来。
+BASELINE_ENTITY_COUNTS: Final[Mapping[str, int]] = {
     "persons": 8,
     "aircraft": 8,
     "missions": 12,
@@ -41,10 +51,12 @@ EXPECTED_COUNTS = {
 
 @dataclass
 class ValidationOutcome:
-    """校验结果。`conflicts` 里的 BLOCKING 项要走人工确认门禁。"""
+    """校验结果。`conflicts` 里的 BLOCKING 项与 `questions` 都要走人工确认门禁。"""
 
     conflicts: list[Conflict] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    #: 缺整类必需数据时的补传请求（`resolution="upload"`）
+    questions: list[OpenQuestion] = field(default_factory=list)
 
     @property
     def blocking(self) -> list[Conflict]:
@@ -154,8 +166,39 @@ def check_referential_integrity(facts: IngestedFacts) -> list[str]:
     return problems
 
 
+def check_known_enums(facts: IngestedFacts) -> list[str]:
+    """身份与资质等级必须是已登记的取值。
+
+    这两个字段**不能像机型那样由数据自由决定** —— §3.1.1 的机组编成判定式
+    直接读它们（`需带飞 = (mission.带飞==是) ∧ (身份==学员)`）。冒出一个
+    「见习教员」，系统没法自己推断他该单飞还是带飞，那是业务方的裁决，
+    不是运行时能补的输入。所以这里给一句**说清楚下一步该找谁做什么**的阻断，
+    而不是让 pydantic 抛一个看不懂的 ValidationError。
+    """
+    problems: list[str] = []
+    for person in facts.persons:
+        if person.identity not in IDENTITIES:
+            problems.append(
+                f"person {person.person_id}({person.name}) 的身份「{person.identity}」"
+                f"不在已登记取值 {list(IDENTITIES)} 内。新增身份会改变 §3.1.1 的机组编成"
+                f"判定式，需业务方先裁决该身份的机组编成规则并落进 rules/semantics.yaml，"
+                f"不能由摄取侧推断"
+            )
+        for qual in person.qualifications:
+            if qual.level not in QUAL_LEVELS:
+                problems.append(
+                    f"person {person.person_id} 的 {qual.mission_class} 类资质等级"
+                    f"「{qual.level}」不在已登记取值 {list(QUAL_LEVELS)} 内，同上需业务方裁决"
+                )
+    return problems
+
+
 def check_value_domains(facts: IngestedFacts) -> list[str]:
-    """值域：主键唯一、机型自洽、跑道机型可实现。"""
+    """值域：主键唯一、机型自洽、跑道机型可实现。
+
+    **机型不是枚举** —— 机队里出现什么机型就是什么机型；这里只保证人员/课目/
+    跑道引用的机型都能在机队里找到。
+    """
     problems: list[str] = []
 
     for label, ids in (
@@ -214,11 +257,14 @@ def check_time_logic(facts: IngestedFacts) -> list[str]:
     return problems
 
 
-def check_entity_counts(facts: IngestedFacts) -> list[str]:
-    """与 v6 §1.3 的实体全景表逐项核对规模。
+def check_entity_counts(
+    facts: IngestedFacts, expected: Mapping[str, int] = BASELINE_ENTITY_COUNTS
+) -> list[str]:
+    """与给定的期望规模逐项核对。**只用于基准回归**，见
+    :data:`BASELINE_ENTITY_COUNTS` 的说明。
 
-    数量对不上通常意味着修复层漏了一行或跨页表没合并 —— 这类错误不报出来的话，
-    会一路安静地跑到求解阶段才以「候选数不对」的形式暴露。
+    数量对不上通常意味着修复层漏了一行或跨页表没合并 —— 在基准数据上这类错误
+    不报出来的话，会一路安静地跑到求解阶段才以「候选数不对」的形式暴露。
     """
     actual = {
         "persons": len(facts.persons),
@@ -229,9 +275,9 @@ def check_entity_counts(facts: IngestedFacts) -> list[str]:
         "rules": len(facts.rules),
     }
     return [
-        f"{key} 实体数为 {actual[key]}，v6 §1.3 期望 {want}"
-        for key, want in EXPECTED_COUNTS.items()
-        if actual[key] != want
+        f"{key} 实体数为 {actual[key]}，期望 {want}"
+        for key, want in expected.items()
+        if actual.get(key) != want
     ]
 
 
@@ -239,14 +285,29 @@ def validate_facts(
     facts: IngestedFacts,
     documents: Sequence[tuple[str, str]] = (),
     *,
-    check_counts: bool = True,
+    expected_counts: Mapping[str, int] | None = None,
+    reference_period: tuple[date, date] | None = None,
 ) -> ValidationOutcome:
     """校验层主入口。
 
-    顺序：后置断言 → 引用完整性/值域/时间逻辑 → 实体规模 → 源内冲突检出 →
-    机组编成断言。前面几步任一失败就抛 `IngestionError`（FTS-1003）；
-    机组编成不一致抛 `DataConflictError`（FTS-2001）。
+    顺序：**必需数据是否齐全** → 后置断言 → 引用完整性/值域/枚举/时间逻辑 →
+    （可选）实体规模 → 源内冲突检出 → 机组编成断言。
+
+    - 缺整类必需数据 → **不报错，直接返回补传请求**（`questions`），后面几步
+      全部跳过。理由见 :func:`~backend.ingestion.questions.detect_missing_inputs`。
+    - 结构性校验任一失败 → `IngestionError`（FTS-1003）
+    - 机组编成不一致 → `DataConflictError`（FTS-2001）
+
+    `expected_counts` **默认 None = 不做规模校验**。它只服务于基准回归，
+    传 :data:`BASELINE_ENTITY_COUNTS` 才会生效 —— 用户上传的数据有多少人多少
+    飞机是用户的事，不该被基准规模卡住。
     """
+    # ⓪ 少了整整一类数据 → 先把这句话说清楚，别让人从一屏外键错误里反推
+    missing = detect_missing_inputs(facts)
+    if missing:
+        logger.info("缺少必需数据，已生成补传请求", missing=[q.question_id for q in missing])
+        return ValidationOutcome(questions=missing)
+
     # ① 后置断言：残缺课目编号一个都不许流进来
     assert_no_orphan_tokens(_orphan_records(facts))
 
@@ -254,9 +315,10 @@ def validate_facts(
     problems: list[str] = []
     problems.extend(check_referential_integrity(facts))
     problems.extend(check_value_domains(facts))
+    problems.extend(check_known_enums(facts))
     problems.extend(check_time_logic(facts))
-    if check_counts:
-        problems.extend(check_entity_counts(facts))
+    if expected_counts is not None:
+        problems.extend(check_entity_counts(facts, expected_counts))
 
     if problems:
         raise IngestionError(
@@ -266,7 +328,7 @@ def validate_facts(
         )
 
     # ③ 源内值冲突（X1/X3/X4）；X2 由 detect_all 内部核验
-    conflicts = detect_all(facts, documents)
+    conflicts = detect_all(facts, documents, reference_period=reference_period)
 
     # ④ 机组编成一致性断言 —— FATAL 直接抛 FTS-2001，不给人工放行的选项
     raise_on_fatal(conflicts)
@@ -294,11 +356,12 @@ def assert_crew_composition(facts: IngestedFacts) -> None:
 
 
 __all__ = [
-    "EXPECTED_COUNTS",
+    "BASELINE_ENTITY_COUNTS",
     "DataConflictError",
     "ValidationOutcome",
     "assert_crew_composition",
     "check_entity_counts",
+    "check_known_enums",
     "check_referential_integrity",
     "check_time_logic",
     "check_value_domains",

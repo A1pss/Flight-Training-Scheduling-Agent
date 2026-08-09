@@ -36,9 +36,12 @@ from backend.ingestion.schema import IngestedFacts, IngestedMission, IngestedPer
 #: 冲突的处置级别
 Severity = Literal["WARN", "BLOCKING", "FATAL"]
 
-#: 基准周（v6 §1.2.3）。X4 用它判断发布日期是否晚于基准周。
+#: 基准周（v6 §1.2.3）。**只是基准数据集的排班周，不是系统常量** ——
+#: X4 的判据是「发布日期晚于**本次要排的那一周**」，那一周由调用方给出。
+#: 不传参考周就不做 X4 检查（拿一个写死的 2026W02 去卡 2027 年的数据毫无意义）。
 BASELINE_WEEK_START: Final[date] = date(2026, 1, 5)
 BASELINE_WEEK_END: Final[date] = date(2026, 1, 11)
+BASELINE_WEEK: Final[tuple[date, date]] = (BASELINE_WEEK_START, BASELINE_WEEK_END)
 
 
 @dataclass(frozen=True)
@@ -85,9 +88,9 @@ ADJUDICATIONS: Final[dict[str, Adjudication]] = {
 #: 发布日期正则
 _PUBLISH_DATE_RE = re.compile(r"发布日期\s*[:：]\s*(\d{4}-\d{2}-\d{2})")
 #: 总表「复训到期」：`仪表等级(C类):2026-01-07`
-_RECURRENT_DUE_RE = re.compile(r"[（(]([A-H])类[）)]\s*[:：]\s*(\d{4}-\d{2}-\d{2})")
+_RECURRENT_DUE_RE = re.compile(r"[（(]([A-Z])类[）)]\s*[:：]\s*(\d{4}-\d{2}-\d{2})")
 #: X2 事后核验：缺连字符的课目编号变体
-_MISSION_VARIANT_RE = re.compile(r"\bmission[A-H]\d\b")
+_MISSION_VARIANT_RE = re.compile(r"\bmission[A-Z]\d+\b")
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -115,10 +118,11 @@ def detect_x1_expiry_conflicts(persons: Sequence[IngestedPerson]) -> list[Confli
             continue
 
         kind = f"X1_{person.name}{mission_class}类到期日"
-        # 基准数据上这条就是 §5.5 表里那条已裁定的 X1
-        if person.person_id == "P04" and mission_class == "C":
-            kind = "X1_刘斌C类到期日"
-        adjudication = ADJUDICATIONS.get(kind)
+        # §5.5 裁定表按 kind 命中。**建议值必须真的是本次冲突两侧之一** ——
+        # 换一批数据时同名同类别的冲突两侧取值可能完全不同，拿一个对不上的
+        # 历史裁定去「建议」，比不建议更糟。
+        entry = ADJUDICATIONS.get(kind)
+        adjudication = entry if entry and entry.value in (summary_date, detail_date) else None
 
         conflicts.append(
             Conflict(
@@ -290,38 +294,46 @@ def detect_x3_crew_composition(
 
 
 # ─────────────────────────────────────────────────────────────────────
-# X4 —— 发布日期晚于基准周（WARN，不阻断）
+# X4 —— 发布日期晚于排班周（WARN，不阻断）
 # ─────────────────────────────────────────────────────────────────────
-def detect_x4_publish_dates(documents: Sequence[tuple[str, str]]) -> list[Conflict]:
-    """检出发布日期晚于基准周的源文件。
+def detect_x4_publish_dates(
+    documents: Sequence[tuple[str, str]],
+    *,
+    reference_period: tuple[date, date] | None = None,
+) -> list[Conflict]:
+    """检出发布日期晚于**参考排班周**的源文件。
 
-    `documents` 是 (文件名, 全文) 的序列。
+    `documents` 是 (文件名, 全文) 的序列；`reference_period` 是本次要排的那一周。
+    **不给参考周就不检查** —— 拿基准周去卡任意一批数据只会制造噪声。
 
     ⚠️ **只记 WARN，不阻断，更不要据此推导任何业务逻辑**（v6 §1.2.3）：这是
-    合成数据的时间戳瑕疵，不是「数据来自未来所以基准周作废」。
+    合成数据的时间戳瑕疵，不是「数据来自未来所以排班周作废」。
     """
+    if reference_period is None:
+        return []
+    period_start, period_end = reference_period
     conflicts: list[Conflict] = []
     for filename, text in documents:
         match = _PUBLISH_DATE_RE.search(text)
         if not match:
             continue
         published = date.fromisoformat(match.group(1))
-        if published <= BASELINE_WEEK_END:
+        if published <= period_end:
             continue
         conflicts.append(
             Conflict(
                 conflict_id=f"{filename}:publish-date",
-                kind="X4_发布日期晚于基准周",
+                kind="X4_发布日期晚于排班周",
                 severity="WARN",
                 message=(
-                    f"{filename} 的发布日期 {published} 晚于基准周 "
-                    f"{BASELINE_WEEK_START}~{BASELINE_WEEK_END}；"
-                    f"属合成数据的时间戳瑕疵，忽略即可，不得据此推导任何业务逻辑"
+                    f"{filename} 的发布日期 {published} 晚于排班周 "
+                    f"{period_start}~{period_end}；"
+                    f"属数据的时间戳瑕疵，忽略即可，不得据此推导任何业务逻辑"
                 ),
                 source_a=f"{filename} 发布日期",
                 value_a=published.isoformat(),
-                source_b="基准周（v6 §1.2.3）",
-                value_b=f"{BASELINE_WEEK_START}~{BASELINE_WEEK_END}",
+                source_b="参考排班周",
+                value_b=f"{period_start}~{period_end}",
                 adjudicated_value=None,
                 adjudication_note="忽略（v6 §5.5 X4）",
                 details={"filename": filename, "published": published.isoformat()},
@@ -333,7 +345,12 @@ def detect_x4_publish_dates(documents: Sequence[tuple[str, str]]) -> list[Confli
 # ─────────────────────────────────────────────────────────────────────
 # 汇总
 # ─────────────────────────────────────────────────────────────────────
-def detect_all(facts: IngestedFacts, documents: Sequence[tuple[str, str]] = ()) -> list[Conflict]:
+def detect_all(
+    facts: IngestedFacts,
+    documents: Sequence[tuple[str, str]] = (),
+    *,
+    reference_period: tuple[date, date] | None = None,
+) -> list[Conflict]:
     """跑完 X1~X4 的全部检出逻辑。
 
     X2 走核验（发现残留直接抛 FTS-1003），X3 的 FATAL 由调用方在校验层统一
@@ -343,7 +360,7 @@ def detect_all(facts: IngestedFacts, documents: Sequence[tuple[str, str]] = ()) 
     conflicts: list[Conflict] = []
     conflicts.extend(detect_x1_expiry_conflicts(facts.persons))
     conflicts.extend(detect_x3_crew_composition(facts.persons, facts.missions))
-    conflicts.extend(detect_x4_publish_dates(documents))
+    conflicts.extend(detect_x4_publish_dates(documents, reference_period=reference_period))
     return conflicts
 
 

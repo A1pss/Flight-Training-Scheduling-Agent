@@ -10,7 +10,8 @@ M1 交付**接口与全部判定逻辑**；UI 在 W9（M6 前端窗口）接上�
 2. **裁决值与 §5.5 裁定表不符 → 拒绝**，除非调用方显式 `override_adjudication`
    并给出理由（理由进审计日志）。这条是为了让「按裁定选 2026-01-07」这件事
    由**门禁**保证，而不是靠 parser 或运气。
-3. **有 `OpenQuestion` 未回答（或答案不合法）→ 拒绝**，并把问题原样放进
+3. **有 `OpenQuestion` 未回答（或答案不合法）→ 拒绝**；`resolution="upload"`
+   的问题（缺整类数据）**永远无法用回答满足**，只能补传文件，并把问题原样放进
    `GateDecision.pending_questions` 交给调用方展示给用户。**门禁绝不替用户
    填默认值** —— 铁律 10「有疑问就问，不要猜」在这里是可执行的代码，
    不是注释（见 :mod:`backend.ingestion.questions`）。
@@ -103,6 +104,11 @@ def review(
     # ── 待回答问题：必需的输入没人给 → 把问题原样抛回去，绝不替用户填 ──
     pending: list[OpenQuestion] = []
     for question in changeset.questions:
+        if question.resolution == "upload":
+            # 少了整整一类数据，给什么值都没用，必须补传文件
+            pending.append(question)
+            reasons.append(f"{question.topic}：需要补传文件，无法用回答替代")
+            continue
         answer = given.get(question.question_id)
         if answer is None:
             pending.append(question)

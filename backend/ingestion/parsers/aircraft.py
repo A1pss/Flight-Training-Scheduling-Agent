@@ -94,7 +94,7 @@ def parse_aircraft_document(
         fleet.append(
             IngestedAircraft(
                 aircraft_id=aircraft_id,
-                aircraft_type=rec["机型"].strip(),  # type: ignore[arg-type]
+                aircraft_type=rec["机型"].strip(),
                 seats=int(rec["座位"].strip()),
                 daily_window_start=_parse_time(window.group(1)),
                 daily_window_end=_parse_time(window.group(2)),

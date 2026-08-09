@@ -30,9 +30,11 @@ SUMMARY_SIGNATURE = ("编号", "姓名", "身份", "机型资质", "已完成课
 DETAIL_SIGNATURE = ("编号", "姓名", "资质(课目类/等级/到期日)")
 
 #: 明细表里的一条资质：`C类/单飞/至2026-02-07` 或 `A类/教员`
-_QUAL_RE = re.compile(r"([A-H])类\s*/\s*(教员|单飞|带飞)(?:\s*/\s*至\s*(\d{4}-\d{2}-\d{2}))?")
+_QUAL_RE = re.compile(
+    r"([A-Z])类\s*/\s*([^;；/\s]+?)(?:\s*/\s*至\s*(\d{4}-\d{2}-\d{2}))?(?=\s*[;；]|\s*$)"
+)
 #: 总表「复训到期」列：`仪表等级(C类):2026-01-07`
-_RECURRENT_DUE_RE = re.compile(r"[（(]([A-H])类[）)]\s*[:：]\s*(\d{4}-\d{2}-\d{2})")
+_RECURRENT_DUE_RE = re.compile(r"[（(]([A-Z])类[）)]\s*[:：]\s*(\d{4}-\d{2}-\d{2})")
 _DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 
@@ -71,8 +73,8 @@ def parse_qualifications(person_id: str, cell: str) -> tuple[IngestedQualificati
     return tuple(
         IngestedQualification(
             person_id=person_id,
-            mission_class=m.group(1),  # type: ignore[arg-type]
-            level=m.group(2),  # type: ignore[arg-type]
+            mission_class=m.group(1),
+            level=m.group(2),
             expiry_date=date.fromisoformat(m.group(3)) if m.group(3) else None,
         )
         for m in matches
@@ -115,8 +117,8 @@ def parse_personnel_document(doc: ExtractedDocument) -> tuple[IngestedPerson, ..
             IngestedPerson(
                 person_id=person_id,
                 name=rec["姓名"].strip(),
-                identity=rec["身份"].strip(),  # type: ignore[arg-type]
-                aircraft_types=tuple(split_list(rec["机型资质"])),  # type: ignore[arg-type]
+                identity=rec["身份"].strip(),
+                aircraft_types=tuple(split_list(rec["机型资质"])),
                 completed_missions=tuple(extract_mission_tokens(rec["已完成课目"])),
                 unavailable_dates=unavailable,
                 qualifications=parse_qualifications(person_id, details[person_id]),

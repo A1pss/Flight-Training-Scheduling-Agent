@@ -41,6 +41,19 @@ ValueKind = Literal["date", "text", "int"]
 #: 课程周期起点问题的固定 id（W9 的 UI 与 CLI 都按它认这条问题）
 QID_CYCLE_START: Final[str] = "Q_cycle_start"
 
+#: 排班必需的实体类 → (面向用户的文档名, 该类在 IngestedFacts 上的字段名)。
+#:
+#: **跑道不在其中**：业务方 2026-08-10 确认跑道数据基本确定、不随每次上传变化，
+#: 维持 `rules/semantics.yaml` S-05 的配置形态。
+#: **规则条文也不在其中**：排班约束永远来自 `rules/` 下的版本化文件（v6 §5.4
+#: 第 3 层），上传的规则原文只进 Chroma 供检索与解释引用，缺了不影响排班。
+REQUIRED_ENTITY_DOCS: Final[tuple[tuple[str, str, str], ...]] = (
+    ("persons", "人员档案", "飞行人员的编号/姓名/身份/机型资质/已完成课目"),
+    ("aircraft", "飞机资源", "机号/机型/座位/每日可用窗/周转时间/维护计划/适配课目"),
+    ("missions", "课目标准", "课目编号/名称/时长/周期与频率/先修/带飞/机型/空域"),
+    ("airspaces", "空域资源", "空域编号/名称/同时段容量（通常与飞机资源同一份文件）"),
+)
+
 
 @dataclass(frozen=True)
 class OpenQuestion:
@@ -53,6 +66,10 @@ class OpenQuestion:
     #: 为什么非答不可 —— 让用户明白拒答的后果，而不是被一个弹窗挡住
     why_it_matters: str
     value_kind: ValueKind
+    #: 这条问题**怎么才能解决**：
+    #: - `answer` = 用户给一个值就行（如课程开始日期）
+    #: - `upload` = 少了一整类数据，**给什么值都没用，必须补传文件**
+    resolution: Literal["answer", "upload"] = "answer"
     #: 该答案影响的范围，例如 {"missions": "missionA-1、missionA-2"}
     applies_to: dict[str, str] = field(default_factory=dict)
     #: 可供参考的线索（**不是默认值**，门禁不会替用户选）
@@ -95,6 +112,43 @@ def parse_answer(question: OpenQuestion, answer: QuestionAnswer) -> Any:
             )
         return int(raw)
     return raw
+
+
+def detect_missing_inputs(facts: IngestedFacts) -> list[OpenQuestion]:
+    """排班必需的实体类里，哪一类**一条记录都没有** → 请用户补传文件。
+
+    这一步要跑在引用完整性校验**之前**：少传一份课目文件时，引用完整性会因为
+    每个人的「已完成课目」都指向不存在的课目而吐出一屏错误，而真正的原因只有
+    一句话 —— 「你没传课目标准文件」。先说这句话，比让人从 9 条外键错误里
+    自己反推有用得多。
+    """
+    questions: list[OpenQuestion] = []
+    for attr, doc_name, columns in REQUIRED_ENTITY_DOCS:
+        if getattr(facts, attr):
+            continue
+        questions.append(
+            OpenQuestion(
+                question_id=f"Q_missing_{attr}",
+                topic=f"缺少{doc_name}",
+                question=(
+                    f"本次上传里没有检测到**{doc_name}**的任何记录，无法排班。\n"
+                    f"请补传一份包含以下内容的文件：{columns}"
+                ),
+                why_it_matters=(
+                    f"没有{doc_name}就没有对应实体，排班的候选枚举无从谈起。\n"
+                    "系统**不会**拿上一次快照或基准数据顶替 —— 那样排出来的计划"
+                    "看着正常，实际是照着别人的数据排的。"
+                ),
+                value_kind="text",
+                resolution="upload",
+                applies_to={"entity": attr, "document": doc_name},
+                hints=[
+                    "若该类数据和别的类在同一份文件里（如空域常与飞机资源同文件），"
+                    "确认那份文件已上传且表头能被识别",
+                ],
+            )
+        )
+    return questions
 
 
 def detect_open_questions(
@@ -168,9 +222,11 @@ BASELINE_ANSWERS: Final[dict[str, QuestionAnswer]] = {
 __all__ = [
     "BASELINE_ANSWERS",
     "QID_CYCLE_START",
+    "REQUIRED_ENTITY_DOCS",
     "OpenQuestion",
     "QuestionAnswer",
     "ValueKind",
+    "detect_missing_inputs",
     "detect_open_questions",
     "parse_answer",
 ]

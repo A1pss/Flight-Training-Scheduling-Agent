@@ -32,9 +32,10 @@ from backend.models.base import Base
 IDENTITIES = ("教员", "成熟飞行员", "学员")
 #: 类别资质等级（`personnel.pdf` 课目级资质明细的「等级」）
 QUAL_LEVELS = ("教员", "单飞", "带飞")
-#: 机型（`aircraft.pdf`）
+#: 基准数据里出现的机型。**这不是枚举，也不是系统上限** —— 机型完全由上传的
+#: 飞机资源文件决定，库层不设 CHECK。留着它只为文档与测试引用。
 AIRCRAFT_TYPES = ("JL-8", "JL-9")
-#: 课目类别 A~H（由课目编号 `mission<X>-<n>` 的 `<X>` 决定）
+#: 基准数据里出现的课目类别。同上，**不是上限**：类别取自课目编号的字母位，A~Z 皆可。
 MISSION_CLASSES = ("A", "B", "C", "D", "E", "F", "G", "H")
 #: `mission_prereq.ref_kind` —— 先修引用可以是课目编号，也可以是类别（S-01）
 PREREQ_REF_KINDS = ("mission", "class")
@@ -49,7 +50,7 @@ class Person(Base):
     __tablename__ = "persons"
     __table_args__ = (
         CheckConstraint("identity IN ('教员', '成熟飞行员', '学员')", name="person_identity_enum"),
-        CheckConstraint("person_id ~ '^P[0-9]{2}$'", name="person_id_format"),
+        CheckConstraint("person_id ~ '^P[0-9]+$'", name="person_id_format"),
     )
 
     person_id: Mapped[str] = mapped_column(String(8), primary_key=True)
@@ -70,7 +71,6 @@ class PersonAircraftType(Base):
             ["persons.person_id", "persons.snapshot_id"],
             ondelete="CASCADE",
         ),
-        CheckConstraint("aircraft_type IN ('JL-8', 'JL-9')", name="person_aircraft_type_enum"),
     )
 
     person_id: Mapped[str] = mapped_column(String(8), primary_key=True)
@@ -94,10 +94,7 @@ class PersonQualification(Base):
             ondelete="CASCADE",
         ),
         CheckConstraint("level IN ('教员', '单飞', '带飞')", name="qualification_level_enum"),
-        CheckConstraint(
-            "mission_class IN ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H')",
-            name="qualification_class_enum",
-        ),
+        CheckConstraint("mission_class ~ '^[A-Z]$'", name="qualification_class_format"),
     )
 
     person_id: Mapped[str] = mapped_column(String(8), primary_key=True)
@@ -166,11 +163,10 @@ class Aircraft(Base):
 
     __tablename__ = "aircraft"
     __table_args__ = (
-        CheckConstraint("aircraft_type IN ('JL-8', 'JL-9')", name="aircraft_type_enum"),
         CheckConstraint("seats > 0", name="aircraft_seats_positive"),
         CheckConstraint("turnaround_minutes >= 0", name="aircraft_turnaround_nonneg"),
         CheckConstraint("daily_window_start < daily_window_end", name="aircraft_window_ordered"),
-        CheckConstraint("aircraft_id ~ '^AC[0-9]{2}$'", name="aircraft_id_format"),
+        CheckConstraint("aircraft_id ~ '^AC[0-9]+$'", name="aircraft_id_format"),
     )
 
     aircraft_id: Mapped[str] = mapped_column(String(8), primary_key=True)
@@ -243,7 +239,7 @@ class Airspace(Base):
     __tablename__ = "airspaces"
     __table_args__ = (CheckConstraint("capacity >= 1", name="airspace_capacity_positive"),)
 
-    airspace_id: Mapped[str] = mapped_column(String(8), primary_key=True)
+    airspace_id: Mapped[str] = mapped_column(String(16), primary_key=True)
     snapshot_id: Mapped[str] = mapped_column(
         String(64), ForeignKey("data_snapshots.snapshot_id", ondelete="CASCADE"), primary_key=True
     )
@@ -269,11 +265,8 @@ class Mission(Base):
         CheckConstraint("duration_minutes > 0", name="mission_duration_positive"),
         CheckConstraint("freq_days > 0", name="mission_freq_days_positive"),
         CheckConstraint("cycle_weeks > 0", name="mission_cycle_weeks_positive"),
-        CheckConstraint(
-            "mission_class IN ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H')",
-            name="mission_class_enum",
-        ),
-        CheckConstraint("mission_id ~ '^mission[A-H]-[0-9]$'", name="mission_id_format"),
+        CheckConstraint("mission_class ~ '^[A-Z]$'", name="mission_class_format"),
+        CheckConstraint("mission_id ~ '^mission[A-Z]-[0-9]+$'", name="mission_id_format"),
     )
 
     mission_id: Mapped[str] = mapped_column(String(16), primary_key=True)
@@ -288,7 +281,7 @@ class Mission(Base):
     freq_days: Mapped[int] = mapped_column(Integer, nullable=False)
     weekly_required: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     dual_required: Mapped[bool] = mapped_column(Boolean, nullable=False)
-    airspace_id: Mapped[str] = mapped_column(String(8), nullable=False)
+    airspace_id: Mapped[str] = mapped_column(String(16), nullable=False)
     #: 频率要求原文，保留以便 Sheet 4 溯源
     frequency_text: Mapped[str] = mapped_column(Text, nullable=False, default="")
 
@@ -303,7 +296,6 @@ class MissionAircraftType(Base):
             ["missions.mission_id", "missions.snapshot_id"],
             ondelete="CASCADE",
         ),
-        CheckConstraint("aircraft_type IN ('JL-8', 'JL-9')", name="mission_aircraft_type_enum"),
     )
 
     mission_id: Mapped[str] = mapped_column(String(16), primary_key=True)
@@ -344,7 +336,7 @@ class Runway(Base):
     """
 
     __tablename__ = "runways"
-    __table_args__ = (CheckConstraint("runway_id ~ '^RWY-[0-9]$'", name="runway_id_format"),)
+    __table_args__ = (CheckConstraint("runway_id ~ '^RWY-[0-9]+$'", name="runway_id_format"),)
 
     runway_id: Mapped[str] = mapped_column(String(8), primary_key=True)
     snapshot_id: Mapped[str] = mapped_column(
@@ -363,7 +355,6 @@ class RunwayAircraftType(Base):
             ["runways.runway_id", "runways.snapshot_id"],
             ondelete="CASCADE",
         ),
-        CheckConstraint("aircraft_type IN ('JL-8', 'JL-9')", name="runway_aircraft_type_enum"),
     )
 
     runway_id: Mapped[str] = mapped_column(String(8), primary_key=True)

@@ -40,8 +40,8 @@ _CYCLE_RE = re.compile(r"(\d+)\s*周")
 _FREQ_RE = re.compile(r"每\s*(\d+)\s*天\s*[≥>=]+\s*1\s*次")
 _WEEKLY_RE = re.compile(r"每周必飞")
 #: 先修引用：类别（`A类`）或课目编号（`missionC-1`）
-_CLASS_REF_RE = re.compile(r"^([A-H])类$")
-_MISSION_REF_RE = re.compile(r"^mission[A-H]-\d$")
+_CLASS_REF_RE = re.compile(r"^([A-Z])类$")
+_MISSION_REF_RE = re.compile(r"^mission[A-Z]-\d+$")
 #: 空域列的表头在 PDF 里是「空域/航线」，NFKC 后不变
 _AIRSPACE_COLUMNS = ("空域/航线", "空域航线", "空域")
 
@@ -165,7 +165,7 @@ def parse_missions_document(doc: ExtractedDocument) -> tuple[IngestedMission, ..
             IngestedMission(
                 mission_id=mission_id,
                 name=rec["名称"].strip(),
-                mission_class=mission_id[len("mission")],  # type: ignore[arg-type]
+                mission_class=mission_id[len("mission")],
                 kind=rec["类型"].strip(),
                 duration_minutes=int(rec["时长(分)"].strip()),
                 cycle_weeks=cycle_weeks,
@@ -175,7 +175,7 @@ def parse_missions_document(doc: ExtractedDocument) -> tuple[IngestedMission, ..
                 prereqs=()
                 if is_null_token(rec["先修"])
                 else parse_prereqs(mission_id, rec["先修"]),
-                aircraft_types=tuple(split_list(rec["机型"], allow_slash=True)),  # type: ignore[arg-type]
+                aircraft_types=tuple(split_list(rec["机型"], allow_slash=True)),
                 airspace_name=rec[airspace_col].strip(),
                 frequency_text=rec["课程周期与频率要求"].strip(),
                 cycle_start=(

@@ -9,7 +9,7 @@ import pytest
 from backend.core.errors import DataConflictError, IngestionError
 from backend.ingestion.schema import IngestedFacts
 from backend.ingestion.validate import (
-    EXPECTED_COUNTS,
+    BASELINE_ENTITY_COUNTS,
     assert_crew_composition,
     check_entity_counts,
     check_referential_integrity,
@@ -21,14 +21,14 @@ from tests.fixtures.ingestion_facts import make_person, minimal_facts
 
 
 def test_minimal_facts_validate_clean() -> None:
-    outcome = validate_facts(minimal_facts(), check_counts=False)
+    outcome = validate_facts(minimal_facts())
     assert outcome.conflicts == []
     assert outcome.blocking == []
 
 
 def test_expected_counts_match_v6_entity_panorama() -> None:
     """8 人 / 8 机 / 12 课目 / 6 空域 / 2 跑道 / 14 条规则。"""
-    assert EXPECTED_COUNTS == {
+    assert BASELINE_ENTITY_COUNTS == {
         "persons": 8,
         "aircraft": 8,
         "missions": 12,
@@ -130,9 +130,7 @@ def test_validate_blocks_on_orphan_token() -> None:
     facts = minimal_facts()
     broken = facts.persons[1].model_copy(update={"completed_missions": ("sionB-1",)})
     with pytest.raises(IngestionError, match="残缺课目编号"):
-        validate_facts(
-            facts.model_copy(update={"persons": (facts.persons[0], broken)}), check_counts=False
-        )
+        validate_facts(facts.model_copy(update={"persons": (facts.persons[0], broken)}))
 
 
 def test_validate_collects_all_problems_at_once() -> None:
@@ -145,7 +143,6 @@ def test_validate_collects_all_problems_at_once() -> None:
     with pytest.raises(IngestionError) as exc:
         validate_facts(
             facts.model_copy(update={"aircraft": (broken_aircraft,), "runways": (broken_runway,)}),
-            check_counts=False,
         )
     assert len(exc.value.details["problems"]) >= 2
 
@@ -167,17 +164,19 @@ def test_crew_composition_assertion_blocks_student_dual_in_a_class() -> None:
         assert_crew_composition(broken)
     # 走主入口同样会被拦
     with pytest.raises(DataConflictError):
-        validate_facts(broken, check_counts=False)
+        validate_facts(broken)
 
 
 def test_validate_reports_x4_as_warning_not_error() -> None:
+    from backend.ingestion.conflicts import BASELINE_WEEK
+
     outcome = validate_facts(
-        minimal_facts(), [("x.pdf", "发布日期:2026-01-26")], check_counts=False
+        minimal_facts(), [("x.pdf", "发布日期:2026-01-26")], reference_period=BASELINE_WEEK
     )
     assert len(outcome.warnings) == 1
     assert outcome.blocking == []
 
 
 def test_validate_empty_facts_without_count_check() -> None:
-    outcome = validate_facts(IngestedFacts(), check_counts=False)
+    outcome = validate_facts(IngestedFacts())
     assert outcome.conflicts == []

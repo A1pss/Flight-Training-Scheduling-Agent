@@ -9,6 +9,7 @@ import pytest
 from backend.core.errors import DataConflictError, ErrorCode, IngestionError
 from backend.ingestion.conflicts import (
     ADJUDICATIONS,
+    BASELINE_WEEK,
     apply_x1_resolution,
     detect_all,
     detect_x1_expiry_conflicts,
@@ -27,6 +28,7 @@ def test_x1_detected_when_summary_and_detail_disagree() -> None:
     person = make_person(
         "P04",
         identity="成熟飞行员",
+        name="刘斌",
         quals=(("C", "单飞"),),
         expiries={"C": date(2026, 2, 7)},
         recurrent_due_raw="仪表等级(C类):2026-01-07",
@@ -45,6 +47,7 @@ def test_x1_silent_when_both_sides_agree() -> None:
     person = make_person(
         "P04",
         identity="成熟飞行员",
+        name="刘斌",
         quals=(("C", "单飞"),),
         expiries={"C": date(2026, 1, 7)},
         recurrent_due_raw="仪表等级(C类):2026-01-07",
@@ -66,6 +69,7 @@ def test_apply_x1_resolution_rewrites_only_that_class() -> None:
     person = make_person(
         "P04",
         identity="成熟飞行员",
+        name="刘斌",
         quals=(("B", "单飞"), ("C", "单飞")),
         expiries={"C": date(2026, 2, 7)},
     )
@@ -149,22 +153,36 @@ def test_raise_on_fatal_is_noop_without_fatal() -> None:
 
 
 # ── X4：发布日期晚于基准周 ───────────────────────────────────────────
+def test_x4_needs_a_reference_period_to_mean_anything() -> None:
+    """不给参考排班周就不检查 —— 拿一个写死的周去卡任意数据只会制造噪声。"""
+    assert detect_x4_publish_dates([("x.pdf", "发布日期:2099-01-01")]) == []
+
+
 def test_x4_warns_but_never_blocks() -> None:
-    conflicts = detect_x4_publish_dates([("personnel.pdf", "发布单位:x 发布日期:2026-01-26\n正文")])
+    conflicts = detect_x4_publish_dates(
+        [("personnel.pdf", "发布单位:x 发布日期:2026-01-26\n正文")],
+        reference_period=BASELINE_WEEK,
+    )
     assert len(conflicts) == 1
     assert conflicts[0].severity == "WARN"
-    assert conflicts[0].kind == "X4_发布日期晚于基准周"
+    assert conflicts[0].kind == "X4_发布日期晚于排班周"
     # WARN 不进人工门禁
     assert not conflicts[0].requires_human_gate
     raise_on_fatal(conflicts)  # 不该抛
 
 
 def test_x4_silent_when_published_within_baseline_week() -> None:
-    assert detect_x4_publish_dates([("x.pdf", "发布日期:2026-01-06")]) == []
+    assert (
+        detect_x4_publish_dates([("x.pdf", "发布日期:2026-01-06")], reference_period=BASELINE_WEEK)
+        == []
+    )
 
 
 def test_x4_silent_without_publish_date() -> None:
-    assert detect_x4_publish_dates([("x.pdf", "没有发布日期字段")]) == []
+    assert (
+        detect_x4_publish_dates([("x.pdf", "没有发布日期字段")], reference_period=BASELINE_WEEK)
+        == []
+    )
 
 
 # ── 汇总 ─────────────────────────────────────────────────────────────
@@ -173,16 +191,19 @@ def test_detect_all_runs_every_check() -> None:
     person = make_person(
         "P04",
         identity="成熟飞行员",
+        name="刘斌",
         quals=(("A", "单飞"), ("B", "单飞")),
         expiries={"B": date(2026, 2, 7)},
         recurrent_due_raw="导航(B类):2026-01-07",
         completed=("missionA-1", "missionB-1"),
     )
     facts = facts.model_copy(update={"persons": (*facts.persons, person)})
-    conflicts = detect_all(facts, [("x.pdf", "发布日期:2026-01-26")])
+    conflicts = detect_all(
+        facts, [("x.pdf", "发布日期:2026-01-26")], reference_period=BASELINE_WEEK
+    )
     kinds = {c.kind for c in conflicts}
     assert any(k.startswith("X1_") for k in kinds)
-    assert "X4_发布日期晚于基准周" in kinds
+    assert "X4_发布日期晚于排班周" in kinds
 
 
 def test_detect_all_on_empty_facts() -> None:

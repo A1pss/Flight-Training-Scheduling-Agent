@@ -36,13 +36,16 @@ from collections.abc import Iterable, Sequence
 
 from backend.core.errors import IngestionError
 
-#: 合法课目编号的唯一形态。后置断言以它为准。
-MISSION_ID_RE = re.compile(r"mission[A-H]-\d")
+#: 合法课目编号的形态（v6 §5.1 ④ 编号正则归一化）。后置断言以它为准。
+#:
+#: **只固定前缀约定，不限类别字母范围与位数** —— 基准数据用到 A~H、单位序号，
+#: 但写死 `[A-H]-\d` 就等于宣布「这套系统只能有 8 个类别、每类 9 门课」。
+MISSION_ID_RE = re.compile(r"mission[A-Z]-\d+")
 #: 完整匹配（`fullmatch` 用）
-MISSION_ID_FULL_RE = re.compile(r"mission[A-H]-\d")
+MISSION_ID_FULL_RE = re.compile(r"mission[A-Z]-\d+")
 #: 机号 / 人员编号
-AIRCRAFT_ID_RE = re.compile(r"AC\d{2}")
-PERSON_ID_RE = re.compile(r"P\d{2}")
+AIRCRAFT_ID_RE = re.compile(r"AC\d+")
+PERSON_ID_RE = re.compile(r"P\d+")
 
 #: v6 §5.2 的五条断词修复正则，**原样落地，顺序不得调整**。
 #: 第 5 条是 v6 新增：`aircraft.pdf` 的适配课目列在断词拼接后写作 `missionC1`

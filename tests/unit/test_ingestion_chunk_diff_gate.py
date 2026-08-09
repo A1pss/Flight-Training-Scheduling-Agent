@@ -88,6 +88,7 @@ def test_person_summary_mentions_unavailable_and_expiry() -> None:
     person = make_person(
         "P04",
         identity="成熟飞行员",
+        name="刘斌",
         quals=(("C", "单飞"),),
         expiries={"C": date(2026, 1, 7)},
         unavailable=(date(2026, 1, 5),),
@@ -243,6 +244,7 @@ def _changeset_with_x1():  # type: ignore[no-untyped-def]
     person = make_person(
         "P04",
         identity="成熟飞行员",
+        name="刘斌",
         quals=(("C", "单飞"),),
         expiries={"C": date(2026, 2, 7)},
         recurrent_due_raw="仪表等级(C类):2026-01-07",

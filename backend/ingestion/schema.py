@@ -24,11 +24,24 @@ DocumentClass = Literal[
     "未知",
 ]
 
-Identity = Literal["教员", "成熟飞行员", "学员"]
-QualLevel = Literal["教员", "单飞", "带飞"]
-AircraftType = Literal["JL-8", "JL-9"]
-MissionClass = Literal["A", "B", "C", "D", "E", "F", "G", "H"]
+#: 身份与资质等级**保留为已知集合**（§3.1.1 的机组编成判定式依赖它们），
+#: 但在契约层用 `str` 承载 —— 出现未登记取值时由校验层给出可操作的阻断说明，
+#: 而不是抛一个 pydantic ValidationError 让人看不懂。
+Identity = str
+QualLevel = str
+#: 机型**完全由上传数据决定**，不是枚举。JL-8 / JL-9 只是基准数据里恰好有的两种。
+#: 一致性由交叉校验保证：人员/课目/跑道引用的机型必须在机队里真实出现过。
+AircraftType = str
+#: 课目类别取自课目编号的字母位，A~Z 皆可（基准数据用到 A~H）
+MissionClass = str
 PrereqRefKind = Literal["mission", "class"]
+
+#: 编号格式（v6 §5.1 ④ 编号正则归一化）。**只固定前缀约定，不限位数** ——
+#: 写死两位就等于把机队上限钉在 99 架、人员上限钉在 99 人。
+PERSON_ID_PATTERN = r"^P\d+$"
+AIRCRAFT_ID_PATTERN = r"^AC\d+$"
+MISSION_ID_PATTERN = r"^mission[A-Z]-\d+$"
+RUNWAY_ID_PATTERN = r"^RWY-\d+$"
 
 
 class SourceFile(BaseModel):
@@ -47,24 +60,24 @@ class SourceFile(BaseModel):
 
 
 class IngestedQualification(BaseModel):
-    """课目类别资质。`expiry_date` 只有刘斌 C 类非空。"""
+    """课目类别资质。`expiry_date` 为空表示该资质不设到期日。"""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    person_id: str = Field(pattern=r"^P\d{2}$")
-    mission_class: MissionClass
-    level: QualLevel
+    person_id: str = Field(pattern=PERSON_ID_PATTERN)
+    mission_class: MissionClass = Field(pattern=r"^[A-Z]$")
+    level: QualLevel = Field(min_length=1)
     expiry_date: date | None = None
 
 
 class IngestedPerson(BaseModel):
-    """`personnel.pdf` 的一名飞行人员（总表 + 明细表合并后的形态）。"""
+    """一名飞行人员（人员档案的总表 + 明细表合并后的形态）。"""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    person_id: str = Field(pattern=r"^P\d{2}$")
+    person_id: str = Field(pattern=PERSON_ID_PATTERN)
     name: str = Field(min_length=1)
-    identity: Identity
+    identity: Identity = Field(min_length=1)
     aircraft_types: tuple[AircraftType, ...]
     completed_missions: tuple[str, ...] = ()
     unavailable_dates: tuple[date, ...] = ()
@@ -85,7 +98,7 @@ class IngestedMaintenance(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    aircraft_id: str = Field(pattern=r"^AC\d{2}$")
+    aircraft_id: str = Field(pattern=AIRCRAFT_ID_PATTERN)
     start_ts: datetime
     end_ts: datetime
     kind: str = "定检维护"
@@ -99,12 +112,12 @@ class IngestedMaintenance(BaseModel):
 
 
 class IngestedAircraft(BaseModel):
-    """`aircraft.pdf` 的一架飞机。"""
+    """一架飞机。"""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    aircraft_id: str = Field(pattern=r"^AC\d{2}$")
-    aircraft_type: AircraftType
+    aircraft_id: str = Field(pattern=AIRCRAFT_ID_PATTERN)
+    aircraft_type: AircraftType = Field(min_length=1)
     seats: int = Field(gt=0)
     daily_window_start: time
     daily_window_end: time
@@ -120,14 +133,14 @@ class IngestedAircraft(BaseModel):
 
 
 class IngestedAirspace(BaseModel):
-    """`aircraft.pdf` 二、空域/航线资源与容量。`capacity` 是硬约束（S-10）。"""
+    """空域/航线及其同时段容量。`capacity` 是硬约束（S-10）。"""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    airspace_id: str = Field(min_length=1, max_length=8)
+    airspace_id: str = Field(min_length=1, max_length=16)
     name: str = Field(min_length=1)
     capacity: int = Field(ge=1)
-    #: 「绑定课目」列 —— 与 missions.pdf 的「空域/航线」列必须互相印证
+    #: 「绑定课目」列 —— 与课目表的「空域/航线」列必须互相印证
     bound_missions: tuple[str, ...] = ()
 
 
@@ -141,20 +154,20 @@ class IngestedPrereq(BaseModel):
 
 
 class IngestedMission(BaseModel):
-    """`missions.pdf` 的一门课目。"""
+    """一门课目。"""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    mission_id: str = Field(pattern=r"^mission[A-H]-\d$")
+    mission_id: str = Field(pattern=MISSION_ID_PATTERN)
     name: str = Field(min_length=1)
-    mission_class: MissionClass
+    mission_class: MissionClass = Field(pattern=r"^[A-Z]$")
     kind: str = Field(min_length=1)
     duration_minutes: int = Field(gt=0)
     cycle_weeks: int = Field(gt=0)
     freq_days: int = Field(gt=0)
-    #: A-1/A-2 的「（每周必飞）」标记 —— 约束3 的适用面
+    #: 「（每周必飞）」标记 —— 约束3 的适用面（基准数据里是 A-1/A-2）
     weekly_required: bool = False
-    #: 「带飞」列。**A-1/A-2 为否（D-1），学员 A 类单飞**
+    #: 「带飞」列。基准数据里 A-1/A-2 为否（D-1）→ 学员 A 类单飞
     dual_required: bool
     prereqs: tuple[IngestedPrereq, ...] = ()
     aircraft_types: tuple[AircraftType, ...]
@@ -178,13 +191,14 @@ class IngestedMission(BaseModel):
 class IngestedRunway(BaseModel):
     """跑道（v6 §1.3.5 / S-05）。
 
-    **来源不是 PDF** —— 四份 PDF 都没有跑道表。权威来源是
-    `rules/semantics.yaml` 的 S-05 开关，由业务方裁定。
+    **跑道不来自上传文件，而来自 `rules/semantics.yaml` 的 S-05 开关。**
+    业务方 2026-08-10 确认：跑道数据基本确定、不随每次上传变化，维持配置形态。
+    换机场时改 S-05 即可，不需要改代码。
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    runway_id: str = Field(pattern=r"^RWY-\d$")
+    runway_id: str = Field(pattern=RUNWAY_ID_PATTERN)
     name: str = Field(min_length=1)
     aircraft_types: tuple[AircraftType, ...]
 
@@ -197,7 +211,7 @@ class IngestedRunway(BaseModel):
 
 
 class IngestedRule(BaseModel):
-    """`rules.pdf` 的一条约束条文（切分单元，**禁止拆分**，v6 §5.3）。"""
+    """一条规则条文（切分单元，**禁止拆分**，v6 §5.3）。"""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 

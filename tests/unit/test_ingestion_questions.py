@@ -240,6 +240,7 @@ def test_questions_and_conflicts_are_independent_gates() -> None:
     person = make_person(
         "P04",
         identity="成熟飞行员",
+        name="刘斌",
         quals=(("C", "单飞"),),
         expiries={"C": date(2026, 2, 7)},
         recurrent_due_raw="仪表等级(C类):2026-01-07",

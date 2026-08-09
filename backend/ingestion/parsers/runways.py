@@ -67,7 +67,7 @@ def parse_runways_from_semantics(path: Path | None = None) -> tuple[IngestedRunw
             IngestedRunway(
                 runway_id=str(runway_id),
                 name=RUNWAY_NAMES.get(str(runway_id), str(runway_id)),
-                aircraft_types=tuple(str(t) for t in types),  # type: ignore[misc]
+                aircraft_types=tuple(str(t) for t in types),
             )
         )
     return tuple(sorted(parsed, key=lambda r: r.runway_id))

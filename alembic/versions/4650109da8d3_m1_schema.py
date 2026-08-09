@@ -17,12 +17,18 @@
 LangGraph 的 checkpoint 表不在本迁移内 —— 它们由 `PostgresSaver` 自带的内部
 迁移负责，见下一个 revision。
 
+**值域刻意放宽，不把基准数据当系统上限**：编号只固定前缀约定不限位数
+（`^P[0-9]+$` / `^AC[0-9]+$` / `^mission[A-Z]-[0-9]+$` / `^RWY-[0-9]+$`），
+机型不设 CHECK（由上传的飞机资源文件决定），课目类别放宽到 `^[A-Z]$`。
+仍设枚举 CHECK 的只有 `identity` 与 `level` —— 它们驱动 §3.1.1 的机组编成
+判定式，新增取值意味着新的编成规则，必须先有业务方裁决。
+
 **回滚**：`downgrade()` 按外键依赖反序 drop 全部 27 张表，已实测
-`upgrade → downgrade → upgrade` 往返干净（见 M1 收工报告）。
+`upgrade → downgrade → upgrade` 往返干净。
 
 Revision ID: 4650109da8d3
 Revises:
-Create Date: 2026-08-07 23:20:01.029246+08:00
+Create Date: 2026-08-10
 """
 
 from __future__ import annotations
@@ -213,10 +219,7 @@ def upgrade() -> None:
         sa.Column("daily_window_end", sa.Time(), nullable=False),
         sa.Column("turnaround_minutes", sa.Integer(), nullable=False),
         sa.CheckConstraint(
-            "aircraft_id ~ '^AC[0-9]{2}$'", name=op.f("ck_aircraft_aircraft_id_format")
-        ),
-        sa.CheckConstraint(
-            "aircraft_type IN ('JL-8', 'JL-9')", name=op.f("ck_aircraft_aircraft_type_enum")
+            "aircraft_id ~ '^AC[0-9]+$'", name=op.f("ck_aircraft_aircraft_id_format")
         ),
         sa.CheckConstraint(
             "daily_window_start < daily_window_end",
@@ -236,7 +239,7 @@ def upgrade() -> None:
     )
     op.create_table(
         "airspaces",
-        sa.Column("airspace_id", sa.String(length=8), nullable=False),
+        sa.Column("airspace_id", sa.String(length=16), nullable=False),
         sa.Column("snapshot_id", sa.String(length=64), nullable=False),
         sa.Column("name", sa.String(length=64), nullable=False),
         sa.Column("capacity", sa.Integer(), nullable=False),
@@ -259,7 +262,7 @@ def upgrade() -> None:
             "identity IN ('教员', '成熟飞行员', '学员')",
             name=op.f("ck_persons_person_identity_enum"),
         ),
-        sa.CheckConstraint("person_id ~ '^P[0-9]{2}$'", name=op.f("ck_persons_person_id_format")),
+        sa.CheckConstraint("person_id ~ '^P[0-9]+$'", name=op.f("ck_persons_person_id_format")),
         sa.ForeignKeyConstraint(
             ["snapshot_id"],
             ["data_snapshots.snapshot_id"],
@@ -325,7 +328,7 @@ def upgrade() -> None:
         sa.Column("runway_id", sa.String(length=8), nullable=False),
         sa.Column("snapshot_id", sa.String(length=64), nullable=False),
         sa.Column("name", sa.String(length=32), nullable=False),
-        sa.CheckConstraint("runway_id ~ '^RWY-[0-9]$'", name=op.f("ck_runways_runway_id_format")),
+        sa.CheckConstraint("runway_id ~ '^RWY-[0-9]+$'", name=op.f("ck_runways_runway_id_format")),
         sa.ForeignKeyConstraint(
             ["snapshot_id"],
             ["data_snapshots.snapshot_id"],
@@ -385,14 +388,13 @@ def upgrade() -> None:
         sa.Column("freq_days", sa.Integer(), nullable=False),
         sa.Column("weekly_required", sa.Boolean(), nullable=False),
         sa.Column("dual_required", sa.Boolean(), nullable=False),
-        sa.Column("airspace_id", sa.String(length=8), nullable=False),
+        sa.Column("airspace_id", sa.String(length=16), nullable=False),
         sa.Column("frequency_text", sa.Text(), nullable=False),
         sa.CheckConstraint(
-            "mission_class IN ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H')",
-            name=op.f("ck_missions_mission_class_enum"),
+            "mission_class ~ '^[A-Z]$'", name=op.f("ck_missions_mission_class_format")
         ),
         sa.CheckConstraint(
-            "mission_id ~ '^mission[A-H]-[0-9]$'", name=op.f("ck_missions_mission_id_format")
+            "mission_id ~ '^mission[A-Z]-[0-9]+$'", name=op.f("ck_missions_mission_id_format")
         ),
         sa.CheckConstraint(
             "cycle_weeks > 0", name=op.f("ck_missions_mission_cycle_weeks_positive")
@@ -420,10 +422,6 @@ def upgrade() -> None:
         sa.Column("person_id", sa.String(length=8), nullable=False),
         sa.Column("snapshot_id", sa.String(length=64), nullable=False),
         sa.Column("aircraft_type", sa.String(length=8), nullable=False),
-        sa.CheckConstraint(
-            "aircraft_type IN ('JL-8', 'JL-9')",
-            name=op.f("ck_person_aircraft_types_person_aircraft_type_enum"),
-        ),
         sa.ForeignKeyConstraint(
             ["person_id", "snapshot_id"],
             ["persons.person_id", "persons.snapshot_id"],
@@ -446,8 +444,8 @@ def upgrade() -> None:
             name=op.f("ck_person_qualifications_qualification_level_enum"),
         ),
         sa.CheckConstraint(
-            "mission_class IN ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H')",
-            name=op.f("ck_person_qualifications_qualification_class_enum"),
+            "mission_class ~ '^[A-Z]$'",
+            name=op.f("ck_person_qualifications_qualification_class_format"),
         ),
         sa.ForeignKeyConstraint(
             ["person_id", "snapshot_id"],
@@ -480,10 +478,6 @@ def upgrade() -> None:
         sa.Column("runway_id", sa.String(length=8), nullable=False),
         sa.Column("snapshot_id", sa.String(length=64), nullable=False),
         sa.Column("aircraft_type", sa.String(length=8), nullable=False),
-        sa.CheckConstraint(
-            "aircraft_type IN ('JL-8', 'JL-9')",
-            name=op.f("ck_runway_aircraft_types_runway_aircraft_type_enum"),
-        ),
         sa.ForeignKeyConstraint(
             ["runway_id", "snapshot_id"],
             ["runways.runway_id", "runways.snapshot_id"],
@@ -586,10 +580,6 @@ def upgrade() -> None:
         sa.Column("mission_id", sa.String(length=16), nullable=False),
         sa.Column("snapshot_id", sa.String(length=64), nullable=False),
         sa.Column("aircraft_type", sa.String(length=8), nullable=False),
-        sa.CheckConstraint(
-            "aircraft_type IN ('JL-8', 'JL-9')",
-            name=op.f("ck_mission_aircraft_types_mission_aircraft_type_enum"),
-        ),
         sa.ForeignKeyConstraint(
             ["mission_id", "snapshot_id"],
             ["missions.mission_id", "missions.snapshot_id"],

@@ -24,6 +24,7 @@ import yaml
 from backend.core.config import PROJECT_ROOT, get_settings
 from backend.core.db import session_scope
 from backend.core.logging import configure_logging, get_logger
+from backend.ingestion.conflicts import BASELINE_WEEK
 from backend.ingestion.gate import (
     ConflictResolution,
     baseline_answers,
@@ -33,6 +34,7 @@ from backend.ingestion.gate import (
 )
 from backend.ingestion.pipeline import commit, prepare, snapshot_manifest
 from backend.ingestion.questions import QID_CYCLE_START, QuestionAnswer
+from backend.ingestion.validate import BASELINE_ENTITY_COUNTS
 
 logger = get_logger(__name__)
 
@@ -97,7 +99,16 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("需要给出文件路径，或使用 --baseline")
 
     with session_scope() as session:
-        prepared = prepare(paths, session=session)
+        # `--baseline` 才开基准回归护栏（规模核对 + X4 发布日期比对）。
+        # 用户上传路径**不设**这两项：有多少人、多少飞机是用户的事；
+        # 排班周由排班请求给出，摄取时无从得知（v6 §1.3 是基准数据的描述，
+        # 不是系统上限）。
+        prepared = prepare(
+            paths,
+            session=session,
+            expected_counts=BASELINE_ENTITY_COUNTS if args.baseline else None,
+            reference_period=BASELINE_WEEK if args.baseline else None,
+        )
         manifest = snapshot_manifest(prepared)
 
         if args.dry_run:
@@ -135,12 +146,15 @@ def main(argv: list[str] | None = None) -> int:
         if not decision.approved:
             # 只是「有问题没答」→ 把问题原样打印给用户，这不是报错，是提问
             if decision.pending_questions:
-                logger.info("需要用户回答后才能继续", count=len(decision.pending_questions))
+                logger.info("需要用户补充后才能继续", count=len(decision.pending_questions))
                 print(format_questions(decision.pending_questions))
-                print(
-                    "\n请用 --cycle-start YYYY-MM-DD 回答，"
-                    "或在课目文件里补上「课程开始日期」列后重新上传。"
-                )
+                if any(q.resolution == "upload" for q in decision.pending_questions):
+                    print("\n请补齐上述文件后重新上传。")
+                else:
+                    print(
+                        "\n请用 --cycle-start YYYY-MM-DD 回答，"
+                        "或在课目文件里补上「课程开始日期」列后重新上传。"
+                    )
                 return 3
             logger.error("人工确认门禁未通过", reasons=decision.reasons)
             _emit(
