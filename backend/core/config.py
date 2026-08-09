@@ -110,6 +110,11 @@ class Settings(BaseSettings):
     CHROMA_PATH: Path = PROJECT_ROOT / ".data" / "chroma"
     RRF_K: int = 60
     RERANK_TOP_K: int = 5
+    #: 嵌入实现。`bge` = 真模型（.data/models/bge-m3）；`hash` = 确定性哈希嵌入，
+    #: 给 CI 用（那里没有 2.2GB 权重）。检索质量指标一律用 `bge` 跑。
+    EMBED_PROVIDER: Literal["bge", "hash"] = "bge"
+    #: **摄取期固定 CPU**：GPU 3 上常驻 Ollama，语料极小没必要抢显存（M1 隔离方案）
+    EMBED_DEVICE: str = "cpu"
 
     # ── 摄取（§5 / §11.5）──────────────────────────────────────────
     PADDLEOCR_HOME: Path = PROJECT_ROOT / ".data" / "paddleocr"
