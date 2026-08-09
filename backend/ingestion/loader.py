@@ -13,7 +13,7 @@
 2. **用户回答**：文件没给时，摄取会生成一条 `OpenQuestion`（`Q_cycle_start`）
    并**由人工确认门禁拒绝放行**，把问题抛给用户；用户答了才继续
 
-两个都没有 → :func:`resolve_cycle_start` 抛 `IngestionError`，绝不编日期。
+两个都没有 → :func:`resolve_cycle_start` 抛 `FTS-1004`，绝不编日期。
 理由：`cycle_start` 是 `training_progress` 主键的一部分（v6 §6.3），填错要迁移
 全表；铁律 5「不假设」与铁律 10「有疑问就问」在这里是同一件事。
 
@@ -43,7 +43,7 @@ from typing import Any
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from backend.core.errors import IngestionError
+from backend.core.errors import RequiredInputMissingError
 from backend.core.logging import get_logger
 from backend.ingestion.diff import content_sha256, normalize_facts
 from backend.ingestion.schema import IngestedFacts, IngestedMission, SourceFile
@@ -78,13 +78,13 @@ def resolve_cycle_start(mission: IngestedMission, answered: date | None) -> date
     2. **用户回答**：`OpenQuestion` `Q_cycle_start` 的答案（对话/命令行/UI）
 
     两个都没有就是 bug —— 人工确认门禁本该在这之前就把问题抛给用户并拒绝放行，
-    走到这里说明有人绕过了门禁。抛 `IngestionError` 而不是编一个日期。
+    走到这里说明有人绕过了门禁。抛 `FTS-1004` 而不是编一个日期。
     """
     if mission.cycle_start is not None:
         return mission.cycle_start
     if answered is not None:
         return answered
-    raise IngestionError(
+    raise RequiredInputMissingError(
         f"{mission.mission_id} 的课程周期起点既不在文件里，也没有用户回答",
         details={"mission_id": mission.mission_id},
         suggestions=[

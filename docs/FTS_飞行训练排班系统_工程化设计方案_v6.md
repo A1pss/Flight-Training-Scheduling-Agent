@@ -182,6 +182,17 @@ S-11:
 
 本节把四份 PDF 的内容整理为求解器可直接消费的形态，供 M1/M2 窗口使用。**所有数值逐字来自 `data/origin/*.pdf`，冲突处按 §1.2 裁定。**
 
+> ⚠️ **本节是「基准数据集长什么样」的描述，不是「系统只能处理这么大」的规格。**
+>
+> 生产形态是**用户上传自己的人员/飞机/课目/空域文件**，`data/origin/` 的四份 PDF
+> 只是数据模板与基础测试样本。所以下面这些数字 —— 8 人、8 机、12 课目、6 空域、
+> 2 跑道，以及 `P01`~`P08`、`AC10`~`AC95`、`JL-8`/`JL-9`、类别 A~H 这些具体取值
+> —— **一个都不许写成代码里的常量或校验上限**。
+>
+> 它们唯一的合法用途是**基准回归护栏**：确认那四份 PDF 没被改坏、抽取没漏行
+> （落点 `backend.ingestion.validate.BASELINE_ENTITY_COUNTS`，默认不启用，
+> 只有基准回归路径显式传入）。具体约束见 §5.1.1。
+
 #### 1.3.1 人员（8 人）
 
 | 编号 | 姓名 | 身份 | 机型资质 | 已完成课目 | 类别资质/等级 | 复训到期 | 不可用日期 |
@@ -931,13 +942,48 @@ def verify_workbook(path: Path, plan: SchedulePlan) -> SchemaCheckReport:
    │     结构化表格 → 直接映射 Pydantic（不过 LLM）
    │     自由文本   → LLM 受约束解码（Ollama format=JSON Schema）→ Pydantic
    ├─ 校验层
+   │     ★ 必需数据齐全性（人员/飞机/课目/空域）→ 缺哪类就产出补传请求并短路
    │     Pydantic + 业务规则（引用完整性、值域、时间逻辑）+ 后置断言
    │     ★ 源内值冲突检出（§5.5）→ FTS-2001
    │     ★ 机组编成一致性断言（§3.1.1）→ FTS-2001
-   ├─ Diff 层：与当前 snapshot 对比，生成 ChangeSet（新增/修改/删除/冲突）
+   ├─ Diff 层：与当前 snapshot 对比，生成 ChangeSet
+   │     （新增/修改/删除/**冲突**/**待澄清问题**）
    ├─ 【人工确认】硬性门禁：任何数据变更必须人工批准
+   │     冲突要逐条裁决、问题要逐条回答，两者是**互相独立的两道闸**
    └─ 落库：PG(事实) → Chroma(向量化) → 新 snapshot_id
 ```
+
+#### 5.1.1 缺输入时**提问**，不猜、不兜底、不拿旧数据顶替
+
+**系统按用户上传的内容排班，`data/origin/` 的基准数据只是数据模板与基础测试。**
+由此派生三条不可违背的实现约束：
+
+1. **实体规模由数据决定。** §1.3 的「8 人 / 8 机 / 12 课目 / 6 空域 / 2 跑道」
+   是**基准数据集的描述，不是系统上限**。它只能作为基准回归护栏（确认那四份 PDF
+   没被改坏），**绝不能跑在用户上传路径上**。
+2. **编号与机型由数据决定。** 编号只固定前缀约定、不限位数
+   （`^P\d+$` / `^AC\d+$` / `^mission[A-Z]-\d+$` / `^RWY-\d+$`）；机型不是枚举，
+   机队里出现什么就是什么，一致性靠交叉校验（人员/课目/跑道引用的机型必须在机队里
+   真实出现过）。**唯一保留已知集合的是 `identity` 与 `level`** —— §3.1.1 的机组
+   编成判定式直接读它们，新增取值意味着新的编成规则，必须先有业务方裁决；此时给出
+   「该找谁做什么决定」的可操作阻断，而不是一个看不懂的类型错误。
+3. **缺数据就问，绝不顶替。** 少传整整一类必需数据时，产出
+   `resolution="upload"` 的待澄清问题（「未检测到课目标准，请补传」），
+   **并短路后续校验** —— 否则引用完整性会因为每个人的已完成课目都指向不存在的
+   课目而吐出一屏外键错误，而真正的原因只有一句话。这类问题**给什么值都无法满足**，
+   只能补传文件。
+
+必需实体类 = **人员 / 飞机 / 课目 / 空域**。
+**跑道不在其中**：业务方 2026-08-10 确认跑道数据基本确定、不随每次上传变化，
+维持 `rules/semantics.yaml` S-05 的配置形态（换机场改 S-05，不改代码）。
+**规则条文也不在其中**：排班约束永远来自 `rules/` 下的版本化文件（§5.4 第 3 层），
+上传的规则原文只进 Chroma 供检索与解释引用。
+
+> **「冲突」与「问题」是两个概念，不要混**：
+> 冲突（`Conflict`）= 两个来源对同一件事说法不一致，两侧取值都在，要人**选一个**；
+> 问题（`OpenQuestion`）= 排班必需的值**根本没人提供**，没有选项，要人**直接给**
+> 或**补传文件**。两者都进 ChangeSet、都阻断落库、都要人工门禁放行，但形态与
+> 处置完全不同。
 
 ### 5.2 换行断词修复与后置断言
 
@@ -975,13 +1021,29 @@ def assert_no_orphan_tokens(records: list[dict]) -> None:
 
 | 文档类型 | 切分单元 | 大小 | Overlap | 元数据 | 理由 |
 |---|---|---|---|---|---|
-| 规则条文 | **单条约束**（正则 `约束(\d+)（(.+?)）【(.+?)】`） | 不限，**禁止拆分** | 0 | `rule_id, hard_soft, ruleset_version` | 半条规则的检索结果是危险的 |
+| 规则条文 | **单条约束**（正则 `约束(\d+)[（(](.+?)[）)]【(.+?)】`） | 不限，**禁止拆分** | 0 | `rule_id, hard_soft, ruleset_version` | 半条规则的检索结果是危险的 |
 | 人员/飞机/课目表 | **单行记录 → 生成自然语言摘要句** | ~120 字 | 0 | `entity_type, entity_id, snapshot_id, field_map` | 表格直接切分会丢表头对应关系。生成「何超（P08），学员，机型资质 JL-8，已完成 missionA-1，A 类单飞资质、B/C/F 类带飞资质，无不可用日期」这类摘要句，语义命中率高得多；`field_map` 让命中后能一键跳回 PG 取权威值 |
 | 情况文件（自由文本） | 语义段落（中文句号/换行 + 长度上限） | 300~500 字 | 80 字 | `doc_id, page, section, event_date` | |
 | 历史排班报告 | 按周 + 按小节 | 400 字 | 100 字 | `week, plan_version, status` | |
 | 会议纪要/通知 | 递归字符切分 | 400 字 | 80 字 | `doc_id, page` | 兜底 |
 
 > **「表格行 → 自然语言摘要」是检索质量的关键技巧**，同时保留 `field_map` 元数据回指结构化记录。
+
+**五种策略 → 四个 collection 的落点**（M1 实现，`backend/memory/collections.py`）：
+
+| 策略 | collection |
+|---|---|
+| 规则条文 | `rule_texts` |
+| 人员/飞机/课目表摘要句 | `entity_summaries` |
+| 历史排班报告 | `historical_reports` |
+| 情况文件、会议纪要/通知 | `situation_docs` |
+
+`situation_docs` 是 §6.1 三分法之外补的第四个：后两种切分策略的 chunk 总得有落点，
+塞进 `historical_reports` 会污染那一路召回。
+
+> **规则条文的切分正则接受全角与半角括号**（`[（(]` / `[）)]`）。原始 `rules.pdf`
+> 用的是半角，而修复层的全半角归一化统一折向半角；两种宽度都接受只放宽匹配面，
+> **切分单元仍然是「单条约束」，14 条一条不差**。
 
 ### 5.4 提示词注入防护
 
@@ -1013,24 +1075,44 @@ def assert_no_orphan_tokens(records: list[dict]) -> None:
 | 存储 | 承载 | 为什么是它 |
 |---|---|---|
 | **PostgreSQL 16**（:5433，裸装独立实例） | 事实唯一真源：人员、飞机、课目、空域、跑道、规则版本、快照、排班计划、架次、训练进度、审计日志、LangGraph Checkpoint、TraceEvent | 排班必须事务化、外键强一致、可审计。递归 CTE 同时承担先修链查询 |
-| **Chroma** | 文档向量：规则原文、实体摘要句、历史报告 | 嵌入式部署、离线友好 |
+| **Chroma** | 文档向量：规则原文（`rule_texts`）、实体摘要句（`entity_summaries`）、历史报告（`historical_reports`）、情况文件与通知（`situation_docs`） | 嵌入式部署、离线友好 |
 | **Redis 7**（:6380，裸装） | RQ 队列、分布式锁 | 单机部署下运维面最小 |
 
 **先修链用递归 CTE 而非图数据库**：
 
 ```sql
 WITH RECURSIVE prereq_chain AS (
-    SELECT mission_id, prereq_ref, 1 AS depth, ARRAY[mission_id] AS path
-    FROM mission_prereq WHERE mission_id = :target
+    SELECT mission_id, prereq_ref, ref_kind, 1 AS depth,
+           ARRAY[mission_id::text] AS path
+    FROM mission_prereq
+    WHERE mission_id = :target AND snapshot_id = :snapshot_id
   UNION ALL
-    SELECT p.mission_id, p.prereq_ref, c.depth + 1, c.path || p.mission_id
+    SELECT p.mission_id, p.prereq_ref, p.ref_kind, c.depth + 1,
+           c.path || p.mission_id::text
     FROM mission_prereq p JOIN prereq_chain c ON p.mission_id = c.prereq_ref
-    WHERE c.depth < 8 AND NOT p.mission_id = ANY(c.path)     -- 防环
+    WHERE p.snapshot_id = :snapshot_id
+      AND c.depth < 8                                        -- 限深
+      AND NOT p.mission_id::text = ANY(c.path)               -- 防环
 )
-SELECT * FROM prereq_chain;
+SELECT * FROM prereq_chain ORDER BY depth, mission_id, prereq_ref;
 ```
 
-`mission_prereq` 的 `prereq_ref` 可以是**课目编号**（`missionC-1`）或**类别**（`A类`）。类别引用按 S-01 展开为「该类全部课目」，展开在 `compile_spec_node` 内完成，不在 SQL 里做。
+> ⚠️ **两处不是风格，是「不写就跑不起来」**（M1 实测，落点 `backend/retrieval/prereq_cte.py`）：
+>
+> 1. **`path` 必须显式 `::text`**。`mission_id` 是 `VARCHAR(16)`，`ARRAY[mission_id]`
+>    在非递归项的类型是 `varchar(16)[]`，递归项拼接后退化为 `varchar[]`，PostgreSQL
+>    直接报错：`recursive query "prereq_chain" column N has type character varying(16)[]
+>    in non-recursive term but type character varying[] overall`。
+> 2. **必须带 `snapshot_id` 过滤**。事实表按 `(自然主键, snapshot_id)` 复合主键建模，
+>    不过滤会跨快照连边，查出一条横跨两个数据版本的「先修链」。
+
+`mission_prereq` 的 `prereq_ref` 可以是**课目编号**（`missionC-1`）或**类别**（`A类`）。类别引用按 S-01 展开为「该类全部课目」，展开在 `compile_spec_node` 内完成，不在 SQL 里做 —— 所以上面这个 CTE 走到类别引用那一跳就停住，这是预期行为。
+
+> **S-01 的类展开只允许有一份实现**：`backend/retrieval/prereq_cte.py` 的
+> `expand_class_ref` / `expand_prereq_refs` / `evaluate_prereq`。`compile_spec_node`
+> 与摄取侧物化 `training_progress` 都调它，**不许各写一份** —— 同一个语义两份实现
+> 必然漂移。这与铁律 2 的 solver/validator 隔离不冲突：那条禁令针对「约束表达代码」，
+> 先修链展开是数据层图遍历，且不属于 `validator/` 与 `solver/` 任何一侧。
 
 当前先修链最深为 2 跳（`missionE-2 ← missionE-1 ← C类 ← {C-1, C-2}` 展开后为 2 跳，`missionG-1 ← {A类, F类}` 为 1 跳），CTE 性能与表达力完全够用。**重新评估引入图数据库的触发条件**：人员规模 >100 或先修链深度 >4 跳。
 
@@ -1067,6 +1149,33 @@ CREATE TABLE training_progress (
 ```
 
 **S-11 在本表的落点**：刘斌（P04）C 类到期日 2026-01-07 → 排班当日由 `compile_spec_node` 写入 `is_recurrent=TRUE, recurrent_since='2026-01-08'`，`last_done_date` 保持其上次实际执行日。基准周的复训窗口 `[2026-01-08, 2026-01-14]` 跨出 W02，**本周不强制安排**，但锚点必须落库，使 W03 排班能正确接续。
+
+#### 6.3.1 `cycle_start` 从哪来（S-14，业务方 2026-08-09/08-10 裁定）
+
+`cycle_start` 是主键的一部分，填错要迁移全表。它**只有两个来源，没有默认值**：
+
+| 优先级 | 来源 | 说明 |
+|---|---|---|
+| ① | **课目文件的「课程开始日期」列** | 可选列，逐行读，**各门课目起点可以不同**。列名别名：课程开始日期 / 课程起始日期 / 周期起点 / 周期开始日期 / 开始日期 / 起始日期。上传的文件带了这一列，系统直接用，**不需要改任何代码** |
+| ② | **用户回答** | 文件没给时，摄取生成 `OpenQuestion`（`Q_cycle_start`），**人工确认门禁拒绝放行**并把问题抛给用户；用户答了才继续 |
+| — | ~~兜底默认值~~ | **刻意不存在。** 配置项里也没有 —— 加一个默认值就等于给「悄悄填一个日期」开后门 |
+
+两者都没有时 `resolve_cycle_start()` 抛 `FTS-1004`，**绝不编造日期**。这是铁律 5「不假设」与铁律 10「有疑问就问」在代码层的落点。
+
+> 基准数据集的四份 PDF 确实没有这一列，其 `cycle_start = 2026-01-05` 来自
+> **业务方 2026-08-09 的一条具名回答记录**（`questions.BASELINE_ANSWERS`），
+> 不是代码常量。换一批数据、冒出没登记过的问题，门禁照样会问。
+
+#### 6.3.2 主键不含 `snapshot_id` 的后果 —— 本表是**物化视图**
+
+上面的主键是 `(person_id, mission_id, cycle_start)`，**不含 `snapshot_id`**（其余事实表都是 `(自然主键, snapshot_id)` 复合主键）。直接后果：
+
+- 同一 `(人, 课目, 周期起点)` 在**全库唯一**，两个快照没法各存一份
+- 所以本表只保留**最新一次物化的结果**，物化时必须按**主键**清旧行，
+  只按 `snapshot_id` 清会在「内容变了 → snapshot_id 变了 → 主键没变」时撞唯一约束（M1 实测踩过）
+- `compile_spec_node` 每次排班都会重算并覆盖 `prereq_met` / `blocked_reason` / `is_recurrent` / `recurrent_since` —— **本表不是独立真源**，真源是 `person_completed_missions` 等事实表
+
+若将来需要多快照并存的进度表，得先改本节的主键定义。
 
 **单周排班 + 跨周锚点**：既避免 12~20 周一次性建模的规模爆炸，又不丢周期完整性。系统另提供**只读的全周期进度推演**（不参与求解）：按当前速度外推，预测各学员能否按期结业。
 
@@ -1875,6 +1984,7 @@ class ErrorResponse(BaseModel):
 | FTS-1001 | 规则文件解析失败 | 指出失败条文编号与原文片段；保留旧规则版本继续服务，拒绝启用新版本 |
 | FTS-1002 | 规则语义歧义未确认 | 列出未确认的 `semantics.yaml` 条目，阻断排班。**S-01~S-13 已全部裁定，本码在当前版本下不应触发**；触发即意味着有人新增了未裁定的开关 |
 | FTS-1003 | PDF 抽取修复层后置断言失败 | 列出残缺 token 与所在页，阻断入库 |
+| **FTS-1004** | **排班必需的输入缺失，需人工补充**（§5.1.1） | 阻断，并把**待澄清问题**原样交给用户：`resolution="answer"` 的给一个值即可（如课程周期起点），`resolution="upload"` 的必须补传整份文件。**不设默认值、不猜、不拿上一版快照顶替**。用户补齐后重跑即可，`retryable=True` |
 | FTS-2001 | **数据引用完整性失败，或同一数据源内部的值冲突** | 指出孤立外键（如课目引用了不存在的空域），或冲突的两侧取值（如 §5.5 的 X1/X3）。上报人工确认环节，按 §5.5 裁定表选定 |
 | FTS-3001 | 约束不可满足 INFEASIBLE | 返回最小冲突集 + 归因 + 松弛提案（§3.9） |
 | FTS-3002 | 求解超时 UNKNOWN | **明确区分于 3001**；返回当前可行解（若有）并标注非最优，提供「延长时限」选项 |

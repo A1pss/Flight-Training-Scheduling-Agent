@@ -1,6 +1,6 @@
 """FTS 错误码与错误契约（v6 §9.3）。
 
-v6 §9.3 定义了 13 个错误码，本模块一个不少地登记，并为每个码固化
+v6 §9.3 定义了 14 个错误码，本模块一个不少地登记，并为每个码固化
 「默认严重度 / 所属阶段 / 是否可重试」三个属性——这三者在 v6 的表格里是
 散落在「行为」列的散文，落到代码里必须是可判定的字段。
 
@@ -21,12 +21,13 @@ Stage = Literal["ingest", "intent", "constraint", "solve", "validate", "export"]
 
 
 class ErrorCode(StrEnum):
-    """v6 §9.3 的 13 个错误码。枚举值即对外契约中的 `code` 字段字面量。"""
+    """v6 §9.3 的 14 个错误码。枚举值即对外契约中的 `code` 字段字面量。"""
 
     # ── 1xxx 规则与摄取 ───────────────────────────────────────────────
     RULE_PARSE_FAILED = "FTS-1001"
     RULE_SEMANTICS_UNCONFIRMED = "FTS-1002"
     PDF_REPAIR_ASSERTION_FAILED = "FTS-1003"
+    REQUIRED_INPUT_MISSING = "FTS-1004"
 
     # ── 2xxx 数据一致性 ──────────────────────────────────────────────
     DATA_INTEGRITY_OR_CONFLICT = "FTS-2001"
@@ -92,6 +93,19 @@ ERROR_REGISTRY: Final[dict[ErrorCode, ErrorSpec]] = {
             severity="ERROR",
             stage="ingest",
             retryable=False,
+        ),
+        ErrorSpec(
+            code=ErrorCode.REQUIRED_INPUT_MISSING,
+            scenario="排班必需的输入缺失，需人工补充（v6 §5.1.1 / §9.3）",
+            behavior=(
+                "阻断，并把待澄清问题原样交给用户："
+                "resolution=answer 的给一个值即可（如课程周期起点），"
+                "resolution=upload 的必须补传整份文件。"
+                "不设默认值、不猜、不拿上一版快照顶替；用户补齐后重跑即可"
+            ),
+            severity="WARN",
+            stage="ingest",
+            retryable=True,
         ),
         ErrorSpec(
             code=ErrorCode.DATA_INTEGRITY_OR_CONFLICT,
@@ -262,6 +276,17 @@ class IngestionError(FTSError):
     code = ErrorCode.PDF_REPAIR_ASSERTION_FAILED
 
 
+class RequiredInputMissingError(FTSError):
+    """排班必需的输入没人提供（v6 §5.1.1）。
+
+    与 :class:`IngestionError` 的区别很实在：那个是「数据脏了，去改源文件」，
+    这个是「数据没给全，去补一个值或补一份文件」—— 前者不可重试、要改数据，
+    后者可重试、等用户补充。混成一个码，前端配色和重试策略都没法分。
+    """
+
+    code = ErrorCode.REQUIRED_INPUT_MISSING
+
+
 class DataConflictError(FTSError):
     """引用完整性失败，或同一数据源内部的值冲突（v6 扩展口径）。"""
 
@@ -331,6 +356,7 @@ __all__ = [
     "IngestionError",
     "LLMSchemaError",
     "LLMUnavailableError",
+    "RequiredInputMissingError",
     "RevisionInfeasibleError",
     "RuleParseError",
     "SemanticsUnconfirmedError",

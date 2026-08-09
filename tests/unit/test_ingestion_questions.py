@@ -11,7 +11,7 @@ from datetime import date
 
 import pytest
 
-from backend.core.errors import IngestionError
+from backend.core.errors import IngestionError, RequiredInputMissingError
 from backend.ingestion.diff import build_changeset, normalize_facts
 from backend.ingestion.gate import (
     ConflictResolution,
@@ -156,7 +156,7 @@ def test_gate_refuses_a_malformed_answer() -> None:
 def test_resolve_refuses_to_invent_a_date() -> None:
     """绕过门禁直接落库时的最后一道闸：抛错，不编日期。"""
     mission = minimal_facts().missions[0]
-    with pytest.raises(IngestionError, match="既不在文件里，也没有用户回答"):
+    with pytest.raises(RequiredInputMissingError, match="既不在文件里，也没有用户回答"):
         resolve_cycle_start(mission, None)
 
 
@@ -206,7 +206,7 @@ def test_parse_answer_by_kind() -> None:
         question_id="Q_i", topic="t", question="q", why_it_matters="w", value_kind="int"
     )
     assert parse_answer(q_int, QuestionAnswer(question_id="Q_i", value="7", answered_by="a")) == 7
-    with pytest.raises(IngestionError, match="不是整数"):
+    with pytest.raises(RequiredInputMissingError, match="不是整数"):
         parse_answer(q_int, QuestionAnswer(question_id="Q_i", value="七", answered_by="a"))
 
     q_text = OpenQuestion(
@@ -215,7 +215,7 @@ def test_parse_answer_by_kind() -> None:
     assert (
         parse_answer(q_text, QuestionAnswer(question_id="Q_t", value=" x ", answered_by="a")) == "x"
     )
-    with pytest.raises(IngestionError, match="答案为空"):
+    with pytest.raises(RequiredInputMissingError, match="答案为空"):
         parse_answer(q_text, QuestionAnswer(question_id="Q_t", value="   ", answered_by="a"))
 
 

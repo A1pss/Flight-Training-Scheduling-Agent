@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from typing import Literal
 
-from backend.core.errors import DataConflictError, IngestionError
+from backend.core.errors import DataConflictError, RequiredInputMissingError
 from backend.core.logging import get_logger
 from backend.ingestion.conflicts import ADJUDICATIONS, Conflict
 from backend.ingestion.diff import ChangeSet
@@ -116,7 +116,7 @@ def review(
             continue
         try:
             parse_answer(question, answer)
-        except IngestionError as exc:
+        except RequiredInputMissingError as exc:
             pending.append(question)
             reasons.append(f"问题 {question.question_id} 的答案不合法：{exc.message}")
 

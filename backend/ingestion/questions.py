@@ -32,7 +32,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from typing import Any, Final, Literal
 
-from backend.core.errors import IngestionError
+from backend.core.errors import RequiredInputMissingError
 from backend.ingestion.schema import IngestedFacts
 
 #: 答案的类型声明，门禁据此校验用户给的值
@@ -89,10 +89,10 @@ class QuestionAnswer:
 
 
 def parse_answer(question: OpenQuestion, answer: QuestionAnswer) -> Any:
-    """按问题声明的类型把答案解析成 Python 值，解析不了就抛 FTS-1003。"""
+    """按问题声明的类型把答案解析成 Python 值，解析不了就抛 FTS-1004。"""
     raw = answer.value.strip()
     if not raw:
-        raise IngestionError(
+        raise RequiredInputMissingError(
             f"问题 {question.question_id} 的答案为空",
             details={"question_id": question.question_id},
         )
@@ -100,13 +100,13 @@ def parse_answer(question: OpenQuestion, answer: QuestionAnswer) -> Any:
         try:
             return date.fromisoformat(raw)
         except ValueError as exc:
-            raise IngestionError(
+            raise RequiredInputMissingError(
                 f"问题 {question.question_id} 的答案 {raw!r} 不是合法日期（需 YYYY-MM-DD）",
                 details={"question_id": question.question_id, "value": raw},
             ) from exc
     if question.value_kind == "int":
         if not raw.lstrip("-").isdigit():
-            raise IngestionError(
+            raise RequiredInputMissingError(
                 f"问题 {question.question_id} 的答案 {raw!r} 不是整数",
                 details={"question_id": question.question_id, "value": raw},
             )
