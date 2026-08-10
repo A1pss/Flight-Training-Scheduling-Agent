@@ -9,7 +9,7 @@
 
 基准周 2026W02 实测 **OPTIMAL**，**14 架次（9 带飞 + 5 单飞）**，与 v6 §1.4.3 的纸面推演
 逐项吻合；**阻塞项恰好 7 条**，与 v6 §1.4.2 逐条一致；静态预筛后**候选 2276 个**
-（已回填 v6 §3.1.3）。§6 六条门禁全绿，**650 个测试全过，覆盖率 91.66%**。
+（已回填 v6 §3.1.3）。§6 六条门禁全绿，**644 个测试全过，覆盖率 92.68%**。
 
 **三件需要你拍板的事**（详见 §7）：
 
@@ -52,12 +52,22 @@ S-12 是 `deadline = freq_days − 1`（**不是** `gap=999`；A 类实测 deadl
 | `backend/solver/diagnose.py` | 最小冲突集 / 归因 / 松弛提案 / 实证验证 / 探针预算池（§3.9、§3.10） |
 | `backend/solver/solve.py` | 顶层入口，解 → `SchedulePlan`，三态严格分离 |
 
-**测试**（新增 6 个文件、约 200 个用例）：
-`tests/unit/test_ruleset_loader.py` · `test_solver_candidates.py` · `test_solver_model.py` ·
-`test_solver_objective.py` · `test_solver_reschedule.py` · `test_solver_diagnose.py` ·
-`tests/integration/test_solver_baseline_live.py`（30 例，直连 PG）·
-`tests/guardrail/test_solver_isolation.py` ·
-`tests/fixtures/solver_facts.py`（合成算例）· `tests/fixtures/solver_asserts.py`（临时断言器）
+**测试**（新增 8 个测试文件、**194 个用例**，另 2 个 fixture 文件）：
+
+| 文件 | 用例数 | 覆盖 |
+|---|---|---|
+| `tests/unit/test_ruleset_loader.py` | 19 | ruleset/semantics 解析、R0 不可松弛、松弛阶梯、`req_max` 公式 |
+| `tests/unit/test_solver_candidates.py` | 30 | §3.1.1 编成判定式、S-01/S-11/S-12、预筛八项、候选确定性 |
+| `tests/unit/test_solver_model.py` | 33 | 14 条约束逐条「宁可不排也不违反」、六种增量约束 |
+| `tests/unit/test_solver_objective.py` | 15 | 分阶段、词典序权重、割线下界的蕴含性、可复现性 |
+| `tests/unit/test_solver_reschedule.py` | 13 | 三档冻结策略（参数化）、跑道冻结、汉明距离 |
+| `tests/unit/test_solver_diagnose.py` | 25 | 冲突集/归因/提案/实证验证/预算熔断三条 |
+| `tests/guardrail/test_solver_isolation.py` | 29 | 隔离与「不留半成品」逐文件检查 |
+| `tests/integration/test_solver_baseline_live.py` | 30 | 基准周 + S-11 专项 + I1~I5 + I1'/I4'/I5' + 局部重排，直连 PG |
+
+`tests/fixtures/solver_facts.py`（合成算例：机型 `TX-1`、人员 P41~P43、1~4 架飞机、
+4 门课目 —— 规模/编号/机型全部不同于基准数据，用来证明求解器没写死 §1.3）·
+`tests/fixtures/solver_asserts.py`（**只服务本窗口**的临时合规断言器，不进 `validator/`）
 
 ---
 
@@ -231,7 +241,7 @@ mypy backend --strict   → Success: no issues found in 80 source files
 bandit -r backend -ll   → No issues identified.（exit 0，11891 行）
 lint-imports            → Contracts: 3 kept, 0 broken.
 pytest -q --cov=backend --cov-fail-under=80
-                        → 650 passed，Total coverage: 91.66%（门槛 80%）
+                        → 644 passed / 0 failed，Total coverage: 92.68%（门槛 80%）
 ```
 
 ```
@@ -239,9 +249,9 @@ rg -n "TODO|FIXME|NotImplementedError|待实现|待补充|后续补" backend/ fr
 → 只命中 tests/guardrail/test_solver_isolation.py 自己的检查正则，backend/ 与 frontend/ 为空 ✅
 ```
 
-`backend/solver/` 各文件覆盖率：`data.py` 99% · `objective.py` 96% · `solve.py` 97% ·
-`candidates.py` 93% · `diagnose.py` 87% · `model.py` 86% · `nodes/compile_spec.py` 93% ·
-`core/ruleset.py` 93%。
+`backend/solver/` 各文件覆盖率：`data.py` 99% · `reschedule.py` 98% · `solve.py` 97% ·
+`model.py` 96% · `objective.py` 96% · `candidates.py` 93% · `diagnose.py` 87%；
+另 `nodes/compile_spec.py` 93% · `core/ruleset.py` 93%。
 
 ### 4.2 隔离验证（铁律 2）
 
