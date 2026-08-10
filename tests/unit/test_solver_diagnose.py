@@ -28,7 +28,7 @@ from backend.solver.model import RelaxationSettings
 from tests.fixtures.solver_facts import TEST_WEEK_START, make_bundle
 
 #: 一个必然不可行的构造：B-1 绑定的空域整周关闭，而 B-1 是本周必排项
-INFEASIBLE_OVERRIDES = ScenarioOverrides(airspace_capacity={"RT2": 0})
+INFEASIBLE_OVERRIDES = ScenarioOverrides(airspace_capacity={"NAV": 0})
 
 
 def _infeasible_bundle(**kwargs: object):  # type: ignore[no-untyped-def]
@@ -122,7 +122,7 @@ def test_conflict_core_names_the_frequency_group() -> None:
 def test_structural_augmentation_catches_groups_the_sat_core_omits() -> None:
     """CP-SAT 的 core 是极小的；结构性不可满足组要另外补上（召回率 100% 的要求）。"""
     bundle = make_bundle(
-        overrides=ScenarioOverrides(airspace_capacity={"SAA": 0, "SAB": 0, "RT2": 0}),
+        overrides=ScenarioOverrides(airspace_capacity={"LAC": 0, "LAD": 0, "NAV": 0}),
         time_limit_s=20.0,
     )
     cset = enumerate_candidates(
@@ -146,7 +146,7 @@ def test_attribution_names_the_real_root_cause() -> None:
     assert items
     freq = next(i for i in items if i.group_id == "C13_frequency")
     assert "C06" in freq.rule_ids, "空域关闭的真实根因（约束6）没有进冲突项"
-    assert any("RT2" in s or "空域" in s for s in freq.subjects)
+    assert any("NAV" in s or "空域" in s for s in freq.subjects)
     assert freq.tier == "R2"
 
 
@@ -160,7 +160,7 @@ def test_drop_to_rule_maps_maintenance_to_both_c06_and_c07() -> None:
 def test_attribution_covers_resource_groups() -> None:
     """跑道全关 → 冲突集里要出现约束9（v6 §12.3 I5 的验证目标）。"""
     bundle = make_bundle(
-        overrides=ScenarioOverrides(closed_runways=frozenset({"RWY-1", "RWY-2"})),
+        overrides=ScenarioOverrides(closed_runways=frozenset({"RWY-7", "RWY-8"})),
         time_limit_s=20.0,
     )
     cset = enumerate_candidates(
@@ -195,7 +195,7 @@ def test_proposal_contract_rejects_r0() -> None:
 def test_drafts_never_target_r0_groups() -> None:
     """跑道全关的场景里冲突集全是 R0 → 一条提案都不该生成。"""
     bundle = make_bundle(
-        overrides=ScenarioOverrides(closed_runways=frozenset({"RWY-1", "RWY-2"})),
+        overrides=ScenarioOverrides(closed_runways=frozenset({"RWY-7", "RWY-8"})),
         time_limit_s=20.0,
     )
     cset = enumerate_candidates(
@@ -245,7 +245,7 @@ def test_infeasible_proposal_is_discarded_not_shown() -> None:
     Tier 1 不动约束3，所以探针必然仍判 INFEASIBLE。
     """
     bundle = make_bundle(
-        overrides=ScenarioOverrides(airspace_capacity={"SAA": 0, "SAB": 0}),
+        overrides=ScenarioOverrides(airspace_capacity={"LAC": 0, "LAD": 0}),
         time_limit_s=15.0,
     )
     draft = ProposalDraft(
@@ -376,7 +376,7 @@ def test_diagnose_escalates_when_only_empty_plans_are_reachable() -> None:
     **0 架次** —— 那不是排班。此时必须升级人工，不能把「一个都不排」端给用户当方案。
     """
     bundle = make_bundle(
-        overrides=ScenarioOverrides(closed_runways=frozenset({"RWY-1", "RWY-2"})),
+        overrides=ScenarioOverrides(closed_runways=frozenset({"RWY-7", "RWY-8"})),
         time_limit_s=20.0,
     )
     result = diagnose(bundle, time_limit_s=20.0, budget=ProbeBudget(15.0, 5, 30.0))

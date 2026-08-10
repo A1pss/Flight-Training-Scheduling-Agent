@@ -133,11 +133,11 @@ def test_c03_weekly_class_is_enforced() -> None:
     这个用例顺带把 S-02 的类级语义钉死了。
     """
     _bundle, half = _solve(
-        overrides=ScenarioOverrides(airspace_capacity={"SAA": 0}), time_limit_s=20.0
+        overrides=ScenarioOverrides(airspace_capacity={"LAC": 0}), time_limit_s=20.0
     )
     assert half.status == "OPTIMAL", "只关一个 A 类空域不该不可行（S-02 类级计数）"
     _bundle2, outcome = _solve(
-        overrides=ScenarioOverrides(airspace_capacity={"SAA": 0, "SAB": 0}),
+        overrides=ScenarioOverrides(airspace_capacity={"LAC": 0, "LAD": 0}),
         time_limit_s=20.0,
     )
     assert outcome.status == "INFEASIBLE"
@@ -226,9 +226,9 @@ def test_c09_runway_is_a_decision_variable_and_respects_type_mapping() -> None:
 
 
 def test_c09_closed_runway_never_used() -> None:
-    bundle, outcome = _solve(overrides=ScenarioOverrides(closed_runways=frozenset({"RWY-2"})))
+    bundle, outcome = _solve(overrides=ScenarioOverrides(closed_runways=frozenset({"RWY-8"})))
     assert outcome.plan is not None
-    assert {s.runway_id for s in outcome.plan.sorties} == {"RWY-1"}
+    assert {s.runway_id for s in outcome.plan.sorties} == {"RWY-7"}
     _assert_compliant(bundle, outcome)
 
 
@@ -356,15 +356,15 @@ def test_relaxed_tier_reports_debts_when_requirement_unsatisfiable(tier: int) ->
     """松弛档下欠账必须**显式披露**（v6 §0.3），不是静默吞掉。"""
     bundle = make_bundle(
         relaxation_tier=tier,
-        overrides=ScenarioOverrides(airspace_capacity={"RT2": 0}),
+        overrides=ScenarioOverrides(airspace_capacity={"NAV": 0}),
         time_limit_s=20.0,
     )
     outcome = solve(bundle, relaxation=RelaxationSettings(tier=tier))
     assert outcome.status in ("OPTIMAL", "FEASIBLE")
     assert outcome.plan is not None
     debts = {(d.person_id, d.mission_id): d for d in outcome.plan.debts}
-    assert ("P42", "missionB-1") in debts
-    debt = debts["P42", "missionB-1"]
+    assert ("P402", "missionB-1") in debts
+    debt = debts["P402", "missionB-1"]
     assert (debt.required, debt.scheduled, debt.debt) == (1, 0, 1)
     assert debt.relaxed_by == f"TIER{tier}"
 
@@ -391,20 +391,20 @@ def _with_incremental(kind: str, targets: list[str], **params: object):  # type:
 
 def test_incremental_forbid_removes_person() -> None:
     """FORBID：点名的人/机在本轮完全不可用。学员被 FORBID → 无解。"""
-    outcome = solve(_with_incremental("FORBID", ["P42"]))
+    outcome = solve(_with_incremental("FORBID", ["P402"]))
     assert outcome.status == "INFEASIBLE"
 
 
 def test_incremental_pin_resource_forces_one_aircraft() -> None:
-    outcome = solve(_with_incremental("PIN_RESOURCE", ["P42"], aircraft_id="AC72"))
+    outcome = solve(_with_incremental("PIN_RESOURCE", ["P402"], aircraft_id="AC702"))
     assert outcome.plan is not None
-    assert {s.aircraft_id for s in outcome.plan.sorties} == {"AC72"}
+    assert {s.aircraft_id for s in outcome.plan.sorties} == {"AC702"}
 
 
 def test_incremental_pin_runway_forces_that_runway() -> None:
-    outcome = solve(_with_incremental("PIN_RUNWAY", ["P42"], runway_id="RWY-2"))
+    outcome = solve(_with_incremental("PIN_RUNWAY", ["P402"], runway_id="RWY-8"))
     assert outcome.plan is not None
-    assert {s.runway_id for s in outcome.plan.sorties} == {"RWY-2"}
+    assert {s.runway_id for s in outcome.plan.sorties} == {"RWY-8"}
 
 
 def test_incremental_pin_runway_on_incompatible_type_kills_the_candidate() -> None:
@@ -415,12 +415,12 @@ def test_incremental_pin_runway_on_incompatible_type_kills_the_candidate() -> No
     from backend.schemas.intent import IncrementalConstraint
 
     bundle = make_bundle(
-        overrides=ScenarioOverrides(closed_runways=frozenset({"RWY-2"})), time_limit_s=15.0
+        overrides=ScenarioOverrides(closed_runways=frozenset({"RWY-8"})), time_limit_s=15.0
     )
     inc = IncrementalConstraint(
         kind="PIN_RUNWAY",
-        targets=["P42"],
-        params={"runway_id": "RWY-2"},
+        targets=["P402"],
+        params={"runway_id": "RWY-8"},
         origin_utterance="都走 2 号跑道",
         round_no=1,
     )
@@ -435,7 +435,7 @@ def test_incremental_pin_runway_on_incompatible_type_kills_the_candidate() -> No
 
 def test_incremental_shift_window_moves_takeoffs() -> None:
     outcome = solve(
-        _with_incremental("SHIFT_WINDOW", ["P42"], earliest_minute=120, latest_minute=400)
+        _with_incremental("SHIFT_WINDOW", ["P402"], earliest_minute=120, latest_minute=400)
     )
     assert outcome.plan is not None
     for sortie in outcome.plan.sorties:
@@ -444,7 +444,7 @@ def test_incremental_shift_window_moves_takeoffs() -> None:
 
 
 def test_incremental_pin_time_fixes_takeoff() -> None:
-    outcome = solve(_with_incremental("PIN_TIME", ["P42"], takeoff_minute=90))
+    outcome = solve(_with_incremental("PIN_TIME", ["P402"], takeoff_minute=90))
     assert outcome.plan is not None
     for sortie in outcome.plan.sorties:
         assert sortie.takeoff.hour * 60 + sortie.takeoff.minute - 6 * 60 == 90

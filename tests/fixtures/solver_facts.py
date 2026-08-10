@@ -6,9 +6,9 @@
 
 1. **速度**：基准周 2276 个候选、求解 ~19 秒。单元测试要跑几十个用例，
    必须有一个「十几个候选、毫秒级」的算例。
-2. **证明没写死基准数据**：这里的人员编号、机型名、机队规模、课目数量
-   **全都和 `data/origin/` 那批不一样**（机型叫 `TX-1`，人员是 P41/P42，
-   只有 1 架飞机、3 门课目）。求解器要是偷偷依赖了 8 人/8 机/`JL-8`，
+2. **证明没写死基准数据**：这里的人员编号、机型名、机队规模、课目数量、空域与跑道编号
+   **全都和 `data/origin/` 那批不一样**，而且人员是**三位编号**（`P401`）——
+   求解器要是偷偷依赖了 8 人 / 8 机 / `JL-8` / 两位人员编号 / 六个基准空域，
    这套算例第一个跑不过（CLAUDE.md §11、v6 §5.1.1）。
 
 ## 唯一沿用基准取值的两处，以及为什么
@@ -113,44 +113,44 @@ def make_problem(
         return overrides.qual_expiry.get((person_id, mission_class), base)
 
     persons: dict[str, PersonInfo] = {
-        "P41": PersonInfo(
-            person_id="P41",
+        "P401": PersonInfo(
+            person_id="P401",
             name="教员甲",
             identity=IDENTITY_INSTRUCTOR,
             aircraft_types=frozenset({TEST_TYPE}),
             qualifications={
-                cls: _qual(cls, LEVEL_INSTRUCTOR, _expiry("P41", cls, None))
+                cls: _qual(cls, LEVEL_INSTRUCTOR, _expiry("P401", cls, None))
                 for cls in ("A", "B", "C")
             },
-            unavailable=_off("P41", frozenset()),
+            unavailable=_off("P401", frozenset()),
             completed=frozenset({"missionA-1", "missionA-2", "missionB-1", "missionC-1"}),
         ),
-        "P42": PersonInfo(
-            person_id="P42",
+        "P402": PersonInfo(
+            person_id="P402",
             name="学员乙",
             identity=IDENTITY_STUDENT,
             aircraft_types=frozenset({TEST_TYPE}),
             qualifications={
-                "A": _qual("A", LEVEL_SOLO, _expiry("P42", "A", None)),
-                "B": _qual("B", LEVEL_DUAL, _expiry("P42", "B", None)),
-                "C": _qual("C", LEVEL_DUAL, _expiry("P42", "C", None)),
+                "A": _qual("A", LEVEL_SOLO, _expiry("P402", "A", None)),
+                "B": _qual("B", LEVEL_DUAL, _expiry("P402", "B", None)),
+                "C": _qual("C", LEVEL_DUAL, _expiry("P402", "C", None)),
             },
-            unavailable=_off("P42", student_unavailable),
+            unavailable=_off("P402", student_unavailable),
             completed=student_completed,
         ),
     }
     if with_mature:
-        persons["P43"] = PersonInfo(
-            person_id="P43",
+        persons["P403"] = PersonInfo(
+            person_id="P403",
             name="成熟丙",
             identity=IDENTITY_MATURE,
             aircraft_types=frozenset({TEST_TYPE}),
             qualifications={
-                "A": _qual("A", LEVEL_SOLO, _expiry("P43", "A", None)),
-                "B": _qual("B", LEVEL_SOLO, _expiry("P43", "B", None)),
-                "C": _qual("C", LEVEL_SOLO, _expiry("P43", "C", mature_expiry)),
+                "A": _qual("A", LEVEL_SOLO, _expiry("P403", "A", None)),
+                "B": _qual("B", LEVEL_SOLO, _expiry("P403", "B", None)),
+                "C": _qual("C", LEVEL_SOLO, _expiry("P403", "C", mature_expiry)),
             },
-            unavailable=_off("P43", frozenset()),
+            unavailable=_off("P403", frozenset()),
             completed=frozenset({"missionA-1", "missionA-2", "missionB-1", "missionC-1"}),
         )
 
@@ -162,15 +162,15 @@ def make_problem(
         )
 
     aircraft = {
-        f"AC7{i}": AircraftInfo(
-            aircraft_id=f"AC7{i}",
+        f"AC70{i}": AircraftInfo(
+            aircraft_id=f"AC70{i}",
             aircraft_type=TEST_TYPE,
             seats=seats,
             window_start=window[0],
             window_end=window[1],
             turnaround_minutes=turnaround,
             missions=frozenset({"missionA-1", "missionA-2", "missionB-1", "missionC-1"}),
-            maintenance=((maintenance if i == 1 else ()) + tuple(extra_maint.get(f"AC7{i}", []))),
+            maintenance=((maintenance if i == 1 else ()) + tuple(extra_maint.get(f"AC70{i}", []))),
         )
         for i in range(1, aircraft_count + 1)
     }
@@ -185,7 +185,7 @@ def make_problem(
             freq_days=3,
             weekly_required=True,
             dual_required=False,
-            airspace_id="SAA",
+            airspace_id="LAC",
             aircraft_types=frozenset({TEST_TYPE}),
             prereqs=(),
         ),
@@ -198,7 +198,7 @@ def make_problem(
             freq_days=3,
             weekly_required=True,
             dual_required=False,
-            airspace_id="SAB",
+            airspace_id="LAD",
             aircraft_types=frozenset({TEST_TYPE}),
             prereqs=(),
         ),
@@ -211,7 +211,7 @@ def make_problem(
             freq_days=7,
             weekly_required=False,
             dual_required=True,
-            airspace_id="RT2",
+            airspace_id="NAV",
             aircraft_types=frozenset({TEST_TYPE}),
             prereqs=(("missionA-1", "mission"),),
         ),
@@ -224,24 +224,24 @@ def make_problem(
             freq_days=7,
             weekly_required=False,
             dual_required=True,
-            airspace_id="IFR",
+            airspace_id="BLD",
             aircraft_types=frozenset({TEST_TYPE}),
             prereqs=(("A类", "class"),),
         ),
     }
 
     airspaces = {
-        "SAA": AirspaceInfo(airspace_id="SAA", name="小区 A", capacity=airspace_capacity),
-        "SAB": AirspaceInfo(airspace_id="SAB", name="小区 B", capacity=airspace_capacity),
-        "RT2": AirspaceInfo(airspace_id="RT2", name="航线 2", capacity=airspace_capacity),
-        "IFR": AirspaceInfo(airspace_id="IFR", name="仪表航线", capacity=airspace_capacity),
+        "LAC": AirspaceInfo(airspace_id="LAC", name="小区 A", capacity=airspace_capacity),
+        "LAD": AirspaceInfo(airspace_id="LAD", name="小区 B", capacity=airspace_capacity),
+        "NAV": AirspaceInfo(airspace_id="NAV", name="航线 2", capacity=airspace_capacity),
+        "BLD": AirspaceInfo(airspace_id="BLD", name="仪表航线", capacity=airspace_capacity),
     }
     runways = {
-        "RWY-1": RunwayInfo(
-            runway_id="RWY-1", name="跑道 1", aircraft_types=frozenset({TEST_TYPE})
+        "RWY-7": RunwayInfo(
+            runway_id="RWY-7", name="跑道 1", aircraft_types=frozenset({TEST_TYPE})
         ),
-        "RWY-2": RunwayInfo(
-            runway_id="RWY-2", name="跑道 2", aircraft_types=frozenset({TEST_TYPE})
+        "RWY-8": RunwayInfo(
+            runway_id="RWY-8", name="跑道 2", aircraft_types=frozenset({TEST_TYPE})
         ),
     }
 

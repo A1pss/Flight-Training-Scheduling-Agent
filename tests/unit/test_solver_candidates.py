@@ -62,14 +62,14 @@ def test_student_a_class_is_solo_and_b_class_is_dual() -> None:
     solo = [c for c in cset.candidates if c.mission_id == "missionA-1"]
     dual = [c for c in cset.candidates if c.mission_id == "missionB-1"]
     assert solo and all(c.instructor_id is None and len(c.crew_ids) == 1 for c in solo)
-    assert dual and all(c.instructor_id == "P41" and len(c.crew_ids) == 2 for c in dual)
+    assert dual and all(c.instructor_id == "P401" and len(c.crew_ids) == 2 for c in dual)
 
 
 def test_instructors_generate_no_trainee_candidates() -> None:
     """S-09：教员不作为受训人生成候选，只在带飞候选里占教员岗。"""
     _bundle, cset = _enumerate()
-    assert all(c.trainee_id != "P41" for c in cset.candidates)
-    assert any(c.instructor_id == "P41" for c in cset.candidates)
+    assert all(c.trainee_id != "P401" for c in cset.candidates)
+    assert any(c.instructor_id == "P401" for c in cset.candidates)
 
 
 def test_seats_limit_blocks_dual_candidates() -> None:
@@ -88,7 +88,7 @@ def test_prereq_unmet_blocks_and_records_item() -> None:
     assert not [c for c in cset.candidates if c.mission_id == "missionC-1"]
     blocked = [b for b in cset.blocked_items if b.mission_id == "missionC-1"]
     assert len(blocked) == 1
-    assert blocked[0].person_id == "P42"
+    assert blocked[0].person_id == "P402"
     # S-01：先修「A类」= A-1 且 A-2 都完成；只完成了 A-1 → 缺 A-2
     assert blocked[0].missing_prereqs == ["missionA-2"]
     # v6 §12.3 要求 Sheet 4 的「缺失先修」列逐字为「missionX 未完成」
@@ -123,8 +123,8 @@ def test_missing_class_qualification_is_not_a_blocked_item() -> None:
     否则学员会因为够不到的课目冒出一堆假阻塞项。
     """
     data = make_problem()
-    stripped = {k: v for k, v in data.persons["P42"].qualifications.items() if k != "B"}
-    object.__setattr__(data.persons["P42"], "qualifications", stripped)
+    stripped = {k: v for k, v in data.persons["P402"].qualifications.items() if k != "B"}
+    object.__setattr__(data.persons["P402"], "qualifications", stripped)
     cset = enumerate_candidates(
         data, make_spec(data), ruleset=make_bundle().ruleset, semantics=get_semantics()
     )
@@ -140,9 +140,9 @@ def test_expired_qualification_removed_for_student() -> None:
     """学员按约束2 字面执行：到期日当日保留，次日起剔除。"""
     data = make_problem()
     expiry = TEST_WEEK_START + timedelta(days=2)
-    quals = dict(data.persons["P42"].qualifications)
+    quals = dict(data.persons["P402"].qualifications)
     quals["B"] = type(quals["B"])(mission_class="B", level="带飞", expiry=expiry)
-    object.__setattr__(data.persons["P42"], "qualifications", quals)
+    object.__setattr__(data.persons["P402"], "qualifications", quals)
     cset = enumerate_candidates(
         data, make_spec(data), ruleset=make_bundle().ruleset, semantics=get_semantics()
     )
@@ -156,7 +156,7 @@ def test_s11_mature_pilot_keeps_expired_candidates_as_recurrent() -> None:
     expiry = TEST_WEEK_START + timedelta(days=1)
     _bundle, cset = _enumerate(with_mature=True, mature_expiry=expiry)
     mature_c = [
-        c for c in cset.candidates if c.trainee_id == "P43" and c.mission_id == "missionC-1"
+        c for c in cset.candidates if c.trainee_id == "P403" and c.mission_id == "missionC-1"
     ]
     assert mature_c, "成熟飞行员的到期资质候选被错误剔除了"
     assert {c.is_recurrent for c in mature_c if c.day <= 1} == {False}
@@ -181,14 +181,14 @@ def test_all_day_maintenance_removes_that_day() -> None:
 
 def test_closed_airspace_removes_bound_missions() -> None:
     """空域关闭 = 容量降为 0（v6 §3.4）：绑定该空域的课目不生成候选。"""
-    _bundle, cset = _enumerate(overrides=ScenarioOverrides(airspace_capacity={"RT2": 0}))
+    _bundle, cset = _enumerate(overrides=ScenarioOverrides(airspace_capacity={"NAV": 0}))
     assert not [c for c in cset.candidates if c.mission_id == "missionB-1"]
     assert DROP_AIRSPACE_CLOSED in cset.drop_counts
 
 
 def test_all_runways_closed_leaves_no_candidates() -> None:
     _bundle, cset = _enumerate(
-        overrides=ScenarioOverrides(closed_runways=frozenset({"RWY-1", "RWY-2"}))
+        overrides=ScenarioOverrides(closed_runways=frozenset({"RWY-7", "RWY-8"}))
     )
     assert not cset.candidates
     assert DROP_NO_RUNWAY in cset.drop_counts
@@ -197,7 +197,7 @@ def test_all_runways_closed_leaves_no_candidates() -> None:
 def test_no_instructor_available_drops_dual_candidates() -> None:
     data = make_problem()
     off = frozenset({data.date_of(d) for d in range(7)})
-    object.__setattr__(data.persons["P41"], "unavailable", off)
+    object.__setattr__(data.persons["P401"], "unavailable", off)
     cset = enumerate_candidates(
         data, make_spec(data), ruleset=make_bundle().ruleset, semantics=get_semantics()
     )
@@ -355,5 +355,5 @@ def test_requirement_lookup_and_drop_helpers() -> None:
     assert cset.requirement(req.req_id) is req
     with pytest.raises(KeyError):
         cset.requirement("nope")
-    assert cset.drops_for("P42", "missionC-1")
-    assert cset.drops_for("P42")[0].label
+    assert cset.drops_for("P402", "missionC-1")
+    assert cset.drops_for("P402")[0].label

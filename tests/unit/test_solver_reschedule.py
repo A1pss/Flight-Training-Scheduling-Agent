@@ -98,7 +98,7 @@ def test_frozen_sortie_pins_time_and_runway() -> None:
         sorted(plan.sorties, key=lambda s: bundle.data.day_index(s.date)),
         strict=True,
     ):
-        assert f.runway_id in ("RWY-1", "RWY-2")
+        assert f.runway_id in ("RWY-7", "RWY-8")
         assert f.slot == (f.trainee_id, f.mission_id, f.day)
         assert s.sortie_id
 
@@ -185,18 +185,18 @@ def test_reschedule_minimises_hamming_distance() -> None:
 def test_disruption_to_overrides_translates_every_field() -> None:
     data = make_problem()
     disruption = Disruption(
-        persons=frozenset({"P42"}),
-        aircraft=frozenset({"AC71"}),
-        airspaces=frozenset({"RT2"}),
-        runways=frozenset({"RWY-2"}),
+        persons=frozenset({"P402"}),
+        aircraft=frozenset({"AC701"}),
+        airspaces=frozenset({"NAV"}),
+        runways=frozenset({"RWY-8"}),
         days=frozenset({1, 2}),
     )
     ov = disruption.to_overrides(data)
     assert isinstance(ov, ScenarioOverrides)
-    assert ov.airspace_capacity == {"RT2": 0}
-    assert ov.closed_runways == frozenset({"RWY-2"})
-    assert ov.unavailable["P42"] == frozenset({data.date_of(1), data.date_of(2)})
-    assert ov.maintenance_all_day == (("AC71", data.date_of(1), data.date_of(2)),)
+    assert ov.airspace_capacity == {"NAV": 0}
+    assert ov.closed_runways == frozenset({"RWY-8"})
+    assert ov.unavailable["P402"] == frozenset({data.date_of(1), data.date_of(2)})
+    assert ov.maintenance_all_day == (("AC701", data.date_of(1), data.date_of(2)),)
     assert not ov.is_empty()
 
 

@@ -153,9 +153,9 @@ def build_plan(built: BuiltModel, run: SolveRun, *, relaxation_tier: int) -> Sch
                 landing=data.clock_of(minute + mission.duration_minutes),
                 mission_id=cand.mission_id,
                 mission_name=mission.name,
-                airspace_id=mission.airspace_id,  # type: ignore[arg-type]
+                airspace_id=mission.airspace_id,
                 aircraft_id=cand.aircraft_id,
-                runway_id=run.runways[idx],  # type: ignore[arg-type]
+                runway_id=run.runways[idx],
                 is_recurrent=cand.is_recurrent,
                 crew=_crew_of(cand, data),
             )

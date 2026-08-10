@@ -8,10 +8,12 @@
 
 1. **基准周实测**：状态 / 架次 / 阻塞项 / 跑道 / 合规性 / 可复现性
 2. **S-11 专项**（v6 §12.3）：把刘斌 C 类到期日临时改到复训窗口落在周内的位置
-3. **v6 §12.3 的 I1~I5**：⚠️ 其中 **I1 / I4 / I5 实测并非 INFEASIBLE**，
-   与 v6 的预期不符。本文件**如实断言实测结果**，并另给三个「够狠」的构造
-   （`I1'` / `I4'` / `I5'`）真的把对应约束逼到不可行。
-   两边的算术都写在 `reports/M2A_收工报告.md`，待业务方裁定 v6 §12.3 是否改写。
+3. **v6 §12.3 的 I1~I5 五族构造不可行场景**，全部断言 `INFEASIBLE` + 冲突集覆盖预期规则。
+   其中 **I1 / I4 / I5 的构造已于 2026-08-11 换过**（v6 本版说明 `Z-2`）：旧构造
+   （两名教员不可用 / 训练窗 06:00-09:00 / RWY-2 关 + 06:00-08:00）**实测都是可行的**，
+   因为它们建立在被 D-1 推翻的「A 类需教员带飞」前提上。
+   旧构造的用例**保留在本文件里**（`test_superseded_*`），作为「那条前提确实已被推翻」的
+   回归证据 —— 哪天它们变成 INFEASIBLE 了，说明有人把 D-1 又改回去了。
 """
 
 from __future__ import annotations
@@ -468,23 +470,23 @@ def test_i3_ifr_closed_all_week_is_infeasible(session: Session, snapshot: str) -
 @pytest.mark.parametrize(
     ("name", "overrides_factory"),
     [
-        # I1：孙军、高超整周不可用（只剩吴鹏，且其周一不可用）
-        ("I1", lambda _bundle: ScenarioOverrides(unavailable_all_week=frozenset({"P01", "P02"}))),
-        # I4：训练窗压缩至 06:00-09:00
-        ("I4", lambda _b: ScenarioOverrides(window_end=time(9, 0))),
-        # I5：RWY-2 整周关闭 + 训练窗压缩至 06:00-08:00
+        # 旧 I1：孙军、高超整周不可用（只剩吴鹏，且其周一不可用）→ 单教员容量 12 ≥ 9
+        ("旧I1", lambda _bundle: ScenarioOverrides(unavailable_all_week=frozenset({"P01", "P02"}))),
+        # 旧 I4：训练窗压缩至 06:00-09:00 → 180 分钟装得下 2 架次/天
+        ("旧I4", lambda _b: ScenarioOverrides(window_end=time(9, 0))),
+        # 旧 I5：RWY-2 整周关闭 + 训练窗压缩至 06:00-08:00 → 单跑道仍可 12 次起飞/天
         (
-            "I5",
+            "旧I5",
             lambda _bundle: ScenarioOverrides(
                 closed_runways=frozenset({"RWY-2"}), window_end=time(8, 0)
             ),
         ),
     ],
 )
-def test_i1_i4_i5_are_actually_feasible(
+def test_superseded_i1_i4_i5_constructions_are_feasible(
     session: Session, snapshot: str, name: str, overrides_factory: object
 ) -> None:
-    """⚠️ **v6 §12.3 预期这三个 INFEASIBLE，实测都是可行的。**
+    """§12.3 的**旧** I1/I4/I5 构造实测可行 —— 保留作为 D-1 已推翻旧前提的回归证据。
 
     算术很直接（详见收工报告）：本周真实需求只有 14 架次、摊到 7 天是 2 架次/天，
     而这三个构造留下的容量分别是
@@ -496,14 +498,18 @@ def test_i1_i4_i5_are_actually_feasible(
     v6 自己给的推导（「两跑道合计 4×9=36 起飞」「单教员容量 12」）也支持这个结论 ——
     那三条预期建立在被 D-1 推翻的「A 类需教员带飞」前提上（16~24 个带飞架次）。
 
-    本用例**如实断言实测结果**，不为了让 v6 好看而改代码。真正把对应约束逼到
-    不可行的构造见 `test_i1_i4_i5_corrected_constructions_are_infeasible`。
+    业务方 2026-08-11 据此把 §12.3 的三条构造换成了现在的版本（见
+    `test_i1_i4_i5_are_infeasible`）。**本用例不是"待修复的失败"** ——
+    它断言的是「按旧构造确实排得出班」，一旦它变红，说明有人把 D-1 改回去了
+    （A 类又要教员带飞），那才是真问题。
     """
     bundle = compile_spec(
         session, snapshot_id=snapshot, week_start=BASELINE_WEEK, materialize=False
     )
     outcome = _solve_scenario(session, snapshot, overrides_factory(bundle), limit=60.0)  # type: ignore[operator]
-    assert outcome.status != "INFEASIBLE", f"{name} 实测竟然不可行了，请复核"
+    assert outcome.status != "INFEASIBLE", (
+        f"旧构造 {name} 变成不可行了 —— 检查 D-1（学员 A 类单飞）是否被改回去了"
+    )
     assert outcome.plan is not None, f"{name} 没有求出方案"
     violations = check_plan(outcome.plan, outcome.bundle.data, outcome.bundle.ruleset)
     assert not violations, format_violations(violations)
@@ -512,17 +518,17 @@ def test_i1_i4_i5_are_actually_feasible(
 @pytest.mark.parametrize(
     ("name", "overrides_factory", "expect_rules"),
     [
-        # I1'：三名教员全部整周不可用 → 9 个带飞架次一个也排不了
+        # I1：三名教员全部整周不可用 → 9 个带飞架次一个也排不了
         (
-            "I1'",
+            "I1",
             lambda _b: ScenarioOverrides(unavailable_all_week=frozenset({"P01", "P02", "P03"})),
             {"C03", "C13"},
         ),
-        # I4'：训练窗压到 06:00-06:30 → 时长 > 30 分钟的课目全部装不进去
-        ("I4'", lambda _b: ScenarioOverrides(window_end=time(6, 30)), {"C01", "C13"}),
-        # I5'：学员机型可用的跑道全部关闭 → 跑道模型必须进冲突集
+        # I4：训练窗压到 06:00-06:30 → 时长 > 30 分钟的课目全部装不进去
+        ("I4", lambda _b: ScenarioOverrides(window_end=time(6, 30)), {"C01", "C13"}),
+        # I5：学员机型可用的跑道全部关闭 → 跑道模型必须进冲突集
         (
-            "I5'",
+            "I5",
             lambda b: ScenarioOverrides(
                 closed_runways=frozenset(
                     b.data.allowed_runways(b.data.aircraft["AC10"].aircraft_type)
@@ -532,16 +538,17 @@ def test_i1_i4_i5_are_actually_feasible(
         ),
     ],
 )
-def test_i1_i4_i5_corrected_constructions_are_infeasible(
+def test_i1_i4_i5_are_infeasible(
     session: Session,
     snapshot: str,
     name: str,
     overrides_factory: object,
     expect_rules: set[str],
 ) -> None:
-    """三个「够狠」的替代构造：真的把 v6 §12.3 想验的那条约束逼到不可行。
+    """v6 §12.3 的 I1 / I4 / I5（**2026-08-11 换过构造的现行版本**）。
 
-    **待业务方裁定是否用它们替换 v6 §12.3 的 I1/I4/I5**（收工报告 §待裁定 Q2）。
+    每条各自验的那条约束必须真的出现在最小冲突集里 —— I4 验约束1、I5 验约束9
+    （后者正是 I5 当初的设计目的：确认跑道不是被建成了软约束）。
     判定必须是 `INFEASIBLE` 而不是 `UNKNOWN`（铁律 8），所以给足 300s 时限。
     """
     bundle = compile_spec(
@@ -615,9 +622,7 @@ def test_jl9_class_sortie_is_pinned_to_its_only_runway(session: Session, snapsho
     from backend.nodes.compile_spec import default_intent
     from backend.schemas.intent import IncrementalConstraint
 
-    probe = compile_spec(
-        session, snapshot_id=snapshot, week_start=BASELINE_WEEK, materialize=False
-    )
+    probe = compile_spec(session, snapshot_id=snapshot, week_start=BASELINE_WEEK, materialize=False)
     single = [
         aid
         for aid, ac in sorted(probe.data.aircraft.items())

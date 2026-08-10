@@ -68,7 +68,7 @@ def test_stage1_active_at_relaxed_tier_with_debt_weighting() -> None:
     """松弛档下阶段1 才有取舍；权重按 `BASE_W × (1 + DEBT_FACTOR × debt_count)`。"""
     _bundle, cset, built = _build(
         relaxation_tier=1,
-        progress_overrides={("P42", "missionB-1"): {"debt_count": 2}},
+        progress_overrides={("P402", "missionB-1"): {"debt_count": 2}},
     )
     assert built.satisfied, "松弛档下应该有满足指示变量"
     assert stage1_progress(built) is not None
