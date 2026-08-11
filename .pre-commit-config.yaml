@@ -2,6 +2,22 @@
 # 完整六条（含 pytest 覆盖率门禁）由 CI 与收工检查单负责。
 #
 # 安装：conda run -n schedule pre-commit install
+#      conda run -n schedule pre-commit install-hooks     # 预建远端 hook 环境
+#
+# ⚠️ **`pre-commit run --all-files` 在本机跑不了**：pre-commit 4.6 会调
+#    `git ls-files --deduplicate`，而系统 git 是 2.25.1（该选项 git 2.31 才有）。
+#    **提交时的 hook 不受影响** —— 它走 staged 文件那条路径，不碰 `--deduplicate`。
+#    要做一次全量扫描，用显式文件清单代替：
+#        conda run -n schedule pre-commit run --files $(git ls-files)
+#    或者直接跑 CLAUDE.md §6 的那几条命令（CI 跑的就是它们，不经 pre-commit）。
+#
+# ⚠️ **所有与 CI 重叠的检查一律用本地 conda 环境跑（`language: system`）**，
+#    不要换成 pre-commit 自建环境的远端 hook。理由是实测过的：ruff 曾经用
+#    `ruff-pre-commit` 的 v0.9.6，而 CI 用的是环境里的 0.16.1，两者对
+#    `S603` 的判定不一致 —— pre-commit 删掉一个 `noqa`，CI 又要求加回来，
+#    来回打架。**本地与 CI 必须是同一套依赖**，这是本仓库反复踩过的那一类坑
+#    （见 `reports/M2A_收工报告.md` §11）。
+#    只有「与 CI 无对应项」的通用卫生检查才用远端 hook（下面 pre-commit-hooks 那组）。
 
 default_language_version:
   python: python3.11
@@ -22,17 +38,24 @@ repos:
       - id: no-commit-to-branch
         args: [--branch, main]
 
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.6
-    hooks:
-      - id: ruff
-        args: [--fix]
-      - id: ruff-format
-
   - repo: local
     hooks:
-      # mypy / bandit / import-linter 用本地 conda 环境跑，避免 pre-commit
-      # 自建虚拟环境导致与 CI 用的不是同一套依赖。
+      # ruff / mypy / bandit / import-linter 全部用本地 conda 环境跑，避免 pre-commit
+      # 自建虚拟环境导致与 CI 用的不是同一套依赖（见文件头第二条 ⚠️）。
+      - id: ruff
+        name: ruff check --fix
+        entry: conda run -n schedule ruff check --fix --force-exclude
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+
+      - id: ruff-format
+        name: ruff format
+        entry: conda run -n schedule ruff format --force-exclude
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+
       - id: mypy
         name: mypy --strict backend
         entry: conda run -n schedule mypy backend --strict
