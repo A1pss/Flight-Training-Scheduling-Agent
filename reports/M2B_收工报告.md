@@ -37,9 +37,10 @@
 | `tests/guardrail/test_validator_isolation.py` | 100 | 校验器侧的隔离护栏（镜像 `test_solver_isolation.py`） |
 | `tests/integration/test_validator_context_live.py` | 151 | 直连裸装 PG 的装配路径 |
 
-**改动的既有文件（两处，都需要业务方过目，见 §7）**：
+**改动的既有文件（三处，均已于 2026-08-12 经业务方批准，见 §7）**：
 `backend/schemas/validation.py`（`CheckResult` 新增可选 `notes` 字段）、
-`requirements.txt`（新增 `types-openpyxl`）。
+`requirements.txt`（新增 `types-openpyxl`）、
+`docs/FTS_…_v6.md`（**Z-7**：§10.4 区块1 增加「语义开关」行 + §4.3 末句订正）。
 
 ---
 
@@ -155,11 +156,16 @@ M3 的 Excel 写出还没有，但「回读 → 深度相等」这一层必须�
 标题与列名、机组拼接格式、角色后缀），M3 直接 import 它们来写。测试用的
 `tests/fixtures/workbook_builder.py` 是这份契约的一个完整实现（不含字体底纹列宽）。
 
-**一处对 v6 §10.4 的扩充需要业务方过目**：区块1 增加一行「**语义开关**」，
+**一处对 v6 §10.4 的扩充**：区块1 增加一行「**语义开关**」，
 序列化为 `S-01=all_missions_completed；S-02=class_level；…`。
 理由与当初新增区块7 完全同构：`semantics_switches` 参与 `content_sha256`（v6 附录 B 脚注），
 不落表就反解不回来，§4.3 的「深度相等」断言就不可能成立。Sheet 4 本身「无版式基准可依，
-由 §10 定义」（§10.5），故这是扩充而非偏离版式。**未改 `docs/`**（CLAUDE.md §7 第 8 条）。
+由 §10 定义」（§10.5），故这是扩充而非偏离版式。
+
+**业务方 2026-08-12 裁定同步进 v6**，已落三处：本版说明 ⑤ 的 **Z-7** 行、
+**§10.4 区块1 表格 + 一条脚注**、**§4.3 末句**（把「`Sortie` 的每一个字段」订正为
+「`SchedulePlan` 的每一个字段」，并点明 `semantics_switches` 的落点）。
+序列化格式由 `workbook.py` 的 `SWITCH_SEP` / `SWITCH_KV` 固化，M3 直接 import。
 
 ### 3.11 Sheet 1~3 只有姓名，`person_id` 靠人员表反查
 
@@ -389,17 +395,18 @@ TOTAL                            1239  59  526  59   93%
 
 ---
 
-## 7. 需要业务方拍板的两处改动
+## 7. 三处需要业务方拍板的改动（**均已于 2026-08-12 批准**）
 
 | # | 改动 | 理由 | 影响面 |
 |---|---|---|---|
-| 1 | `backend/schemas/validation.py::CheckResult` 新增 `notes: list[str] = []` | 出口标准要求「报告中标注 S-11 为**授权改写**」，而 `CheckResult` 的字段全是违规/计数，没有放「不是违规但必须出现在报告里的声明」的位置。**可选字段 + 默认值，对既有调用方向后兼容**；v6 §10.4 区块6 的「授权改写声明」行直接取 `report.all_notes()` | 契约扩充（新增可选字段），不改变任何既有语义 |
-| 2 | `requirements.txt` 新增 `types-openpyxl==3.1.5.20260807` | `workbook.py` 用 openpyxl，`mypy --strict` 报 `Library stubs not installed`。**选择装 stub 而不是把 `openpyxl.*` 加进 `pyproject.toml` 的 `ignore_missing_imports` 白名单** —— 后者是放宽配置（CLAUDE.md §6 要求单列说明），前者与既有的 `types-PyYAML` 同一口径，且能真正查出 openpyxl API 的用法错误 | 仅类型检查期依赖，运行时无影响；CI 走 `pip install -r requirements.txt` 自动生效 |
+| 1 | ✅ 已批准 · `backend/schemas/validation.py::CheckResult` 新增 `notes: list[str] = []` | 出口标准要求「报告中标注 S-11 为**授权改写**」，而 `CheckResult` 的字段全是违规/计数，没有放「不是违规但必须出现在报告里的声明」的位置。**可选字段 + 默认值，对既有调用方向后兼容**；v6 §10.4 区块6 的「授权改写声明」行直接取 `report.all_notes()` | 契约扩充（新增可选字段），不改变任何既有语义 |
+| 2 | ✅ 已批准 · `requirements.txt` 新增 `types-openpyxl==3.1.5.20260807` | `workbook.py` 用 openpyxl，`mypy --strict` 报 `Library stubs not installed`。**选择装 stub 而不是把 `openpyxl.*` 加进 `pyproject.toml` 的 `ignore_missing_imports` 白名单** —— 后者是放宽配置（CLAUDE.md §6 要求单列说明），前者与既有的 `types-PyYAML` 同一口径，且能真正查出 openpyxl API 的用法错误 | 仅类型检查期依赖，运行时无影响；CI 走 `pip install -r requirements.txt` 自动生效 |
 
 **`pyproject.toml` / `.importlinter` / `setup.cfg` 一处都没动。**
 
-另有一处**版式契约的扩充**（不是配置放宽，但同样请过目）：Sheet 4 区块1 增加一行「语义开关」，
-理由见 §3.10。它不改 `docs/`，只写在 `workbook.py` 的模块文档里，M3 落地时会用到。
+**业务方 2026-08-12 已对上表两条逐条批准**（改动在提出时即已落地，无需再改）。
+同时批准第三处 —— Sheet 4 区块1 增加一行「语义开关」**同步进 v6**，落点见 §3.10 末段。
+这是本窗口对 `docs/` 的唯一改动（CLAUDE.md §7 第 8 条：改设计文档须先取得业务方确认）。
 
 ---
 

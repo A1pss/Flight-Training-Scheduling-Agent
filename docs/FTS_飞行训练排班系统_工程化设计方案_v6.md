@@ -39,6 +39,7 @@ v6 相对 v5.2 的实质变化来自两个源头：
 | **Z-4** | **附录 B 的编号 pattern** | `person_id` 等放宽到只固定前缀、`airspace_id`/`runway_id` 不再是 `Literal` | 与 **§5.1.1** 直接矛盾：M1 已按 §5.1.1 放宽 ORM 与摄取校验，附录 B 当时没跟着放宽 → 换一批数据时「摄取通过、求解通过、组装方案时才炸」 |
 | **Z-5** | **§3.2.1（新增）、§3.3、§3.5.3、§3.7.1~3.7.5、§3.9** | 补写编码层的等价重写与三族蕴含下界；澄清阶段1 的目标口径 | 照 v6 字面实现的第一版基准周 30s 内证不到最优（gap 35.7%） |
 | **Z-6** | §3.1.3、§7.6、§12.3 基准周预期 | 回填 M2-A 实测值（候选 2276、模型 12568/37235、求解 21.0s、`OPTIMAL`、14 架次、7 条阻塞项） | 铁律 6 的正向要求 |
+| **Z-7** | **§10.4 区块1、§4.3** | **区块1 增加一行「语义开关」**（序列化 `S-01=…；S-02=…`），承载 `SchedulePlan.semantics_switches` | M2-B 实测：`semantics_switches` 参与 `content_sha256`（附录 B 脚注），而它在四张表里**一处都不出现** → §4.3 闸门3 的「反解后与源对象深度相等」在数学上就不可能成立。与当初为承载 `runway_id` 新增区块7（F10）是同一性质的补漏。业务方 2026-08-12 裁定 |
 
 > **Z-2 / Z-3 / Z-4 三条的共同点**：都是「文档某一处已经改对了，另一处没跟着改」造成的内部不一致。找规格时**先查有没有更晚的裁定**（§1.1 的 S-xx、本节的 D-xx / Z-xx），再看正文。
 
@@ -1110,7 +1111,7 @@ def verify_workbook(path: Path, plan: SchedulePlan) -> SchemaCheckReport:
     return SchemaCheckReport(passed=not diff, diff=diff)
 ```
 
-最后一条断言让格式通过率在逻辑上必然为 100%：写出的内容能被完整反解回原对象，格式就不可能错。**因此 `Sortie` 的每一个字段都必须在四张表的某一处出现——`runway_id` 与 `is_recurrent` 落在 Sheet 4 区块 7（§10.4）。**
+最后一条断言让格式通过率在逻辑上必然为 100%：写出的内容能被完整反解回原对象，格式就不可能错。**因此 `SchedulePlan` 的每一个字段都必须在四张表的某一处出现——`Sortie.runway_id` 与 `.is_recurrent` 落在 Sheet 4 区块 7，`semantics_switches` 落在区块 1 的「语义开关」行（§10.4，Z-7）。**
 
 ---
 
@@ -2251,6 +2252,7 @@ class ErrorResponse(BaseModel):
 | ISO 周 / 覆盖日期 | `2026W02` / `2026-01-05 ~ 2026-01-11` |
 | 数据快照 | `snap_2026w02_v3` |
 | 规则版本 / 语义版本 | `rs_1.3` / `sem_1.1` |
+| **语义开关**（★ Z-7 新增） | `S-01=all_missions_completed；S-02=class_level；…`（S-01~S-13 全量，`；` 分隔、`=` 连接） |
 | **跑道模型** | `dual_runway`（RWY-1: JL-8/JL-9；RWY-2: JL-8） |
 | 松弛档位 | `Tier 0（全硬约束）` |
 | 求解状态 / 耗时 / 目标值 / gap / worker 数 / seed | `OPTIMAL` / `…` / `…` / `…` / `8` / `42` |
@@ -2267,6 +2269,11 @@ class ErrorResponse(BaseModel):
 | … | … | … | … | … | … |
 
 末行追加格式校验三层结果：`Schema 层 ✅ / 业务完整性层 ✅ / 产物回读层 ✅`。
+
+> **「语义开关」行为什么是必须的**（Z-7）：`semantics_switches` 参与 `content_sha256`（附录 B 脚注）——
+> 同一份数据在不同语义解读下排出的两个方案是两个不同的计划版本。它若不落表，Excel 就反解不回
+> 完整的 `SchedulePlan`，§4.3 闸门3 的深度相等断言随之失效。序列化格式由
+> `backend/validator/workbook.py` 的 `SWITCH_SEP` / `SWITCH_KV` 固化，写出侧（M3）直接 import。
 
 **区块 3 · 训练进度与欠账**
 
