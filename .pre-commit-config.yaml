@@ -54,8 +54,21 @@ repos:
         pass_filenames: false
         types: [python]
 
+      # 这两条静态扫描 CI 也跑（ci.yml 的「铁律 1」与「E2/E3」两步）。
+      # 本地必须一起跑：M2-A 的 CI 连着红过三次，每次都是「本地没跑到这一步」或
+      # 「跑在了 CI 看不到的那一侧」。两个脚本的扫描集都是
+      # `git ls-files --cached --others --exclude-standard`，所以 pre-commit 里
+      # `pass_filenames: false` 不会漏掉暂存的新文件。
       - id: no-placeholders
         name: 禁止 TODO/FIXME/NotImplementedError（铁律 1）
         entry: bash deploy/scripts/check_no_placeholders.sh
         language: system
         pass_filenames: false
+        always_run: true
+
+      - id: egress-scan
+        name: E2/E3 egress 静态扫描（v6 §12.5.4）
+        entry: bash deploy/scripts/check_egress.sh
+        language: system
+        pass_filenames: false
+        always_run: true
