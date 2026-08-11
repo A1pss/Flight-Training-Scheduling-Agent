@@ -799,4 +799,35 @@ tests/guardrail/test_solver_isolation.py:36:UNFINISHED = re.compile(r"TODO|FIXME
 
 > **给后续窗口的一句话**：改动任何「扫文件」的门禁脚本后，**先 `git add`、再跑一次**，
 > 或者干脆确认脚本的扫描集与 `git status` 里看得见的东西一致。
-> 更省事的做法是把 pre-commit 装上（`pre-commit install`）—— 它在 commit 时替你跑这一遍。
+
+### 收尾：pre-commit 已装上，并顺手修掉两处「本地与 CI 不一致」
+
+三次 CI 失败的共同根因都是**本地与 CI 的视角/依赖不一致**，所以最后把 pre-commit 真装上了
+（`pre-commit install` + `install-hooks`），让这一类问题在 commit 时就暴露。装完实测又抓出
+两处同类不一致：
+
+| # | 不一致 | 修法 |
+|---|---|---|
+| ① | ruff 走 `ruff-pre-commit` 远端 hook（**v0.9.6**），而 CI 跑的是 conda 环境里的 **0.16.1** —— 两者对 `S603` 判定不同：pre-commit 删掉一个 `noqa`，CI 又要求加回来，来回打架 | 改成 `language: system` 调 conda 环境的 ruff。配置文件里 mypy/bandit/import-linter **本来就是这个原则**（注释写着「避免与 CI 用的不是同一套依赖」），ruff 当时漏了 |
+| ② | CI 的「E2/E3 egress 静态扫描」本地没有对应 hook | 补上；两条静态扫描都加 `always_run: true` —— 占位符可能写在 `.md`/`.sh` 里，只按 python 触发会漏 |
+
+只有「与 CI 无对应项」的通用卫生检查（trailing-whitespace / check-yaml /
+detect-private-key / `no-commit-to-branch --branch main`）继续用远端 hook。
+
+**实测（四条，都是真跑 `git commit`）**：
+
+```
+真提交一次                        → 15 个 hook 全过，提交成功
+暂存 raise NotImplementedError    → 「铁律 1」拦下，exit 1，提交未发生
+暂存 import requests              → lint-imports 与 E2 **双层**拦下
+暂存未使用的 import               → ruff --fix 改掉文件并中止提交（要求重新 add）
+pre-commit run --files $(git ls-files) → 全量 15 项全绿
+```
+
+**一处已知限制**（已写进 `.pre-commit-config.yaml` 文件头）：
+`pre-commit run --all-files` 在本机跑不了 —— pre-commit 4.6 会调
+`git ls-files --deduplicate`，而系统 git 是 **2.25.1**（该选项 git 2.31 才有）。
+**提交时的 hook 不受影响**（它走 staged 文件那条路径，不碰 `--deduplicate`），
+CI 也完全不经 pre-commit。要做全量扫描用 `--files $(git ls-files)`，或直接跑 §6 的命令。
+**没有为此往 conda 环境里塞一个新版 git** —— 那会让 PATH 上出现第二个 git，
+而这个仓库是用 SSH 推送的，换 git 有可能影响凭据与 ssh 配置，风险换不来什么收益。

@@ -143,7 +143,15 @@ bash deploy/scripts/check_egress.sh               # v6 §12.5.4 的 E2/E3
 > 两次是同一个错的两种形态 —— **验证时的视角必须与 CI 的视角一致**。
 > 现在两个扫描脚本都用 `git ls-files --cached --others --exclude-standard`
 > （入库的 + 未入库但没被 gitignore 的），本机与 CI 看同一批文件；
-> **新增文件在提交之前就会被拦下**。装上 pre-commit（`pre-commit install`）能少踩这一类坑。
+> **新增文件在提交之前就会被拦下**。
+>
+> **pre-commit 已装（M2-A）**：`conda run -n schedule pre-commit install`。
+> 它在 `git commit` 时跑上面除 pytest 以外的全部检查 + 通用卫生检查。两条注意：
+> ① **与 CI 重叠的检查一律用 `language: system` 调 conda 环境**，不要换成远端 hook ——
+> 曾经 ruff 用远端 v0.9.6、CI 用环境里的 0.16.1，两者判定不一致来回打架；
+> ② `pre-commit run --all-files` 在本机跑不了（系统 git 2.25.1 不支持
+> `--deduplicate`），全量扫描用 `pre-commit run --files $(git ls-files)`，
+> **提交时的 hook 不受影响**。
 
 一条不过就不许推。**不许通过放宽配置来让它过** —— 配置文件（`pyproject.toml` / `.importlinter` / `setup.cfg`）的任何放宽都要在收工报告里单列一条说明理由，并等用户确认。
 
