@@ -19,7 +19,7 @@
 
 基准周 2026W02 实测 **OPTIMAL**，**14 架次（9 带飞 + 5 单飞）**，与 v6 §1.4.3 的纸面推演
 逐项吻合；**阻塞项恰好 7 条**，与 v6 §1.4.2 逐条一致；静态预筛后**候选 2276 个**
-（已回填 v6 §3.1.3）。§6 六条门禁全绿，**657 个测试全过，覆盖率 92.70%**。
+（已回填 v6 §3.1.3）。§6 六条门禁 + 两条静态扫描全绿，**664 个测试全过，覆盖率 92.70%**。
 
 **三件请业务方拍板的事已于 2026-08-11 全部裁定并落地**（原始分析见 §7）：
 
@@ -251,13 +251,17 @@ mypy backend --strict   → Success: no issues found in 80 source files
 bandit -r backend -ll   → No issues identified.（exit 0，11891 行）
 lint-imports            → Contracts: 3 kept, 0 broken.
 pytest -q --cov=backend --cov-fail-under=80
-                        → 657 passed / 0 failed，Total coverage: 92.70%（门槛 80%）
+                        → 664 passed / 0 failed，Total coverage: 92.70%（门槛 80%）
 ```
 
 ```
-rg -n "TODO|FIXME|NotImplementedError|待实现|待补充|后续补" backend/ frontend/ tests/
-→ 只命中 tests/guardrail/test_solver_isolation.py 自己的检查正则，backend/ 与 frontend/ 为空 ✅
+bash deploy/scripts/check_no_placeholders.sh   → ✅ 无占位符
+bash deploy/scripts/check_egress.sh            → ✅ E2 通过 / ✅ E3 通过
 ```
+
+> ⚠️ **首个 CI 就栽在铁律 1 那一步上，两个原因叠在一起（详见 §11）。**
+> 教训：**门禁的判据是脚本的退出码，不是人看 `rg` 输出后的判断。**
+> CLAUDE.md §6 已把这两条脚本补进「收工前必跑」清单。
 
 `backend/solver/` 各文件覆盖率：`data.py` 99% · `reschedule.py` 98% · `solve.py` 97% ·
 `model.py` 96% · `objective.py` 96% · `candidates.py` 93% · `diagnose.py` 87%；
@@ -694,3 +698,64 @@ from backend.solver.data import ScenarioOverrides  # 外部扰动
 反而让那条解释失去对象（CLAUDE.md §1 已规定 v6 优先于 SPEC_DECISIONS）。
 
 **`docs/M0_规格锁定.md` 未改动** —— 它记的是 M0 窗口锁定的规格快照，不是活文档。
+
+---
+
+## 11. 补记：首个 CI 在「铁律 1」上失败的两个原因
+
+推上去之后 CI 的 `铁律 1 —— 无 TODO / NotImplementedError` 那一步红了。输出里两件事混在一起：
+
+```
+grep: tests/guardrail/__pycache__/test_solver_isolation.cpython-311-pytest-9.1.1.pyc: binary file matches
+❌ 检出占位符（违反 CLAUDE.md 铁律 1「不留半成品」）：
+tests/guardrail/test_solver_isolation.py:12:2. 求解链路里没有 `TODO` / ... 这类半成品（铁律 1）。
+tests/guardrail/test_solver_isolation.py:36:UNFINISHED = re.compile(r"TODO|FIXME|...")
+```
+
+### 原因 A（我引入的）：查占位符的文件被占位符检查自己拦下
+
+`tests/guardrail/test_solver_isolation.py` 是**检查这些标记**的护栏测试，它必须字面包含
+`TODO` 等 token，否则没法检查。而 `check_no_placeholders.sh` 扫的正是 `tests/`。
+
+**我本地明明看到了这两条命中。** 当时按 CLAUDE.md §10 收工检查单里的 `rg` 命令扫了一遍，
+判断「只命中检查正则本身、无害」就放过了 —— 而 CI 调的是 `check_no_placeholders.sh`，
+它**命中即 exit 1**，不认「无害」。这是**用目视判断代替了跑门禁**，收工报告 §4.1 当时甚至
+把那句「只命中检查正则本身」当成通过证据写了进去。CLAUDE.md §6 已补上这两条脚本与一句
+「门禁的判据是脚本的退出码，不是人的判断」。
+
+### 原因 B（早就存在，与我的文件无关）：脚本扫工作区而不是扫入库文件
+
+`grep -r backend frontend tests` 会扫到 CI 里 pytest 步骤刚生成的 `__pycache__/*.pyc`，
+而 `grep -r` 对二进制文件只会说「binary file matches」。**任何 `.pyc` 里恰好带上那几个
+字节都能让 CI 红**，跟「有没有半成品」毫无关系。
+
+本机之所以一直没暴露：脚本原先「有 `rg` 用 `rg`、没 `rg` 用 `grep`」分两支，
+`rg` 默认遵守 `.gitignore` 会跳过 `__pycache__`，CI 镜像里没有 `rg` 走的是 `grep` 那支。
+**本机与 CI 扫的根本不是同一批文件** —— 这类分叉是「本地绿、CI 红」的常见来源。
+
+### 修法
+
+| # | 改动 | 说明 |
+|---|---|---|
+| 1 | 两个脚本统一扫 **`git ls-files`**，只有一条代码路径 | 一次解决 B：`__pycache__` / 覆盖率产物 / `.data` 全部不在其中；也消掉了本机与 CI 的分叉。**语义是「未入库」而非「被 gitignore」** —— `git add` 过的新文件在索引里照样被扫，pre-commit 场景不漏 |
+| 2 | 加 `grep -I` | 就算某个二进制文件真的入了库也不会误报 |
+| 3 | 支持**逐行豁免** `# placeholder-scan: allow` | 解决 A。刻意做成逐行而不是按文件：**按文件豁免等于整个文件成盲区**；逐行豁免可审计（`rg "placeholder-scan: allow"` 一眼看全部用处），且评审时就摆在那一行上 |
+| 4 | `check_egress.sh` 一并统一到 `git ls-files` | 它当时没坏（`--include='*.py'` 挡掉了 `.pyc`），但带着同一个 `rg`/`grep` 分叉隐患 |
+| 5 | 新增 `tests/guardrail/test_placeholder_scan.py`（7 例） | 把三条语义钉死：真占位符必拦、逐行豁免生效、未入库/二进制不扫；另断言脚本确实被 CI 与 pre-commit 调用、豁免用处不超过 2 处 |
+
+**第 5 条是这次真正的收获。** 一个「命中即失败」的检查，只要它的假阳性没被钉住，
+下一个人碰到就会去加白名单绕过去 —— 而白名单一加，整个目录从此成为盲区。
+给 grep 脚本写测试看着小题大做，但它防的是**门禁被悄悄削弱**。
+
+### 一个连带发现：逐行豁免会被 formatter 撕开
+
+第一版把豁免写成
+`UNFINISHED = re.compile(r"TODO|...")  # placeholder-scan: allow`，
+`ruff format` 嫌行长，把字符串折到了下一行，注释留在 `)` 那一行 ——
+**含标记的那一行没了豁免，检查照样拦**。改成先用一个短赋值承接（`_TOKENS = r"..."  # 豁免`）
+再 `re.compile(_TOKENS)`，并验证 `ruff format` 两次都不再改动它。
+`test_clean_tree_passes` 会兜住这类回归。
+
+> **给后续窗口**：需要在 `backend/` / `frontend/` / `tests/` 里字面写这些标记时，
+> 在**同一物理行**末尾加 `# placeholder-scan: allow`，并确认 `ruff format` 之后
+> 注释还在那一行上。**不要**用它放过真正的半成品 —— 铁律 1 没有例外。

@@ -9,7 +9,7 @@ CLAUDE.md 铁律 2 的隔离**有一半是 import-linter 查不出来的**：
 
 1. `backend/solver/` 与 `backend/nodes/compile_spec.py` 里**一处都不提 validator**
    （连字符串、注释、类型注解都不许）；
-2. 求解链路里没有 `TODO` / `NotImplementedError` 这类半成品（铁律 1）。
+2. 求解链路里没有半成品占位符（铁律 1；具体标记见 `UNFINISHED`）。
 
 「写 validator 的窗口不许打开 backend/solver/」那一半靠窗口纪律，测不出来 ——
 这一点在收工报告里如实写明，不假装它被测到了。
@@ -32,8 +32,20 @@ SOLVER_FILES: tuple[Path, ...] = (
     PROJECT_ROOT / "backend" / "nodes" / "compile_spec.py",
 )
 
-#: 半成品标记（CLAUDE.md 铁律 1 + 收工检查单的 `rg` 命令同一口径）
-UNFINISHED = re.compile(r"TODO|FIXME|NotImplementedError|待实现|待补充|后续补")
+#: 半成品标记，与 CLAUDE.md 铁律 1、§10 收工检查单的 `rg` 命令、
+#: `deploy/scripts/check_no_placeholders.sh` 三处**同一口径**。
+#:
+#: 行尾那个豁免注释是必需的：本行字面包含了那几个标记，而 `check_no_placeholders.sh`
+#: 扫的正是 `tests/`，不豁免的话**这个查占位符的文件会被占位符检查自己拦下**。
+#: 豁免逐行、可审计（`rg "placeholder-scan: allow"` 一眼看全部用处），
+#: 不是「让 CI 过去」的开关。
+#:
+#: ⚠️ **正则单独拆成一行、而且必须短到 `ruff format` 不会再折它。** 写成
+#: `UNFINISHED = re.compile(r"...")  # 豁免` 时 formatter 会把字符串折到下一行，
+#: 豁免注释留在 `)` 那一行 —— 于是含标记的那一行没了豁免，检查照样拦。
+#: （这个回归被 `tests/guardrail/test_placeholder_scan.py::test_clean_tree_passes` 兜住。）
+_TOKENS = r"TODO|FIXME|NotImplementedError|待实现|待补充|后续补"  # placeholder-scan: allow
+UNFINISHED = re.compile(_TOKENS)
 
 
 def test_solver_files_exist() -> None:

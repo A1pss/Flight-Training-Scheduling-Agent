@@ -21,9 +21,24 @@ if [ ${#EXISTING[@]} -eq 0 ]; then
   echo "[check_egress] 无可扫描目录，跳过"; exit 0
 fi
 
+# 只扫**受版本控制的 .py 文件**，且只有一条代码路径。
+#
+# 早先这里按「有 rg 用 rg，没 rg 用 grep -r」分了两支，那是个隐患：`rg` 默认遵守
+# `.gitignore`、`grep -r` 不遵守，两支的扫描范围不一样 —— 本机绿、CI 红（或反过来）
+# 这类问题就是这么来的（`check_no_placeholders.sh` 已经因为同源问题在 CI 上炸过一次）。
+# 统一到 `git ls-files` 之后，本机与 CI 扫的是同一批文件。
+PY_FILES=""
+if command -v git >/dev/null 2>&1 && git rev-parse --git-dir >/dev/null 2>&1; then
+  PY_FILES=$(git ls-files -- "${EXISTING[@]}" | grep -E '\.py$' || true)
+fi
+
 grep_all() {
-  if command -v rg >/dev/null 2>&1; then rg -n "$1" "${EXISTING[@]}" || true
-  else grep -rnE "$1" "${EXISTING[@]}" --include='*.py' || true; fi
+  if [ -n "$PY_FILES" ]; then
+    printf '%s\n' "$PY_FILES" | tr '\n' '\0' \
+      | xargs -0 --no-run-if-empty grep -nIE "$1" -- || true
+  else
+    grep -rnIE "$1" "${EXISTING[@]}" --include='*.py' || true
+  fi
 }
 
 # ── E2：HTTP 客户端库的 import ───────────────────────────────────────

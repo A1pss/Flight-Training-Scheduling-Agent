@@ -127,7 +127,16 @@ conda run -n schedule mypy backend --strict
 conda run -n schedule bandit -r backend -ll
 conda run -n schedule lint-imports                # import-linter，强制三条依赖禁令（§3 铁律 2/3）
 conda run -n schedule pytest -q --cov=backend --cov-report=term-missing --cov-fail-under=80
+
+# ⚠️ CI 在这六条之后还有两条静态扫描，**本地也必须跑**（M2-A 的 CI 就是栽在第一条上）
+bash deploy/scripts/check_no_placeholders.sh      # 铁律 1：无 TODO / 半成品
+bash deploy/scripts/check_egress.sh               # v6 §12.5.4 的 E2/E3
 ```
+
+> **不要用「肉眼看 `rg` 的输出」代替跑脚本。** M2-A 当时按下面 §10 的 `rg` 命令扫了一遍，
+> 看到两条命中、判断「只命中检查正则本身、无害」就过了 —— 而 CI 调的是
+> `check_no_placeholders.sh`，它**命中即 exit 1**，不认「无害」。
+> **门禁的判据是脚本的退出码，不是人的判断。**
 
 一条不过就不许推。**不许通过放宽配置来让它过** —— 配置文件（`pyproject.toml` / `.importlinter` / `setup.cfg`）的任何放宽都要在收工报告里单列一条说明理由，并等用户确认。
 
