@@ -4,13 +4,23 @@
 #
 # 用法：bash deploy/scripts/check_no_placeholders.sh
 #
-# ── 两处踩过的坑，改动前先读 ────────────────────────────────────────
+# ── 三处踩过的坑，改动前先读 ────────────────────────────────────────
 #
-# ① **只扫受版本控制的文件（`git ls-files`），不扫工作区。**
-#    早先直接 `grep -r backend frontend tests`，于是 CI 里 pytest 步骤留下的
+# ① **扫「入库的 + 未入库但没被 gitignore 的」，不扫整个工作区。**
+#    `git ls-files --cached --others --exclude-standard`
+#
+#    起因 1：早先直接 `grep -r backend frontend tests`，于是 CI 里 pytest 步骤留下的
 #    `__pycache__/*.pyc` 被当成命中报出来（`grep: ...pyc: binary file matches`）——
 #    `.pyc` 里恰好带着那几个字节就能让 CI 红，而那和「有没有半成品」毫无关系。
-#    顺带也把 `.data/`、覆盖率产物等一切未入库的东西排除在外。
+#
+#    起因 2（**别把 `--others` 去掉**）：只用 `git ls-files`（= 只扫入库文件）会造出
+#    一道「未入库 vs 已入库」的行为悬崖 —— 同一个文件 `git add` 之前脚本看不见、
+#    之后才看见。实测踩过：新写的测试文件在未入库状态下跑门禁全绿，一 commit 推上去
+#    CI 就红。加上 `--others --exclude-standard` 之后，**本机与 CI 看到的是同一批文件**，
+#    且新文件在提交**之前**就会被拦下 —— 这比只扫入库文件更严，也更省事。
+#
+#    `--exclude-standard` 保证 gitignore 里的东西（`__pycache__/`、`.data/`、
+#    覆盖率产物）一律不进扫描集，起因 1 因此仍然是修好的。
 #    没有 git 时退回目录扫描，但加 `-I` 跳过二进制。
 #
 # ② **允许逐行豁免：同一行带 `placeholder-scan: allow` 即跳过。**
@@ -43,10 +53,11 @@ if [ ${#EXISTING[@]} -eq 0 ]; then
   exit 0
 fi
 
-# 受版本控制的文件清单（坑 ①）
+# 扫描集：入库的 + 未入库但未被 gitignore 的（坑 ①）
 FILES=""
 if command -v git >/dev/null 2>&1 && git rev-parse --git-dir >/dev/null 2>&1; then
-  FILES=$(git ls-files -z -- "${EXISTING[@]}" | tr '\0' '\n')
+  FILES=$(git ls-files -z --cached --others --exclude-standard -- "${EXISTING[@]}" \
+          | tr '\0' '\n' | sort -u)
 fi
 
 if [ -n "$FILES" ]; then

@@ -21,15 +21,17 @@ if [ ${#EXISTING[@]} -eq 0 ]; then
   echo "[check_egress] 无可扫描目录，跳过"; exit 0
 fi
 
-# 只扫**受版本控制的 .py 文件**，且只有一条代码路径。
+# 扫描集与 `check_no_placeholders.sh` 保持同一口径：**入库的 + 未入库但未被 gitignore 的**
+# `.py` 文件，且只有一条代码路径。
 #
 # 早先这里按「有 rg 用 rg，没 rg 用 grep -r」分了两支，那是个隐患：`rg` 默认遵守
 # `.gitignore`、`grep -r` 不遵守，两支的扫描范围不一样 —— 本机绿、CI 红（或反过来）
-# 这类问题就是这么来的（`check_no_placeholders.sh` 已经因为同源问题在 CI 上炸过一次）。
-# 统一到 `git ls-files` 之后，本机与 CI 扫的是同一批文件。
+# 这类问题就是这么来的（`check_no_placeholders.sh` 已经因为同源问题在 CI 上炸过两次）。
+# `--others` 不能去掉：少了它，同一个文件 `git add` 前后会被区别对待。
 PY_FILES=""
 if command -v git >/dev/null 2>&1 && git rev-parse --git-dir >/dev/null 2>&1; then
-  PY_FILES=$(git ls-files -- "${EXISTING[@]}" | grep -E '\.py$' || true)
+  PY_FILES=$(git ls-files --cached --others --exclude-standard -- "${EXISTING[@]}" \
+             | grep -E '\.py$' | sort -u || true)
 fi
 
 grep_all() {

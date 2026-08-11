@@ -19,7 +19,7 @@
 
 基准周 2026W02 实测 **OPTIMAL**，**14 架次（9 带飞 + 5 单飞）**，与 v6 §1.4.3 的纸面推演
 逐项吻合；**阻塞项恰好 7 条**，与 v6 §1.4.2 逐条一致；静态预筛后**候选 2276 个**
-（已回填 v6 §3.1.3）。§6 六条门禁 + 两条静态扫描全绿，**664 个测试全过，覆盖率 92.70%**。
+（已回填 v6 §3.1.3）。§6 六条门禁 + 两条静态扫描全绿，**665 个测试全过，覆盖率 92.70%**。
 
 **三件请业务方拍板的事已于 2026-08-11 全部裁定并落地**（原始分析见 §7）：
 
@@ -251,7 +251,7 @@ mypy backend --strict   → Success: no issues found in 80 source files
 bandit -r backend -ll   → No issues identified.（exit 0，11891 行）
 lint-imports            → Contracts: 3 kept, 0 broken.
 pytest -q --cov=backend --cov-fail-under=80
-                        → 664 passed / 0 failed，Total coverage: 92.70%（门槛 80%）
+                        → 665 passed / 0 failed / 0 skipped，Total coverage: 92.70%（门槛 80%）
 ```
 
 ```
@@ -701,7 +701,7 @@ from backend.solver.data import ScenarioOverrides  # 外部扰动
 
 ---
 
-## 11. 补记：首个 CI 在「铁律 1」上失败的两个原因
+## 11. 补记：CI 在「铁律 1」上连着失败三次，同一个错犯了两遍
 
 推上去之后 CI 的 `铁律 1 —— 无 TODO / NotImplementedError` 那一步红了。输出里两件事混在一起：
 
@@ -759,3 +759,44 @@ tests/guardrail/test_solver_isolation.py:36:UNFINISHED = re.compile(r"TODO|FIXME
 > **给后续窗口**：需要在 `backend/` / `frontend/` / `tests/` 里字面写这些标记时，
 > 在**同一物理行**末尾加 `# placeholder-scan: allow`，并确认 `ruff format` 之后
 > 注释还在那一行上。**不要**用它放过真正的半成品 —— 铁律 1 没有例外。
+
+### 第三次失败：修法本身造出了「未入库 vs 已入库」的行为悬崖
+
+上面那版修法（「只扫 `git ls-files`」）推上去之后，CI 又红了 —— 这次报的是
+**新增的 `tests/guardrail/test_placeholder_scan.py` 自己**：它的模块文档里为了讲清
+「护栏测试必须字面包含那几个标记」，把 `TODO` 字面写了出来。
+
+**我本地跑门禁时它是全绿的。** 原因是：那时这个文件还**未入库**（`git status` 里的 `??`），
+而「只扫入库文件」的口径看不见它；`git add` + `commit` 之后，CI 看到的是入库版本，于是红。
+
+**这和第二次失败（原因 A）是同一个错的两种形态：验证时所处的状态，与 CI 所处的状态不同。**
+第一次是「用目视代替跑脚本」，这一次是「跑了脚本，但跑在了 CI 看不到的那一侧」。
+两次的共同点是**我没有让本机的检查视角与 CI 对齐**。
+
+#### 修法：扫描集改成 `--cached --others --exclude-standard`
+
+| 口径 | `.pyc` 等产物 | 未入库的新文件 | 结果 |
+|---|---|---|---|
+| `grep -r`（最初） | **扫**（假阳性） | 扫 | CI 第一次红 |
+| `git ls-files`（第二版） | 不扫 ✅ | **不扫**（行为悬崖） | CI 第三次红 |
+| **`--cached --others --exclude-standard`（现行）** | **不扫**（被 gitignore） ✅ | **扫** ✅ | 本机与 CI 同一视角 |
+
+关键在于把口径从「**是否入库**」换成「**是否被 gitignore**」：
+`__pycache__/`、`.data/`、覆盖率产物都在 `.gitignore` 里，照样排除；而一个刚写出来、
+还没 `git add` 的文件**在提交之前就会被拦下** —— 比只扫入库文件更严，也省得再踩一次。
+
+顺带的收益：测试**不必再碰 git 索引**。上一版为了让探针「入库」而在测试里调
+`git add` / `git rm --cached`，那会污染开发者的暂存区（测试崩在中途就留下一个已 add
+的探针）。新口径下探针只要写文件、删文件。
+
+用例也随之调整（现 8 例）：
+`test_real_placeholder_is_caught_even_when_untracked`（钉住这次的失败）、
+`test_gitignored_artifacts_are_not_scanned`（钉住第一次的 `.pyc` 假阳性，并先自证
+`__pycache__` 确实被忽略，否则用例什么也没验到）、
+`test_allow_mark_must_be_on_the_same_physical_line`（钉住 formatter 撕开豁免那一条）。
+
+`check_egress.sh` 一并统一到同口径，并复验了 E2/E3 的正例与反例（未入库的违规文件也能拦到）。
+
+> **给后续窗口的一句话**：改动任何「扫文件」的门禁脚本后，**先 `git add`、再跑一次**，
+> 或者干脆确认脚本的扫描集与 `git status` 里看得见的东西一致。
+> 更省事的做法是把 pre-commit 装上（`pre-commit install`）—— 它在 commit 时替你跑这一遍。

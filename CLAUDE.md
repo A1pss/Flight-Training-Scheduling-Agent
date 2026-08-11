@@ -137,6 +137,13 @@ bash deploy/scripts/check_egress.sh               # v6 §12.5.4 的 E2/E3
 > 看到两条命中、判断「只命中检查正则本身、无害」就过了 —— 而 CI 调的是
 > `check_no_placeholders.sh`，它**命中即 exit 1**，不认「无害」。
 > **门禁的判据是脚本的退出码，不是人的判断。**
+>
+> **也不要在「CI 看不到的那一侧」跑门禁。** 同一个窗口紧接着又栽了一次：新写的文件
+> 还没 `git add`，而当时的脚本只扫入库文件，于是本机全绿、一 commit 就 CI 红。
+> 两次是同一个错的两种形态 —— **验证时的视角必须与 CI 的视角一致**。
+> 现在两个扫描脚本都用 `git ls-files --cached --others --exclude-standard`
+> （入库的 + 未入库但没被 gitignore 的），本机与 CI 看同一批文件；
+> **新增文件在提交之前就会被拦下**。装上 pre-commit（`pre-commit install`）能少踩这一类坑。
 
 一条不过就不许推。**不许通过放宽配置来让它过** —— 配置文件（`pyproject.toml` / `.importlinter` / `setup.cfg`）的任何放宽都要在收工报告里单列一条说明理由，并等用户确认。
 
