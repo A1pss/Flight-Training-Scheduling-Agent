@@ -209,6 +209,7 @@ torch==2.8.0
 tqdm==4.70.0
 transformers==4.57.6
 typer==0.27.1
+types-openpyxl==3.1.5.20260807
 types-PyYAML==6.0.12.20260724
 typing_extensions==4.15.0
 typing-inspection==0.4.2

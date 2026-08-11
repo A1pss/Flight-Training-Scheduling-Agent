@@ -45,6 +45,12 @@ class CheckResult(BaseModel):
     checked_items: int = Field(ge=0, description="检查了多少个对象；0 项需警惕假通过")
     violations: list[Violation] = Field(default_factory=list)
     duration_ms: float = Field(ge=0.0)
+    #: ★ M2-B 新增（可选、有默认值，对既有调用方向后兼容）：**不是违规、但必须
+    #: 出现在报告里的声明**。当前唯一的强制项是 S-11 的「业务方授权改写」
+    #: （v6 §1.2.4 / §10.4 区块6）—— 只要 S-11 开关为 on，无论本周是否真排出
+    #: 复训架次，这行声明都必须出现，否则评审者看到「刘斌到期后还在飞 C 类」
+    #: 会当成校验器漏判（风险项 R17）。
+    notes: list[str] = Field(default_factory=list)
 
 
 class ValidationReport(BaseModel):
@@ -71,6 +77,10 @@ class ValidationReport(BaseModel):
 
     def all_violations(self) -> list[Violation]:
         return [v for r in self.results for v in r.violations]
+
+    def all_notes(self) -> list[str]:
+        """报告级声明（当前为 S-11 授权改写）。Sheet 4 区块6 直接取它。"""
+        return [n for r in self.results for n in r.notes]
 
     def missing_rules(self) -> list[str]:
         """未被校验的规则编号。非空即说明校验没跑全，不能宣称 100% 合规。"""
