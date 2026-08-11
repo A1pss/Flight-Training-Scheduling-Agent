@@ -138,16 +138,61 @@ def test_extra_forbid_everywhere() -> None:
 @pytest.mark.parametrize(
     ("field", "bad"),
     [
-        ("sortie_id", "S1"),
-        ("mission_id", "missionZ-1"),
-        ("aircraft_id", "AC1"),
-        ("runway_id", "RWY-3"),
-        ("airspace_id", "LAC"),
+        ("sortie_id", "S1"),  # 系统自己发的号，位数仍然钉死（§10.6）
+        ("mission_id", "mission1-1"),  # 类别位必须是字母
+        ("mission_id", "missionA1"),  # 缺连字符
+        ("aircraft_id", "A10"),  # 前缀不对
+        ("aircraft_id", "ACx"),  # 序号不是数字
+        ("runway_id", "RWY-A"),  # 序号不是数字
+        ("runway_id", "RW-1"),  # 前缀不对
+        ("person_id", "X01"),  # 前缀不对
+        ("airspace_id", ""),  # 空域编号不许为空
     ],
 )
-def test_field_patterns(field: str, bad: str) -> None:
+def test_field_patterns_reject_malformed(field: str, bad: str) -> None:
+    """格式确实**畸形**的编号要拒。"""
+    kwargs: dict[str, object] = {field: bad}
+    if field == "person_id":
+        kwargs = {"crew": [{"person_id": bad, "name": "某人", "role": "单飞"}]}
     with pytest.raises(ValidationError):
-        _sortie(**{field: bad})
+        _sortie(**kwargs)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        # 编号只固定前缀约定、不限位数（v6 §5.1.1，业务方 2026-08-11 裁定）
+        ("mission_id", "missionZ-1"),  # 类别放宽到 A~Z
+        ("mission_id", "missionA-12"),  # 序号不限位数
+        ("aircraft_id", "AC1"),  # 一位机号
+        ("aircraft_id", "AC1024"),  # 四位机号
+        ("runway_id", "RWY-3"),  # 换机场就换跑道编号
+        ("airspace_id", "LAC"),  # 空域编号完全由上传数据决定，不是枚举
+        ("airspace_id", "Large-Area-C"),
+    ],
+)
+def test_field_patterns_accept_non_baseline_ids(field: str, value: str) -> None:
+    """**换一批数据也要能装出 `Sortie`。**
+
+    这一组曾经全是「期望抛 ValidationError」—— 那是把 §1.3 的基准取值当成了系统上限。
+    附录 B 于 2026-08-11 按 §5.1.1 放宽：编号只固定前缀约定，空域编号不是枚举。
+    否则用户上传 `P100` / `LAC` / `RWY-3` 时，**摄取通过、求解通过，组装方案时才炸**。
+    """
+    assert _sortie(**{field: value})
+
+
+def test_three_digit_person_id_is_accepted() -> None:
+    """9 个人以上的训练单位（`P100`）必须能排班。"""
+    sortie = _sortie(crew=[{"person_id": "P100", "name": "第一百人", "role": "单飞"}])
+    assert sortie.crew[0].person_id == "P100"
+
+
+def test_role_and_weekday_stay_enumerated() -> None:
+    """`role` / `weekday` 是**规格**，不是基准取值 —— 保持枚举（§5.1.1 同一口径）。"""
+    with pytest.raises(ValidationError):
+        _sortie(crew=[{"person_id": "P01", "name": "某人", "role": "见习教员"}])
+    with pytest.raises(ValidationError):
+        _sortie(weekday="星期一")
 
 
 # ─── SchedulePlan ────────────────────────────────────────────────────

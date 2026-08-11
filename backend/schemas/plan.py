@@ -1,4 +1,15 @@
-"""排班方案契约（v6 附录 B，逐字对齐）。
+r"""排班方案契约（v6 附录 B，逐字对齐）。
+
+**编号与枚举的口径以 v6 §5.1.1 为准**（业务方 2026-08-11 裁定）：编号只固定前缀约定、
+不限位数；空域编号由上传数据决定，**不是枚举**。附录 B 早先把 `person_id` 钉成
+`^P\d{2}$`、`airspace_id`/`runway_id` 钉成基准取值的 `Literal`，与 §5.1.1 直接矛盾 ——
+后果很具体：用户上传 9 个人（`P100`）、或空域叫 `LAC`，**摄取会通过、求解会通过，
+组装 `SchedulePlan` 时才 ValidationError**。
+
+仍然保持 `Literal` 的三处是**规格的一部分**，不是「把基准数据写成枚举」：
+`CrewRole`（新增一个角色意味着新的编成规则，必须先有业务方裁决）、`Weekday`、
+`RunwayModel`（S-05 的开关取值）。`sortie_id` 保持 `^S\d{6}$` —— 它不是上传数据，
+是本系统自己发的号（§10.6）。
 
 v6 相对 v5.2 的四处新增，一个都不能少：
 
@@ -22,10 +33,21 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 Weekday = Literal["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 CrewRole = Literal["教员", "学员", "单飞", "复训"]
-AirspaceId = Literal["SAA", "SAB", "IFR", "RT1", "RT2", "RNG"]
-RunwayId = Literal["RWY-1", "RWY-2"]
 RunwayModel = Literal["dual_runway", "single_runway"]
 RelaxTier = Literal["TIER1", "TIER2", "TIER3"]
+
+# ─────────────────────────────────────────────────────────────────────
+# 编号格式（v6 §5.1.1：只固定前缀约定，不限位数）
+#
+# 这几个常量存在的意义是「只有一处定义」：M1 的 ORM CHECK、摄取校验与这里的契约
+# 必须是同一口径，散在三处迟早漂。
+# ─────────────────────────────────────────────────────────────────────
+PERSON_ID_PATTERN = r"^P\d+$"
+AIRCRAFT_ID_PATTERN = r"^AC\d+$"
+MISSION_ID_PATTERN = r"^mission[A-Z]-\d+$"
+RUNWAY_ID_PATTERN = r"^RWY-\d+$"
+#: 系统自己发的架次号（§10.6 命名归档），不是上传数据，故仍钉死位数
+SORTIE_ID_PATTERN = r"^S\d{6}$"
 
 #: 训练窗（v6 §1.3.2 每日可用窗 06:00-18:00）
 TRAINING_WINDOW_START: time = time(6, 0)
@@ -37,7 +59,7 @@ class CrewMember(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    person_id: str = Field(pattern=r"^P\d{2}$")
+    person_id: str = Field(pattern=PERSON_ID_PATTERN)
     name: str = Field(min_length=1)
     role: CrewRole  # ★ v6 新增「复训」
 
@@ -47,16 +69,18 @@ class Sortie(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    sortie_id: str = Field(pattern=r"^S\d{6}$")
+    sortie_id: str = Field(pattern=SORTIE_ID_PATTERN)
     date: date_type
     weekday: Weekday
     takeoff: time
     landing: time
-    mission_id: str = Field(pattern=r"^mission[A-H]-\d$")
+    mission_id: str = Field(pattern=MISSION_ID_PATTERN)
     mission_name: str = Field(min_length=1)
-    airspace_id: AirspaceId
-    aircraft_id: str = Field(pattern=r"^AC\d{2}$")
-    runway_id: RunwayId  # ★ v6 新增（S-05）
+    #: 空域编号由上传数据决定，**不是枚举**（§5.1.1）。与 `airspaces` 表的一致性
+    #: 由摄取期的引用完整性校验保证，不靠这里的类型
+    airspace_id: str = Field(min_length=1)
+    aircraft_id: str = Field(pattern=AIRCRAFT_ID_PATTERN)
+    runway_id: str = Field(pattern=RUNWAY_ID_PATTERN)  # ★ v6 新增（S-05）
     is_recurrent: bool = False  # ★ v6 新增（S-11）
     crew: list[CrewMember] = Field(min_length=1, max_length=2)
 
@@ -91,9 +115,9 @@ class BlockedItem(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    person_id: str = Field(pattern=r"^P\d{2}$")
-    mission_id: str = Field(pattern=r"^mission[A-H]-\d$")
-    reason: str = Field(min_length=1, description="如「先修 A 类未达标」")
+    person_id: str = Field(pattern=PERSON_ID_PATTERN)
+    mission_id: str = Field(pattern=MISSION_ID_PATTERN)
+    reason: str = Field(min_length=1, description="如「missionA-2 未完成」")
     missing_prereqs: list[str] = Field(default_factory=list)
 
 
@@ -102,8 +126,8 @@ class TrainingDebt(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    person_id: str = Field(pattern=r"^P\d{2}$")
-    mission_id: str = Field(pattern=r"^mission[A-H]-\d$")
+    person_id: str = Field(pattern=PERSON_ID_PATTERN)
+    mission_id: str = Field(pattern=MISSION_ID_PATTERN)
     required: int = Field(ge=0, description="按 freq_days 滑窗推出的本周应排次数")
     scheduled: int = Field(ge=0)
     debt: int = Field(ge=0)
@@ -168,14 +192,17 @@ class SchedulePlan(BaseModel):
 
 
 __all__ = [
+    "AIRCRAFT_ID_PATTERN",
+    "MISSION_ID_PATTERN",
+    "PERSON_ID_PATTERN",
+    "RUNWAY_ID_PATTERN",
+    "SORTIE_ID_PATTERN",
     "TRAINING_WINDOW_END",
     "TRAINING_WINDOW_START",
-    "AirspaceId",
     "BlockedItem",
     "CrewMember",
     "CrewRole",
     "RelaxTier",
-    "RunwayId",
     "RunwayModel",
     "SchedulePlan",
     "Sortie",

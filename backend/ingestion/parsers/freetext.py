@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import date
 from typing import Any, Final, Literal
 
@@ -24,6 +25,7 @@ from backend.core.errors import IngestionError
 from backend.ingestion.adapters import ExtractedDocument
 from backend.ingestion.prompts import build_extraction_messages
 from backend.llm.provider import LLMProvider
+from backend.schemas.plan import AIRCRAFT_ID_PATTERN, PERSON_ID_PATTERN
 
 EventKind = Literal["person_unavailable", "aircraft_maintenance"]
 
@@ -82,9 +84,13 @@ class SituationEvent(BaseModel):
 
     @model_validator(mode="after")
     def _subject_matches_kind(self) -> SituationEvent:
-        import re
+        """主体编号要与事件类型对得上（人员事件配人员编号，飞机事件配机号）。
 
-        expected = r"^P\d{2}$" if self.kind == "person_unavailable" else r"^AC\d{2}$"
+        编号只校验**前缀约定、不限位数** —— v6 §5.1.1：编号由上传数据决定，
+        换一个训练单位可能是三位编号。位数写死会让 `P100` 这种合法编号被拒
+        （业务方 2026-08-11 裁定，与附录 B 同一次放宽）。
+        """
+        expected = PERSON_ID_PATTERN if self.kind == "person_unavailable" else AIRCRAFT_ID_PATTERN
         if not re.match(expected, self.subject_id):
             raise ValueError(f"{self.kind} 的 subject_id {self.subject_id!r} 不符合 {expected}")
         return self

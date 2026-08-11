@@ -70,6 +70,7 @@ source_modules =
     backend.core.db
     backend.core.errors
     backend.core.logging
+    backend.core.ruleset
 ; import-linter 不接受外部包的子模块（urllib.request），故对整个 urllib 设禁 ——
 ; 更严的口径。urllib.request 的文本形态另由 deploy/scripts/check_egress.sh 的
 ; E2 静态扫描把关（v6 §12.5.4）。
