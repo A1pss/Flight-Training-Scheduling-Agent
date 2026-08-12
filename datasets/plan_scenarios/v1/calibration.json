@@ -1,0 +1,522 @@
+[
+  {
+    "knob_id": "instructors_out",
+    "title": "整周不可用的教员人数",
+    "unit": "人",
+    "critical_level": 2,
+    "probes": [
+      [
+        3,
+        "INFEASIBLE"
+      ],
+      [
+        1,
+        "OPTIMAL"
+      ],
+      [
+        2,
+        "OPTIMAL"
+      ]
+    ]
+  },
+  {
+    "knob_id": "student_fleet_down",
+    "title": "整周维护的「学员机型」飞机数",
+    "unit": "架",
+    "critical_level": 5,
+    "probes": [
+      [
+        6,
+        "INFEASIBLE"
+      ],
+      [
+        3,
+        "OPTIMAL"
+      ],
+      [
+        4,
+        "OPTIMAL"
+      ],
+      [
+        5,
+        "OPTIMAL"
+      ]
+    ]
+  },
+  {
+    "knob_id": "fleet_down",
+    "title": "整周维护的飞机总数",
+    "unit": "架",
+    "critical_level": 5,
+    "probes": [
+      [
+        8,
+        "INFEASIBLE"
+      ],
+      [
+        4,
+        "OPTIMAL"
+      ],
+      [
+        6,
+        "INFEASIBLE"
+      ],
+      [
+        5,
+        "OPTIMAL"
+      ]
+    ]
+  },
+  {
+    "knob_id": "window_end_hours",
+    "title": "训练窗尾部缩短的小时数",
+    "unit": "小时",
+    "critical_level": null,
+    "probes": [
+      [
+        11,
+        "OPTIMAL"
+      ]
+    ]
+  },
+  {
+    "knob_id": "window_start_hours",
+    "title": "训练窗头部推迟的小时数",
+    "unit": "小时",
+    "critical_level": null,
+    "probes": [
+      [
+        11,
+        "OPTIMAL"
+      ]
+    ]
+  },
+  {
+    "knob_id": "airspace_IFR",
+    "title": "空域 IFR 容量下调格数（基准 1）",
+    "unit": "格",
+    "critical_level": 0,
+    "probes": [
+      [
+        1,
+        "INFEASIBLE"
+      ]
+    ]
+  },
+  {
+    "knob_id": "airspace_RNG",
+    "title": "空域 RNG 容量下调格数（基准 1）",
+    "unit": "格",
+    "critical_level": null,
+    "probes": [
+      [
+        1,
+        "OPTIMAL"
+      ]
+    ]
+  },
+  {
+    "knob_id": "airspace_RT1",
+    "title": "空域 RT1 容量下调格数（基准 1）",
+    "unit": "格",
+    "critical_level": 0,
+    "probes": [
+      [
+        1,
+        "INFEASIBLE"
+      ]
+    ]
+  },
+  {
+    "knob_id": "airspace_RT2",
+    "title": "空域 RT2 容量下调格数（基准 1）",
+    "unit": "格",
+    "critical_level": 0,
+    "probes": [
+      [
+        1,
+        "INFEASIBLE"
+      ]
+    ]
+  },
+  {
+    "knob_id": "airspace_SAA",
+    "title": "空域 SAA 容量下调格数（基准 2）",
+    "unit": "格",
+    "critical_level": null,
+    "probes": [
+      [
+        2,
+        "OPTIMAL"
+      ]
+    ]
+  },
+  {
+    "knob_id": "airspace_SAB",
+    "title": "空域 SAB 容量下调格数（基准 2）",
+    "unit": "格",
+    "critical_level": 1,
+    "probes": [
+      [
+        2,
+        "INFEASIBLE"
+      ],
+      [
+        1,
+        "OPTIMAL"
+      ]
+    ]
+  },
+  {
+    "knob_id": "runways_closed",
+    "title": "关闭的跑道条数",
+    "unit": "条",
+    "critical_level": 1,
+    "probes": [
+      [
+        2,
+        "INFEASIBLE"
+      ],
+      [
+        1,
+        "OPTIMAL"
+      ]
+    ]
+  },
+  {
+    "knob_id": "everyone_off_days",
+    "title": "全员不可用的天数（从周末往前推）",
+    "unit": "天",
+    "critical_level": 2,
+    "probes": [
+      [
+        7,
+        "INFEASIBLE"
+      ],
+      [
+        3,
+        "INFEASIBLE"
+      ],
+      [
+        1,
+        "OPTIMAL"
+      ],
+      [
+        2,
+        "OPTIMAL"
+      ]
+    ]
+  },
+  {
+    "knob_id": "students_off_days",
+    "title": "全部学员不可用的天数",
+    "unit": "天",
+    "critical_level": 2,
+    "probes": [
+      [
+        7,
+        "INFEASIBLE"
+      ],
+      [
+        3,
+        "INFEASIBLE"
+      ],
+      [
+        1,
+        "OPTIMAL"
+      ],
+      [
+        2,
+        "OPTIMAL"
+      ]
+    ]
+  },
+  {
+    "knob_id": "instructors_off_days",
+    "title": "全部教员不可用的天数",
+    "unit": "天",
+    "critical_level": 5,
+    "probes": [
+      [
+        7,
+        "INFEASIBLE"
+      ],
+      [
+        3,
+        "OPTIMAL"
+      ],
+      [
+        5,
+        "OPTIMAL"
+      ],
+      [
+        6,
+        "INFEASIBLE"
+      ]
+    ]
+  },
+  {
+    "knob_id": "student_off_P05",
+    "title": "学员 P05 不可用的天数",
+    "unit": "天",
+    "critical_level": 6,
+    "probes": [
+      [
+        7,
+        "INFEASIBLE"
+      ],
+      [
+        3,
+        "OPTIMAL"
+      ],
+      [
+        5,
+        "OPTIMAL"
+      ],
+      [
+        6,
+        "OPTIMAL"
+      ]
+    ]
+  },
+  {
+    "knob_id": "student_off_P06",
+    "title": "学员 P06 不可用的天数",
+    "unit": "天",
+    "critical_level": 5,
+    "probes": [
+      [
+        7,
+        "INFEASIBLE"
+      ],
+      [
+        3,
+        "OPTIMAL"
+      ],
+      [
+        5,
+        "OPTIMAL"
+      ],
+      [
+        6,
+        "INFEASIBLE"
+      ]
+    ]
+  },
+  {
+    "knob_id": "student_off_P07",
+    "title": "学员 P07 不可用的天数",
+    "unit": "天",
+    "critical_level": 5,
+    "probes": [
+      [
+        7,
+        "INFEASIBLE"
+      ],
+      [
+        3,
+        "OPTIMAL"
+      ],
+      [
+        5,
+        "OPTIMAL"
+      ],
+      [
+        6,
+        "INFEASIBLE"
+      ]
+    ]
+  },
+  {
+    "knob_id": "student_off_P08",
+    "title": "学员 P08 不可用的天数",
+    "unit": "天",
+    "critical_level": 2,
+    "probes": [
+      [
+        7,
+        "INFEASIBLE"
+      ],
+      [
+        3,
+        "INFEASIBLE"
+      ],
+      [
+        1,
+        "OPTIMAL"
+      ],
+      [
+        2,
+        "OPTIMAL"
+      ]
+    ]
+  },
+  {
+    "knob_id": "instructor_off_P01",
+    "title": "教员 P01 不可用的天数",
+    "unit": "天",
+    "critical_level": null,
+    "probes": [
+      [
+        7,
+        "OPTIMAL"
+      ]
+    ]
+  },
+  {
+    "knob_id": "instructor_off_P02",
+    "title": "教员 P02 不可用的天数",
+    "unit": "天",
+    "critical_level": null,
+    "probes": [
+      [
+        7,
+        "OPTIMAL"
+      ]
+    ]
+  },
+  {
+    "knob_id": "instructor_off_P03",
+    "title": "教员 P03 不可用的天数",
+    "unit": "天",
+    "critical_level": null,
+    "probes": [
+      [
+        7,
+        "OPTIMAL"
+      ]
+    ]
+  },
+  {
+    "knob_id": "all_airspaces_down",
+    "title": "全部空域容量同时下调的格数",
+    "unit": "格",
+    "critical_level": 0,
+    "probes": [
+      [
+        2,
+        "INFEASIBLE"
+      ],
+      [
+        1,
+        "INFEASIBLE"
+      ]
+    ]
+  },
+  {
+    "knob_id": "student_fleet_days",
+    "title": "「学员机型」飞机全部维护的天数",
+    "unit": "天",
+    "critical_level": 2,
+    "probes": [
+      [
+        7,
+        "INFEASIBLE"
+      ],
+      [
+        3,
+        "INFEASIBLE"
+      ],
+      [
+        1,
+        "OPTIMAL"
+      ],
+      [
+        2,
+        "OPTIMAL"
+      ]
+    ]
+  },
+  {
+    "knob_id": "window_end_half_hours",
+    "title": "训练窗尾部缩短的半小时数",
+    "unit": "半小时",
+    "critical_level": 22,
+    "probes": [
+      [
+        23,
+        "INFEASIBLE"
+      ],
+      [
+        11,
+        "OPTIMAL"
+      ],
+      [
+        17,
+        "OPTIMAL"
+      ],
+      [
+        20,
+        "OPTIMAL"
+      ],
+      [
+        21,
+        "OPTIMAL"
+      ],
+      [
+        22,
+        "OPTIMAL"
+      ]
+    ]
+  },
+  {
+    "knob_id": "window_end_ten_min",
+    "title": "训练窗尾部缩短的 10 分钟格数（细粒度）",
+    "unit": "个10分钟",
+    "critical_level": 66,
+    "probes": [
+      [
+        71,
+        "INFEASIBLE"
+      ],
+      [
+        35,
+        "OPTIMAL"
+      ],
+      [
+        53,
+        "OPTIMAL"
+      ],
+      [
+        62,
+        "OPTIMAL"
+      ],
+      [
+        66,
+        "OPTIMAL"
+      ],
+      [
+        68,
+        "INFEASIBLE"
+      ],
+      [
+        67,
+        "INFEASIBLE"
+      ]
+    ]
+  },
+  {
+    "knob_id": "student_fleet_days_front",
+    "title": "「学员机型」飞机全部维护的天数（从周一往后推）",
+    "unit": "天",
+    "critical_level": 2,
+    "probes": [
+      [
+        7,
+        "INFEASIBLE"
+      ],
+      [
+        3,
+        "INFEASIBLE"
+      ],
+      [
+        1,
+        "OPTIMAL"
+      ],
+      [
+        2,
+        "OPTIMAL"
+      ]
+    ]
+  }
+]

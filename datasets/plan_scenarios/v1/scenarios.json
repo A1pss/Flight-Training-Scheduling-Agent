@@ -1,0 +1,5042 @@
+[
+  {
+    "scenario_id": "BASE-01",
+    "category": "baseline",
+    "family": "baseline",
+    "title": "基准周 2026-01-05 原始数据，零扰动",
+    "expected_status": "SOLVED",
+    "overrides": {},
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 基准周：M2-A 实测 OPTIMAL / 14 架次 / 7 条阻塞项"
+  },
+  {
+    "scenario_id": "SP-ABS-01",
+    "category": "single",
+    "family": "absence",
+    "title": "1 人请假：P01（教员）整周不可用",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable_all_week": [
+        "P01"
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 人请假"
+  },
+  {
+    "scenario_id": "SP-ABS-02",
+    "category": "single",
+    "family": "absence",
+    "title": "1 人请假：P02（教员）整周不可用",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable_all_week": [
+        "P02"
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 人请假"
+  },
+  {
+    "scenario_id": "SP-ABS-03",
+    "category": "single",
+    "family": "absence",
+    "title": "1 人请假：P03（教员）整周不可用",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable_all_week": [
+        "P03"
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 人请假"
+  },
+  {
+    "scenario_id": "SP-ABS-04",
+    "category": "single",
+    "family": "absence",
+    "title": "1 人请假：P04（成熟飞行员）整周不可用",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable_all_week": [
+        "P04"
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 人请假"
+  },
+  {
+    "scenario_id": "SP-ABS-05",
+    "category": "single",
+    "family": "absence",
+    "title": "1 人请假：P05（学员）整周不可用",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable_all_week": [
+        "P05"
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 人请假"
+  },
+  {
+    "scenario_id": "SP-ABS-06",
+    "category": "single",
+    "family": "absence",
+    "title": "1 人请假：P06（学员）整周不可用",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable_all_week": [
+        "P06"
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 人请假"
+  },
+  {
+    "scenario_id": "SP-ABS-07",
+    "category": "single",
+    "family": "absence",
+    "title": "1 人请假：P07（学员）整周不可用",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable_all_week": [
+        "P07"
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 人请假"
+  },
+  {
+    "scenario_id": "SP-ABS-08",
+    "category": "single",
+    "family": "absence",
+    "title": "1 人请假：P08（学员）整周不可用",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable_all_week": [
+        "P08"
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 人请假"
+  },
+  {
+    "scenario_id": "SP-ABS-09",
+    "category": "single",
+    "family": "absence",
+    "title": "1 人请假：P01（教员）1 天不可用（2026-01-05起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable": {
+        "P01": [
+          "2026-01-05"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 人请假"
+  },
+  {
+    "scenario_id": "SP-ABS-10",
+    "category": "single",
+    "family": "absence",
+    "title": "1 人请假：P02（教员）1 天不可用（2026-01-06起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable": {
+        "P02": [
+          "2026-01-06"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 人请假"
+  },
+  {
+    "scenario_id": "SP-ABS-11",
+    "category": "single",
+    "family": "absence",
+    "title": "1 人请假：P03（教员）1 天不可用（2026-01-07起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable": {
+        "P03": [
+          "2026-01-07"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 人请假"
+  },
+  {
+    "scenario_id": "SP-ABS-12",
+    "category": "single",
+    "family": "absence",
+    "title": "1 人请假：P04（成熟飞行员）1 天不可用（2026-01-08起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable": {
+        "P04": [
+          "2026-01-08"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 人请假"
+  },
+  {
+    "scenario_id": "SP-ABS-13",
+    "category": "single",
+    "family": "absence",
+    "title": "1 人请假：P05（学员）1 天不可用（2026-01-09起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable": {
+        "P05": [
+          "2026-01-09"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 人请假"
+  },
+  {
+    "scenario_id": "SP-ABS-14",
+    "category": "single",
+    "family": "absence",
+    "title": "1 人请假：P06（学员）1 天不可用（2026-01-10起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable": {
+        "P06": [
+          "2026-01-10"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 人请假"
+  },
+  {
+    "scenario_id": "SP-ABS-15",
+    "category": "single",
+    "family": "absence",
+    "title": "1 人请假：P07（学员）1 天不可用（2026-01-11起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable": {
+        "P07": [
+          "2026-01-11"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 人请假"
+  },
+  {
+    "scenario_id": "SP-MNT-01",
+    "category": "single",
+    "family": "maintenance",
+    "title": "1 机维修：AC10 连续 7 天全天维护（2026-01-05 起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC10",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 机维修"
+  },
+  {
+    "scenario_id": "SP-MNT-02",
+    "category": "single",
+    "family": "maintenance",
+    "title": "1 机维修：AC27 连续 7 天全天维护（2026-01-05 起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC27",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 机维修"
+  },
+  {
+    "scenario_id": "SP-MNT-03",
+    "category": "single",
+    "family": "maintenance",
+    "title": "1 机维修：AC34 连续 7 天全天维护（2026-01-05 起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC34",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 机维修"
+  },
+  {
+    "scenario_id": "SP-MNT-04",
+    "category": "single",
+    "family": "maintenance",
+    "title": "1 机维修：AC49 连续 7 天全天维护（2026-01-05 起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC49",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 机维修"
+  },
+  {
+    "scenario_id": "SP-MNT-05",
+    "category": "single",
+    "family": "maintenance",
+    "title": "1 机维修：AC61 连续 7 天全天维护（2026-01-05 起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC61",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 机维修"
+  },
+  {
+    "scenario_id": "SP-MNT-06",
+    "category": "single",
+    "family": "maintenance",
+    "title": "1 机维修：AC73 连续 7 天全天维护（2026-01-05 起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC73",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 机维修"
+  },
+  {
+    "scenario_id": "SP-MNT-07",
+    "category": "single",
+    "family": "maintenance",
+    "title": "1 机维修：AC84 连续 7 天全天维护（2026-01-05 起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC84",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 机维修"
+  },
+  {
+    "scenario_id": "SP-MNT-08",
+    "category": "single",
+    "family": "maintenance",
+    "title": "1 机维修：AC95 连续 7 天全天维护（2026-01-05 起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC95",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 机维修"
+  },
+  {
+    "scenario_id": "SP-MNT-09",
+    "category": "single",
+    "family": "maintenance",
+    "title": "1 机维修：AC10 连续 1 天全天维护（2026-01-05 起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC10",
+          "2026-01-05",
+          "2026-01-05"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 机维修"
+  },
+  {
+    "scenario_id": "SP-MNT-10",
+    "category": "single",
+    "family": "maintenance",
+    "title": "1 机维修：AC27 连续 1 天全天维护（2026-01-06 起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC27",
+          "2026-01-06",
+          "2026-01-06"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 机维修"
+  },
+  {
+    "scenario_id": "SP-MNT-11",
+    "category": "single",
+    "family": "maintenance",
+    "title": "1 机维修：AC34 连续 1 天全天维护（2026-01-07 起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC34",
+          "2026-01-07",
+          "2026-01-07"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 机维修"
+  },
+  {
+    "scenario_id": "SP-MNT-12",
+    "category": "single",
+    "family": "maintenance",
+    "title": "1 机维修：AC49 连续 1 天全天维护（2026-01-08 起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC49",
+          "2026-01-08",
+          "2026-01-08"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 机维修"
+  },
+  {
+    "scenario_id": "SP-MNT-13",
+    "category": "single",
+    "family": "maintenance",
+    "title": "1 机维修：AC61 连续 1 天全天维护（2026-01-09 起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC61",
+          "2026-01-09",
+          "2026-01-09"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 机维修"
+  },
+  {
+    "scenario_id": "SP-MNT-14",
+    "category": "single",
+    "family": "maintenance",
+    "title": "1 机维修：AC73 连续 1 天全天维护（2026-01-10 起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC73",
+          "2026-01-10",
+          "2026-01-10"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 机维修"
+  },
+  {
+    "scenario_id": "SP-MNT-15",
+    "category": "single",
+    "family": "maintenance",
+    "title": "1 机维修：AC84 连续 1 天全天维护（2026-01-11 起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC84",
+          "2026-01-11",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 机维修"
+  },
+  {
+    "scenario_id": "SP-EXP-01",
+    "category": "single",
+    "family": "expiry",
+    "title": "1 资质到期：P04（成熟飞行员）A 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "qual_expiry": {
+        "P04|A": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 资质到期（成熟飞行员走 S-11 复训，学员按约束2 字面剔除）"
+  },
+  {
+    "scenario_id": "SP-EXP-02",
+    "category": "single",
+    "family": "expiry",
+    "title": "1 资质到期：P04（成熟飞行员）B 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "qual_expiry": {
+        "P04|B": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 资质到期（成熟飞行员走 S-11 复训，学员按约束2 字面剔除）"
+  },
+  {
+    "scenario_id": "SP-EXP-03",
+    "category": "single",
+    "family": "expiry",
+    "title": "1 资质到期：P04（成熟飞行员）C 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "qual_expiry": {
+        "P04|C": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 资质到期（成熟飞行员走 S-11 复训，学员按约束2 字面剔除）"
+  },
+  {
+    "scenario_id": "SP-EXP-04",
+    "category": "single",
+    "family": "expiry",
+    "title": "1 资质到期：P04（成熟飞行员）D 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "qual_expiry": {
+        "P04|D": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 资质到期（成熟飞行员走 S-11 复训，学员按约束2 字面剔除）"
+  },
+  {
+    "scenario_id": "SP-EXP-05",
+    "category": "single",
+    "family": "expiry",
+    "title": "1 资质到期：P04（成熟飞行员）E 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "qual_expiry": {
+        "P04|E": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 资质到期（成熟飞行员走 S-11 复训，学员按约束2 字面剔除）"
+  },
+  {
+    "scenario_id": "SP-EXP-06",
+    "category": "single",
+    "family": "expiry",
+    "title": "1 资质到期：P04（成熟飞行员）F 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "qual_expiry": {
+        "P04|F": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 资质到期（成熟飞行员走 S-11 复训，学员按约束2 字面剔除）"
+  },
+  {
+    "scenario_id": "SP-EXP-07",
+    "category": "single",
+    "family": "expiry",
+    "title": "1 资质到期：P04（成熟飞行员）G 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "qual_expiry": {
+        "P04|G": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 资质到期（成熟飞行员走 S-11 复训，学员按约束2 字面剔除）"
+  },
+  {
+    "scenario_id": "SP-EXP-08",
+    "category": "single",
+    "family": "expiry",
+    "title": "1 资质到期：P04（成熟飞行员）H 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "qual_expiry": {
+        "P04|H": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 资质到期（成熟飞行员走 S-11 复训，学员按约束2 字面剔除）"
+  },
+  {
+    "scenario_id": "SP-EXP-09",
+    "category": "single",
+    "family": "expiry",
+    "title": "1 资质到期：P05（学员）A 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "qual_expiry": {
+        "P05|A": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 资质到期（成熟飞行员走 S-11 复训，学员按约束2 字面剔除）"
+  },
+  {
+    "scenario_id": "SP-EXP-10",
+    "category": "single",
+    "family": "expiry",
+    "title": "1 资质到期：P05（学员）B 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "qual_expiry": {
+        "P05|B": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 资质到期（成熟飞行员走 S-11 复训，学员按约束2 字面剔除）"
+  },
+  {
+    "scenario_id": "SP-EXP-11",
+    "category": "single",
+    "family": "expiry",
+    "title": "1 资质到期：P05（学员）C 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "qual_expiry": {
+        "P05|C": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 资质到期（成熟飞行员走 S-11 复训，学员按约束2 字面剔除）"
+  },
+  {
+    "scenario_id": "SP-EXP-12",
+    "category": "single",
+    "family": "expiry",
+    "title": "1 资质到期：P05（学员）F 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "qual_expiry": {
+        "P05|F": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 资质到期（成熟飞行员走 S-11 复训，学员按约束2 字面剔除）"
+  },
+  {
+    "scenario_id": "SP-EXP-13",
+    "category": "single",
+    "family": "expiry",
+    "title": "1 资质到期：P06（学员）A 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "qual_expiry": {
+        "P06|A": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 资质到期（成熟飞行员走 S-11 复训，学员按约束2 字面剔除）"
+  },
+  {
+    "scenario_id": "SP-EXP-14",
+    "category": "single",
+    "family": "expiry",
+    "title": "1 资质到期：P06（学员）B 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "qual_expiry": {
+        "P06|B": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 资质到期（成熟飞行员走 S-11 复训，学员按约束2 字面剔除）"
+  },
+  {
+    "scenario_id": "SP-ASP-01",
+    "category": "single",
+    "family": "airspace",
+    "title": "1 空域容量变更：IFR 容量降为 0（关闭）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "IFR": 0
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 空域容量降为 0（v6 §3.4：关闭 = 容量降为 0）"
+  },
+  {
+    "scenario_id": "SP-ASP-02",
+    "category": "single",
+    "family": "airspace",
+    "title": "1 空域容量变更：RNG 容量降为 0（关闭）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "RNG": 0
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 空域容量降为 0（v6 §3.4：关闭 = 容量降为 0）"
+  },
+  {
+    "scenario_id": "SP-ASP-03",
+    "category": "single",
+    "family": "airspace",
+    "title": "1 空域容量变更：RT1 容量降为 0（关闭）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "RT1": 0
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 空域容量降为 0（v6 §3.4：关闭 = 容量降为 0）"
+  },
+  {
+    "scenario_id": "SP-ASP-04",
+    "category": "single",
+    "family": "airspace",
+    "title": "1 空域容量变更：RT2 容量降为 0（关闭）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "RT2": 0
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 空域容量降为 0（v6 §3.4：关闭 = 容量降为 0）"
+  },
+  {
+    "scenario_id": "SP-ASP-05",
+    "category": "single",
+    "family": "airspace",
+    "title": "1 空域容量变更：SAA 容量降为 1",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "SAA": 1
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 空域容量降为 0（v6 §3.4：关闭 = 容量降为 0）"
+  },
+  {
+    "scenario_id": "SP-ASP-06",
+    "category": "single",
+    "family": "airspace",
+    "title": "1 空域容量变更：SAA 容量降为 0（关闭）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "SAA": 0
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 空域容量降为 0（v6 §3.4：关闭 = 容量降为 0）"
+  },
+  {
+    "scenario_id": "SP-ASP-07",
+    "category": "single",
+    "family": "airspace",
+    "title": "1 空域容量变更：SAB 容量降为 1",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "SAB": 1
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 空域容量降为 0（v6 §3.4：关闭 = 容量降为 0）"
+  },
+  {
+    "scenario_id": "SP-ASP-08",
+    "category": "single",
+    "family": "airspace",
+    "title": "1 空域容量变更：SAB 容量降为 0（关闭）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "SAB": 0
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 空域容量降为 0（v6 §3.4：关闭 = 容量降为 0）"
+  },
+  {
+    "scenario_id": "SP-ASP-09",
+    "category": "single",
+    "family": "airspace",
+    "title": "1 空域容量变更：IFR 容量降为 0（关闭）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "IFR": 0
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 空域容量降为 0（v6 §3.4：关闭 = 容量降为 0）"
+  },
+  {
+    "scenario_id": "SP-ASP-10",
+    "category": "single",
+    "family": "airspace",
+    "title": "1 空域容量变更：RNG 容量降为 0（关闭）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "RNG": 0
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 空域容量降为 0（v6 §3.4：关闭 = 容量降为 0）"
+  },
+  {
+    "scenario_id": "SP-ASP-11",
+    "category": "single",
+    "family": "airspace",
+    "title": "1 空域容量变更：RT1 容量降为 0（关闭）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "RT1": 0
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 空域容量降为 0（v6 §3.4：关闭 = 容量降为 0）"
+  },
+  {
+    "scenario_id": "SP-ASP-12",
+    "category": "single",
+    "family": "airspace",
+    "title": "1 空域容量变更：RT2 容量降为 0（关闭）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "RT2": 0
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 空域容量降为 0（v6 §3.4：关闭 = 容量降为 0）"
+  },
+  {
+    "scenario_id": "SP-ASP-13",
+    "category": "single",
+    "family": "airspace",
+    "title": "1 空域容量变更：SAA 容量降为 1",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "SAA": 1
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 空域容量降为 0（v6 §3.4：关闭 = 容量降为 0）"
+  },
+  {
+    "scenario_id": "SP-ASP-14",
+    "category": "single",
+    "family": "airspace",
+    "title": "1 空域容量变更：SAA 容量降为 0（关闭）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "SAA": 0
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 空域容量降为 0（v6 §3.4：关闭 = 容量降为 0）"
+  },
+  {
+    "scenario_id": "SP-RWY-01",
+    "category": "single",
+    "family": "runway",
+    "title": "1 跑道关闭：RWY-1（服务机型 JL-8/JL-9）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "closed_runways": [
+        "RWY-1"
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 跑道关闭（v6 新增）"
+  },
+  {
+    "scenario_id": "SP-RWY-02",
+    "category": "single",
+    "family": "runway",
+    "title": "1 跑道关闭：RWY-2（服务机型 JL-8）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "closed_runways": [
+        "RWY-2"
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 单点扰动：1 跑道关闭（v6 新增）"
+  },
+  {
+    "scenario_id": "CB-01",
+    "category": "combo",
+    "family": "combo2",
+    "title": "组合扰动（2 个）：1 人请假：P05（学员）整周不可用；1 机维修：AC61 连续 7 天全天维护（2026-01-05 起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable_all_week": [
+        "P05"
+      ],
+      "maintenance_all_day": [
+        [
+          "AC61",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-02",
+    "category": "combo",
+    "family": "combo4",
+    "title": "组合扰动（4 个）：1 空域容量变更：RNG 容量降为 0（关闭）；1 机维修：AC49 连续 1 天全天维护（2026-01-08 起）；1 空域容量变更：IFR 容量降为 0（关闭）；1 空域容量变更：RNG 容量降为 0（关闭）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "RNG": 0,
+        "IFR": 0
+      },
+      "maintenance_all_day": [
+        [
+          "AC49",
+          "2026-01-08",
+          "2026-01-08"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-03",
+    "category": "combo",
+    "family": "combo4",
+    "title": "组合扰动（4 个）：1 机维修：AC61 连续 7 天全天维护（2026-01-05 起）；1 机维修：AC10 连续 7 天全天维护（2026-01-05 起）；1 人请假：P03（教员）整周不可用；1 资质到期：P04（成熟飞行员）A 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable_all_week": [
+        "P03"
+      ],
+      "maintenance_all_day": [
+        [
+          "AC10",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC61",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ],
+      "qual_expiry": {
+        "P04|A": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-04",
+    "category": "combo",
+    "family": "combo2",
+    "title": "组合扰动（2 个）：1 空域容量变更：IFR 容量降为 0（关闭）；1 资质到期：P06（学员）B 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "IFR": 0
+      },
+      "qual_expiry": {
+        "P06|B": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-05",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 资质到期：P04（成熟飞行员）H 类于 2026-01-04 到期；1 机维修：AC95 连续 7 天全天维护（2026-01-05 起）；1 人请假：P04（成熟飞行员）1 天不可用（2026-01-08起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable": {
+        "P04": [
+          "2026-01-08"
+        ]
+      },
+      "maintenance_all_day": [
+        [
+          "AC95",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ],
+      "qual_expiry": {
+        "P04|H": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-06",
+    "category": "combo",
+    "family": "combo2",
+    "title": "组合扰动（2 个）：1 资质到期：P05（学员）A 类于 2026-01-04 到期；1 人请假：P05（学员）1 天不可用（2026-01-09起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable": {
+        "P05": [
+          "2026-01-09"
+        ]
+      },
+      "qual_expiry": {
+        "P05|A": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-07",
+    "category": "combo",
+    "family": "combo2",
+    "title": "组合扰动（2 个）：1 空域容量变更：SAB 容量降为 1；1 机维修：AC84 连续 1 天全天维护（2026-01-11 起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "SAB": 1
+      },
+      "maintenance_all_day": [
+        [
+          "AC84",
+          "2026-01-11",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-08",
+    "category": "combo",
+    "family": "combo4",
+    "title": "组合扰动（4 个）：1 人请假：P04（成熟飞行员）1 天不可用（2026-01-08起）；1 机维修：AC84 连续 1 天全天维护（2026-01-11 起）；1 资质到期：P05（学员）A 类于 2026-01-04 到期；1 资质到期：P04（成熟飞行员）E 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable": {
+        "P04": [
+          "2026-01-08"
+        ]
+      },
+      "maintenance_all_day": [
+        [
+          "AC84",
+          "2026-01-11",
+          "2026-01-11"
+        ]
+      ],
+      "qual_expiry": {
+        "P05|A": "2026-01-04",
+        "P04|E": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-09",
+    "category": "combo",
+    "family": "combo2",
+    "title": "组合扰动（2 个）：1 机维修：AC84 连续 7 天全天维护（2026-01-05 起）；1 空域容量变更：RNG 容量降为 0（关闭）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "RNG": 0
+      },
+      "maintenance_all_day": [
+        [
+          "AC84",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-10",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 机维修：AC49 连续 1 天全天维护（2026-01-08 起）；1 资质到期：P05（学员）A 类于 2026-01-04 到期；1 人请假：P02（教员）1 天不可用（2026-01-06起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable": {
+        "P02": [
+          "2026-01-06"
+        ]
+      },
+      "maintenance_all_day": [
+        [
+          "AC49",
+          "2026-01-08",
+          "2026-01-08"
+        ]
+      ],
+      "qual_expiry": {
+        "P05|A": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-11",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 机维修：AC84 连续 7 天全天维护（2026-01-05 起）；1 人请假：P01（教员）1 天不可用（2026-01-05起）；1 机维修：AC49 连续 7 天全天维护（2026-01-05 起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable": {
+        "P01": [
+          "2026-01-05"
+        ]
+      },
+      "maintenance_all_day": [
+        [
+          "AC49",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC84",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-12",
+    "category": "combo",
+    "family": "combo2",
+    "title": "组合扰动（2 个）：1 资质到期：P04（成熟飞行员）E 类于 2026-01-04 到期；1 人请假：P01（教员）整周不可用",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable_all_week": [
+        "P01"
+      ],
+      "qual_expiry": {
+        "P04|E": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-13",
+    "category": "combo",
+    "family": "combo4",
+    "title": "组合扰动（4 个）：1 空域容量变更：SAB 容量降为 1；1 人请假：P04（成熟飞行员）整周不可用；1 空域容量变更：IFR 容量降为 0（关闭）；1 人请假：P04（成熟飞行员）1 天不可用（2026-01-08起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "SAB": 1,
+        "IFR": 0
+      },
+      "unavailable": {
+        "P04": [
+          "2026-01-08"
+        ]
+      },
+      "unavailable_all_week": [
+        "P04"
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-14",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 空域容量变更：SAA 容量降为 1；1 空域容量变更：SAA 容量降为 0（关闭）；1 机维修：AC84 连续 1 天全天维护（2026-01-11 起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "SAA": 0
+      },
+      "maintenance_all_day": [
+        [
+          "AC84",
+          "2026-01-11",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-15",
+    "category": "combo",
+    "family": "combo4",
+    "title": "组合扰动（4 个）：1 人请假：P05（学员）整周不可用；1 机维修：AC10 连续 1 天全天维护（2026-01-05 起）；1 机维修：AC73 连续 1 天全天维护（2026-01-10 起）；1 资质到期：P05（学员）C 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable_all_week": [
+        "P05"
+      ],
+      "maintenance_all_day": [
+        [
+          "AC10",
+          "2026-01-05",
+          "2026-01-05"
+        ],
+        [
+          "AC73",
+          "2026-01-10",
+          "2026-01-10"
+        ]
+      ],
+      "qual_expiry": {
+        "P05|C": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-16",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 机维修：AC10 连续 1 天全天维护（2026-01-05 起）；1 人请假：P05（学员）1 天不可用（2026-01-09起）；1 机维修：AC84 连续 7 天全天维护（2026-01-05 起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable": {
+        "P05": [
+          "2026-01-09"
+        ]
+      },
+      "maintenance_all_day": [
+        [
+          "AC10",
+          "2026-01-05",
+          "2026-01-05"
+        ],
+        [
+          "AC84",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-17",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 机维修：AC10 连续 1 天全天维护（2026-01-05 起）；1 机维修：AC61 连续 1 天全天维护（2026-01-09 起）；1 人请假：P06（学员）整周不可用",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable_all_week": [
+        "P06"
+      ],
+      "maintenance_all_day": [
+        [
+          "AC10",
+          "2026-01-05",
+          "2026-01-05"
+        ],
+        [
+          "AC61",
+          "2026-01-09",
+          "2026-01-09"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-18",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 资质到期：P05（学员）C 类于 2026-01-04 到期；1 资质到期：P04（成熟飞行员）D 类于 2026-01-04 到期；1 人请假：P07（学员）整周不可用",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable_all_week": [
+        "P07"
+      ],
+      "qual_expiry": {
+        "P05|C": "2026-01-04",
+        "P04|D": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-19",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 机维修：AC27 连续 1 天全天维护（2026-01-06 起）；1 机维修：AC95 连续 7 天全天维护（2026-01-05 起）；1 人请假：P05（学员）1 天不可用（2026-01-09起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable": {
+        "P05": [
+          "2026-01-09"
+        ]
+      },
+      "maintenance_all_day": [
+        [
+          "AC27",
+          "2026-01-06",
+          "2026-01-06"
+        ],
+        [
+          "AC95",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-20",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 机维修：AC49 连续 7 天全天维护（2026-01-05 起）；1 人请假：P04（成熟飞行员）1 天不可用（2026-01-08起）；1 资质到期：P04（成熟飞行员）B 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable": {
+        "P04": [
+          "2026-01-08"
+        ]
+      },
+      "maintenance_all_day": [
+        [
+          "AC49",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ],
+      "qual_expiry": {
+        "P04|B": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-21",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 空域容量变更：RT2 容量降为 0（关闭）；1 机维修：AC10 连续 1 天全天维护（2026-01-05 起）；1 资质到期：P04（成熟飞行员）B 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "RT2": 0
+      },
+      "maintenance_all_day": [
+        [
+          "AC10",
+          "2026-01-05",
+          "2026-01-05"
+        ]
+      ],
+      "qual_expiry": {
+        "P04|B": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-22",
+    "category": "combo",
+    "family": "combo2",
+    "title": "组合扰动（2 个）：1 空域容量变更：SAA 容量降为 0（关闭）；1 资质到期：P05（学员）A 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "SAA": 0
+      },
+      "qual_expiry": {
+        "P05|A": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-23",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 人请假：P04（成熟飞行员）1 天不可用（2026-01-08起）；1 人请假：P03（教员）1 天不可用（2026-01-07起）；1 资质到期：P04（成熟飞行员）A 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable": {
+        "P04": [
+          "2026-01-08"
+        ],
+        "P03": [
+          "2026-01-07"
+        ]
+      },
+      "qual_expiry": {
+        "P04|A": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-24",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 空域容量变更：SAB 容量降为 1；1 空域容量变更：SAA 容量降为 1；1 资质到期：P05（学员）B 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "SAB": 1,
+        "SAA": 1
+      },
+      "qual_expiry": {
+        "P05|B": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-25",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 跑道关闭：RWY-1（服务机型 JL-8/JL-9）；1 空域容量变更：SAA 容量降为 0（关闭）；1 人请假：P03（教员）1 天不可用（2026-01-07起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "SAA": 0
+      },
+      "closed_runways": [
+        "RWY-1"
+      ],
+      "unavailable": {
+        "P03": [
+          "2026-01-07"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-26",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 机维修：AC49 连续 7 天全天维护（2026-01-05 起）；1 空域容量变更：RT1 容量降为 0（关闭）；1 资质到期：P04（成熟飞行员）C 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "RT1": 0
+      },
+      "maintenance_all_day": [
+        [
+          "AC49",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ],
+      "qual_expiry": {
+        "P04|C": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-27",
+    "category": "combo",
+    "family": "combo4",
+    "title": "组合扰动（4 个）：1 空域容量变更：RNG 容量降为 0（关闭）；1 人请假：P07（学员）整周不可用；1 人请假：P08（学员）整周不可用；1 机维修：AC34 连续 1 天全天维护（2026-01-07 起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "RNG": 0
+      },
+      "unavailable_all_week": [
+        "P07",
+        "P08"
+      ],
+      "maintenance_all_day": [
+        [
+          "AC34",
+          "2026-01-07",
+          "2026-01-07"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-28",
+    "category": "combo",
+    "family": "combo2",
+    "title": "组合扰动（2 个）：1 资质到期：P04（成熟飞行员）B 类于 2026-01-04 到期；1 空域容量变更：RT1 容量降为 0（关闭）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "RT1": 0
+      },
+      "qual_expiry": {
+        "P04|B": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-29",
+    "category": "combo",
+    "family": "combo4",
+    "title": "组合扰动（4 个）：1 跑道关闭：RWY-1（服务机型 JL-8/JL-9）；1 空域容量变更：IFR 容量降为 0（关闭）；1 资质到期：P04（成熟飞行员）A 类于 2026-01-04 到期；1 人请假：P05（学员）整周不可用",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "IFR": 0
+      },
+      "closed_runways": [
+        "RWY-1"
+      ],
+      "unavailable_all_week": [
+        "P05"
+      ],
+      "qual_expiry": {
+        "P04|A": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-30",
+    "category": "combo",
+    "family": "combo2",
+    "title": "组合扰动（2 个）：1 跑道关闭：RWY-1（服务机型 JL-8/JL-9）；1 资质到期：P04（成熟飞行员）G 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "closed_runways": [
+        "RWY-1"
+      ],
+      "qual_expiry": {
+        "P04|G": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-31",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 人请假：P04（成熟飞行员）整周不可用；1 人请假：P07（学员）1 天不可用（2026-01-11起）；1 空域容量变更：IFR 容量降为 0（关闭）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "IFR": 0
+      },
+      "unavailable": {
+        "P07": [
+          "2026-01-11"
+        ]
+      },
+      "unavailable_all_week": [
+        "P04"
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-32",
+    "category": "combo",
+    "family": "combo2",
+    "title": "组合扰动（2 个）：1 跑道关闭：RWY-1（服务机型 JL-8/JL-9）；1 空域容量变更：SAB 容量降为 1",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "SAB": 1
+      },
+      "closed_runways": [
+        "RWY-1"
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-33",
+    "category": "combo",
+    "family": "combo2",
+    "title": "组合扰动（2 个）：1 资质到期：P04（成熟飞行员）D 类于 2026-01-04 到期；1 空域容量变更：SAB 容量降为 0（关闭）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "SAB": 0
+      },
+      "qual_expiry": {
+        "P04|D": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-34",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 空域容量变更：RNG 容量降为 0（关闭）；1 人请假：P03（教员）整周不可用；1 空域容量变更：SAB 容量降为 0（关闭）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "RNG": 0,
+        "SAB": 0
+      },
+      "unavailable_all_week": [
+        "P03"
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-35",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 资质到期：P04（成熟飞行员）A 类于 2026-01-04 到期；1 机维修：AC84 连续 1 天全天维护（2026-01-11 起）；1 资质到期：P06（学员）A 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC84",
+          "2026-01-11",
+          "2026-01-11"
+        ]
+      ],
+      "qual_expiry": {
+        "P04|A": "2026-01-04",
+        "P06|A": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-36",
+    "category": "combo",
+    "family": "combo4",
+    "title": "组合扰动（4 个）：1 机维修：AC49 连续 7 天全天维护（2026-01-05 起）；1 资质到期：P06（学员）B 类于 2026-01-04 到期；1 资质到期：P06（学员）A 类于 2026-01-04 到期；1 空域容量变更：SAB 容量降为 1",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "SAB": 1
+      },
+      "maintenance_all_day": [
+        [
+          "AC49",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ],
+      "qual_expiry": {
+        "P06|B": "2026-01-04",
+        "P06|A": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-37",
+    "category": "combo",
+    "family": "combo2",
+    "title": "组合扰动（2 个）：1 机维修：AC49 连续 7 天全天维护（2026-01-05 起）；1 人请假：P07（学员）1 天不可用（2026-01-11起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable": {
+        "P07": [
+          "2026-01-11"
+        ]
+      },
+      "maintenance_all_day": [
+        [
+          "AC49",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-38",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 机维修：AC34 连续 7 天全天维护（2026-01-05 起）；1 空域容量变更：IFR 容量降为 0（关闭）；1 空域容量变更：RT2 容量降为 0（关闭）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "IFR": 0,
+        "RT2": 0
+      },
+      "maintenance_all_day": [
+        [
+          "AC34",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-39",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 空域容量变更：RT2 容量降为 0（关闭）；1 机维修：AC84 连续 1 天全天维护（2026-01-11 起）；1 空域容量变更：IFR 容量降为 0（关闭）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "RT2": 0,
+        "IFR": 0
+      },
+      "maintenance_all_day": [
+        [
+          "AC84",
+          "2026-01-11",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-40",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 人请假：P01（教员）整周不可用；1 空域容量变更：SAA 容量降为 1；1 资质到期：P04（成熟飞行员）C 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "SAA": 1
+      },
+      "unavailable_all_week": [
+        "P01"
+      ],
+      "qual_expiry": {
+        "P04|C": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-41",
+    "category": "combo",
+    "family": "combo2",
+    "title": "组合扰动（2 个）：1 跑道关闭：RWY-2（服务机型 JL-8）；1 人请假：P05（学员）整周不可用",
+    "expected_status": "EITHER",
+    "overrides": {
+      "closed_runways": [
+        "RWY-2"
+      ],
+      "unavailable_all_week": [
+        "P05"
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-42",
+    "category": "combo",
+    "family": "combo2",
+    "title": "组合扰动（2 个）：1 机维修：AC61 连续 1 天全天维护（2026-01-09 起）；1 空域容量变更：SAA 容量降为 1",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "SAA": 1
+      },
+      "maintenance_all_day": [
+        [
+          "AC61",
+          "2026-01-09",
+          "2026-01-09"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-43",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 空域容量变更：RT2 容量降为 0（关闭）；1 资质到期：P05（学员）F 类于 2026-01-04 到期；1 资质到期：P04（成熟飞行员）D 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "RT2": 0
+      },
+      "qual_expiry": {
+        "P05|F": "2026-01-04",
+        "P04|D": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-44",
+    "category": "combo",
+    "family": "combo2",
+    "title": "组合扰动（2 个）：1 机维修：AC27 连续 7 天全天维护（2026-01-05 起）；1 人请假：P02（教员）1 天不可用（2026-01-06起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable": {
+        "P02": [
+          "2026-01-06"
+        ]
+      },
+      "maintenance_all_day": [
+        [
+          "AC27",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-45",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 机维修：AC73 连续 7 天全天维护（2026-01-05 起）；1 空域容量变更：SAA 容量降为 0（关闭）；1 机维修：AC95 连续 7 天全天维护（2026-01-05 起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "SAA": 0
+      },
+      "maintenance_all_day": [
+        [
+          "AC73",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC95",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-46",
+    "category": "combo",
+    "family": "combo2",
+    "title": "组合扰动（2 个）：1 机维修：AC84 连续 7 天全天维护（2026-01-05 起）；1 资质到期：P04（成熟飞行员）H 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC84",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ],
+      "qual_expiry": {
+        "P04|H": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-47",
+    "category": "combo",
+    "family": "combo4",
+    "title": "组合扰动（4 个）：1 机维修：AC49 连续 1 天全天维护（2026-01-08 起）；1 空域容量变更：RNG 容量降为 0（关闭）；1 空域容量变更：SAA 容量降为 1；1 机维修：AC61 连续 7 天全天维护（2026-01-05 起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "RNG": 0,
+        "SAA": 1
+      },
+      "maintenance_all_day": [
+        [
+          "AC49",
+          "2026-01-08",
+          "2026-01-08"
+        ],
+        [
+          "AC61",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-48",
+    "category": "combo",
+    "family": "combo4",
+    "title": "组合扰动（4 个）：1 空域容量变更：SAA 容量降为 0（关闭）；1 资质到期：P05（学员）C 类于 2026-01-04 到期；1 人请假：P01（教员）1 天不可用（2026-01-05起）；1 人请假：P02（教员）整周不可用",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "SAA": 0
+      },
+      "unavailable": {
+        "P01": [
+          "2026-01-05"
+        ]
+      },
+      "unavailable_all_week": [
+        "P02"
+      ],
+      "qual_expiry": {
+        "P05|C": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-49",
+    "category": "combo",
+    "family": "combo2",
+    "title": "组合扰动（2 个）：1 空域容量变更：SAA 容量降为 0（关闭）；1 人请假：P07（学员）整周不可用",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "SAA": 0
+      },
+      "unavailable_all_week": [
+        "P07"
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-50",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 人请假：P01（教员）1 天不可用（2026-01-05起）；1 资质到期：P04（成熟飞行员）G 类于 2026-01-04 到期；1 空域容量变更：SAB 容量降为 1",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "SAB": 1
+      },
+      "unavailable": {
+        "P01": [
+          "2026-01-05"
+        ]
+      },
+      "qual_expiry": {
+        "P04|G": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-51",
+    "category": "combo",
+    "family": "combo2",
+    "title": "组合扰动（2 个）：1 人请假：P02（教员）1 天不可用（2026-01-06起）；1 跑道关闭：RWY-2（服务机型 JL-8）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "closed_runways": [
+        "RWY-2"
+      ],
+      "unavailable": {
+        "P02": [
+          "2026-01-06"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-52",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 机维修：AC61 连续 7 天全天维护（2026-01-05 起）；1 资质到期：P05（学员）C 类于 2026-01-04 到期；1 空域容量变更：RT1 容量降为 0（关闭）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "RT1": 0
+      },
+      "maintenance_all_day": [
+        [
+          "AC61",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ],
+      "qual_expiry": {
+        "P05|C": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-53",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 人请假：P08（学员）整周不可用；1 机维修：AC49 连续 7 天全天维护（2026-01-05 起）；1 资质到期：P04（成熟飞行员）E 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable_all_week": [
+        "P08"
+      ],
+      "maintenance_all_day": [
+        [
+          "AC49",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ],
+      "qual_expiry": {
+        "P04|E": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-54",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 资质到期：P05（学员）B 类于 2026-01-04 到期；1 空域容量变更：IFR 容量降为 0（关闭）；1 空域容量变更：RT2 容量降为 0（关闭）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "IFR": 0,
+        "RT2": 0
+      },
+      "qual_expiry": {
+        "P05|B": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-55",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 资质到期：P06（学员）B 类于 2026-01-04 到期；1 人请假：P08（学员）整周不可用；1 人请假：P07（学员）1 天不可用（2026-01-11起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable": {
+        "P07": [
+          "2026-01-11"
+        ]
+      },
+      "unavailable_all_week": [
+        "P08"
+      ],
+      "qual_expiry": {
+        "P06|B": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-56",
+    "category": "combo",
+    "family": "combo2",
+    "title": "组合扰动（2 个）：1 人请假：P01（教员）1 天不可用（2026-01-05起）；1 空域容量变更：SAB 容量降为 0（关闭）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "SAB": 0
+      },
+      "unavailable": {
+        "P01": [
+          "2026-01-05"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-57",
+    "category": "combo",
+    "family": "combo4",
+    "title": "组合扰动（4 个）：1 人请假：P05（学员）1 天不可用（2026-01-09起）；1 资质到期：P06（学员）B 类于 2026-01-04 到期；1 机维修：AC73 连续 1 天全天维护（2026-01-10 起）；1 空域容量变更：SAA 容量降为 0（关闭）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "SAA": 0
+      },
+      "unavailable": {
+        "P05": [
+          "2026-01-09"
+        ]
+      },
+      "maintenance_all_day": [
+        [
+          "AC73",
+          "2026-01-10",
+          "2026-01-10"
+        ]
+      ],
+      "qual_expiry": {
+        "P06|B": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-58",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 人请假：P03（教员）1 天不可用（2026-01-07起）；1 跑道关闭：RWY-2（服务机型 JL-8）；1 资质到期：P04（成熟飞行员）G 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "closed_runways": [
+        "RWY-2"
+      ],
+      "unavailable": {
+        "P03": [
+          "2026-01-07"
+        ]
+      },
+      "qual_expiry": {
+        "P04|G": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-59",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 资质到期：P04（成熟飞行员）B 类于 2026-01-04 到期；1 空域容量变更：RNG 容量降为 0（关闭）；1 人请假：P02（教员）1 天不可用（2026-01-06起）",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "RNG": 0
+      },
+      "unavailable": {
+        "P02": [
+          "2026-01-06"
+        ]
+      },
+      "qual_expiry": {
+        "P04|B": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "CB-60",
+    "category": "combo",
+    "family": "combo3",
+    "title": "组合扰动（3 个）：1 机维修：AC61 连续 1 天全天维护（2026-01-09 起）；1 资质到期：P04（成熟飞行员）C 类于 2026-01-04 到期；1 资质到期：P04（成熟飞行员）F 类于 2026-01-04 到期",
+    "expected_status": "EITHER",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC61",
+          "2026-01-09",
+          "2026-01-09"
+        ]
+      ],
+      "qual_expiry": {
+        "P04|C": "2026-01-04",
+        "P04|F": "2026-01-04"
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 组合扰动：2~4 个异常叠加，来源见 title"
+  },
+  {
+    "scenario_id": "BD-01-E",
+    "category": "boundary",
+    "family": "instructors_out",
+    "title": "资源恰好够：整周不可用的教员人数 = 2 人（再紧 1 人即不可解）",
+    "expected_status": "SOLVED",
+    "overrides": {
+      "unavailable_all_week": [
+        "P01",
+        "P02"
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-01",
+    "pair_role": "enough",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；临界档由 instructors_out 旋钮二分标定，探针序列 ((3, 'INFEASIBLE'), (1, 'OPTIMAL'), (2, 'OPTIMAL'))"
+  },
+  {
+    "scenario_id": "BD-01-S",
+    "category": "boundary",
+    "family": "instructors_out",
+    "title": "资源恰好差 1：整周不可用的教员人数 = 3 人（松 1 人即可解）",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "unavailable_all_week": [
+        "P01",
+        "P02",
+        "P03"
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-01",
+    "pair_role": "short",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；与 BD-01-E 互为「恰好」的证明"
+  },
+  {
+    "scenario_id": "BD-02-E",
+    "category": "boundary",
+    "family": "student_fleet_down",
+    "title": "资源恰好够：整周维护的「学员机型」飞机数 = 5 架（再紧 1 架即不可解）",
+    "expected_status": "SOLVED",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC10",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC27",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC34",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC49",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC61",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-02",
+    "pair_role": "enough",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；临界档由 student_fleet_down 旋钮二分标定，探针序列 ((6, 'INFEASIBLE'), (3, 'OPTIMAL'), (4, 'OPTIMAL'), (5, 'OPTIMAL'))"
+  },
+  {
+    "scenario_id": "BD-02-S",
+    "category": "boundary",
+    "family": "student_fleet_down",
+    "title": "资源恰好差 1：整周维护的「学员机型」飞机数 = 6 架（松 1 架即可解）",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC10",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC27",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC34",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC49",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC61",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC73",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-02",
+    "pair_role": "short",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；与 BD-02-E 互为「恰好」的证明"
+  },
+  {
+    "scenario_id": "BD-03-E",
+    "category": "boundary",
+    "family": "fleet_down",
+    "title": "资源恰好够：整周维护的飞机总数 = 5 架（再紧 1 架即不可解）",
+    "expected_status": "SOLVED",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC10",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC27",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC34",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC49",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC61",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-03",
+    "pair_role": "enough",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；临界档由 fleet_down 旋钮二分标定，探针序列 ((8, 'INFEASIBLE'), (4, 'OPTIMAL'), (6, 'INFEASIBLE'), (5, 'OPTIMAL'))"
+  },
+  {
+    "scenario_id": "BD-03-S",
+    "category": "boundary",
+    "family": "fleet_down",
+    "title": "资源恰好差 1：整周维护的飞机总数 = 6 架（松 1 架即可解）",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC10",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC27",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC34",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC49",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC61",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC73",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-03",
+    "pair_role": "short",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；与 BD-03-E 互为「恰好」的证明"
+  },
+  {
+    "scenario_id": "BD-04-E",
+    "category": "boundary",
+    "family": "airspace_IFR",
+    "title": "资源恰好够：空域 IFR 容量下调格数（基准 1） = 0 格（再紧 1 格即不可解）",
+    "expected_status": "SOLVED",
+    "overrides": {
+      "airspace_capacity": {
+        "IFR": 1
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-04",
+    "pair_role": "enough",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；临界档由 airspace_IFR 旋钮二分标定，探针序列 ((1, 'INFEASIBLE'),)"
+  },
+  {
+    "scenario_id": "BD-04-S",
+    "category": "boundary",
+    "family": "airspace_IFR",
+    "title": "资源恰好差 1：空域 IFR 容量下调格数（基准 1） = 1 格（松 1 格即可解）",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "airspace_capacity": {
+        "IFR": 0
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-04",
+    "pair_role": "short",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；与 BD-04-E 互为「恰好」的证明"
+  },
+  {
+    "scenario_id": "BD-05-E",
+    "category": "boundary",
+    "family": "airspace_RT1",
+    "title": "资源恰好够：空域 RT1 容量下调格数（基准 1） = 0 格（再紧 1 格即不可解）",
+    "expected_status": "SOLVED",
+    "overrides": {
+      "airspace_capacity": {
+        "RT1": 1
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-05",
+    "pair_role": "enough",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；临界档由 airspace_RT1 旋钮二分标定，探针序列 ((1, 'INFEASIBLE'),)"
+  },
+  {
+    "scenario_id": "BD-05-S",
+    "category": "boundary",
+    "family": "airspace_RT1",
+    "title": "资源恰好差 1：空域 RT1 容量下调格数（基准 1） = 1 格（松 1 格即可解）",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "airspace_capacity": {
+        "RT1": 0
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-05",
+    "pair_role": "short",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；与 BD-05-E 互为「恰好」的证明"
+  },
+  {
+    "scenario_id": "BD-06-E",
+    "category": "boundary",
+    "family": "airspace_RT2",
+    "title": "资源恰好够：空域 RT2 容量下调格数（基准 1） = 0 格（再紧 1 格即不可解）",
+    "expected_status": "SOLVED",
+    "overrides": {
+      "airspace_capacity": {
+        "RT2": 1
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-06",
+    "pair_role": "enough",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；临界档由 airspace_RT2 旋钮二分标定，探针序列 ((1, 'INFEASIBLE'),)"
+  },
+  {
+    "scenario_id": "BD-06-S",
+    "category": "boundary",
+    "family": "airspace_RT2",
+    "title": "资源恰好差 1：空域 RT2 容量下调格数（基准 1） = 1 格（松 1 格即可解）",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "airspace_capacity": {
+        "RT2": 0
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-06",
+    "pair_role": "short",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；与 BD-06-E 互为「恰好」的证明"
+  },
+  {
+    "scenario_id": "BD-07-E",
+    "category": "boundary",
+    "family": "airspace_SAB",
+    "title": "资源恰好够：空域 SAB 容量下调格数（基准 2） = 1 格（再紧 1 格即不可解）",
+    "expected_status": "SOLVED",
+    "overrides": {
+      "airspace_capacity": {
+        "SAB": 1
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-07",
+    "pair_role": "enough",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；临界档由 airspace_SAB 旋钮二分标定，探针序列 ((2, 'INFEASIBLE'), (1, 'OPTIMAL'))"
+  },
+  {
+    "scenario_id": "BD-07-S",
+    "category": "boundary",
+    "family": "airspace_SAB",
+    "title": "资源恰好差 1：空域 SAB 容量下调格数（基准 2） = 2 格（松 1 格即可解）",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "airspace_capacity": {
+        "SAB": 0
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-07",
+    "pair_role": "short",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；与 BD-07-E 互为「恰好」的证明"
+  },
+  {
+    "scenario_id": "BD-08-E",
+    "category": "boundary",
+    "family": "runways_closed",
+    "title": "资源恰好够：关闭的跑道条数 = 1 条（再紧 1 条即不可解）",
+    "expected_status": "SOLVED",
+    "overrides": {
+      "closed_runways": [
+        "RWY-1"
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-08",
+    "pair_role": "enough",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；临界档由 runways_closed 旋钮二分标定，探针序列 ((2, 'INFEASIBLE'), (1, 'OPTIMAL'))"
+  },
+  {
+    "scenario_id": "BD-08-S",
+    "category": "boundary",
+    "family": "runways_closed",
+    "title": "资源恰好差 1：关闭的跑道条数 = 2 条（松 1 条即可解）",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "closed_runways": [
+        "RWY-1",
+        "RWY-2"
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-08",
+    "pair_role": "short",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；与 BD-08-E 互为「恰好」的证明"
+  },
+  {
+    "scenario_id": "BD-09-E",
+    "category": "boundary",
+    "family": "everyone_off_days",
+    "title": "资源恰好够：全员不可用的天数（从周末往前推） = 2 天（再紧 1 天即不可解）",
+    "expected_status": "SOLVED",
+    "overrides": {
+      "unavailable": {
+        "P01": [
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        "P02": [
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        "P03": [
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        "P04": [
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        "P05": [
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        "P06": [
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        "P07": [
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        "P08": [
+          "2026-01-10",
+          "2026-01-11"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-09",
+    "pair_role": "enough",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；临界档由 everyone_off_days 旋钮二分标定，探针序列 ((7, 'INFEASIBLE'), (3, 'INFEASIBLE'), (1, 'OPTIMAL'), (2, 'OPTIMAL'))"
+  },
+  {
+    "scenario_id": "BD-09-S",
+    "category": "boundary",
+    "family": "everyone_off_days",
+    "title": "资源恰好差 1：全员不可用的天数（从周末往前推） = 3 天（松 1 天即可解）",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "unavailable": {
+        "P01": [
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        "P02": [
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        "P03": [
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        "P04": [
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        "P05": [
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        "P06": [
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        "P07": [
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        "P08": [
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-09",
+    "pair_role": "short",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；与 BD-09-E 互为「恰好」的证明"
+  },
+  {
+    "scenario_id": "BD-10-E",
+    "category": "boundary",
+    "family": "students_off_days",
+    "title": "资源恰好够：全部学员不可用的天数 = 2 天（再紧 1 天即不可解）",
+    "expected_status": "SOLVED",
+    "overrides": {
+      "unavailable": {
+        "P05": [
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        "P06": [
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        "P07": [
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        "P08": [
+          "2026-01-10",
+          "2026-01-11"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-10",
+    "pair_role": "enough",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；临界档由 students_off_days 旋钮二分标定，探针序列 ((7, 'INFEASIBLE'), (3, 'INFEASIBLE'), (1, 'OPTIMAL'), (2, 'OPTIMAL'))"
+  },
+  {
+    "scenario_id": "BD-10-S",
+    "category": "boundary",
+    "family": "students_off_days",
+    "title": "资源恰好差 1：全部学员不可用的天数 = 3 天（松 1 天即可解）",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "unavailable": {
+        "P05": [
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        "P06": [
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        "P07": [
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        "P08": [
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-10",
+    "pair_role": "short",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；与 BD-10-E 互为「恰好」的证明"
+  },
+  {
+    "scenario_id": "BD-11-E",
+    "category": "boundary",
+    "family": "instructors_off_days",
+    "title": "资源恰好够：全部教员不可用的天数 = 5 天（再紧 1 天即不可解）",
+    "expected_status": "SOLVED",
+    "overrides": {
+      "unavailable": {
+        "P01": [
+          "2026-01-07",
+          "2026-01-08",
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        "P02": [
+          "2026-01-07",
+          "2026-01-08",
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        "P03": [
+          "2026-01-07",
+          "2026-01-08",
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-11",
+    "pair_role": "enough",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；临界档由 instructors_off_days 旋钮二分标定，探针序列 ((7, 'INFEASIBLE'), (3, 'OPTIMAL'), (5, 'OPTIMAL'), (6, 'INFEASIBLE'))"
+  },
+  {
+    "scenario_id": "BD-11-S",
+    "category": "boundary",
+    "family": "instructors_off_days",
+    "title": "资源恰好差 1：全部教员不可用的天数 = 6 天（松 1 天即可解）",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "unavailable": {
+        "P01": [
+          "2026-01-06",
+          "2026-01-07",
+          "2026-01-08",
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        "P02": [
+          "2026-01-06",
+          "2026-01-07",
+          "2026-01-08",
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        "P03": [
+          "2026-01-06",
+          "2026-01-07",
+          "2026-01-08",
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-11",
+    "pair_role": "short",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；与 BD-11-E 互为「恰好」的证明"
+  },
+  {
+    "scenario_id": "BD-12-E",
+    "category": "boundary",
+    "family": "student_off_P05",
+    "title": "资源恰好够：学员 P05 不可用的天数 = 6 天（再紧 1 天即不可解）",
+    "expected_status": "SOLVED",
+    "overrides": {
+      "unavailable": {
+        "P05": [
+          "2026-01-06",
+          "2026-01-07",
+          "2026-01-08",
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-12",
+    "pair_role": "enough",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；临界档由 student_off_P05 旋钮二分标定，探针序列 ((7, 'INFEASIBLE'), (3, 'OPTIMAL'), (5, 'OPTIMAL'), (6, 'OPTIMAL'))"
+  },
+  {
+    "scenario_id": "BD-12-S",
+    "category": "boundary",
+    "family": "student_off_P05",
+    "title": "资源恰好差 1：学员 P05 不可用的天数 = 7 天（松 1 天即可解）",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "unavailable": {
+        "P05": [
+          "2026-01-05",
+          "2026-01-06",
+          "2026-01-07",
+          "2026-01-08",
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-12",
+    "pair_role": "short",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；与 BD-12-E 互为「恰好」的证明"
+  },
+  {
+    "scenario_id": "BD-13-E",
+    "category": "boundary",
+    "family": "student_off_P06",
+    "title": "资源恰好够：学员 P06 不可用的天数 = 5 天（再紧 1 天即不可解）",
+    "expected_status": "SOLVED",
+    "overrides": {
+      "unavailable": {
+        "P06": [
+          "2026-01-07",
+          "2026-01-08",
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-13",
+    "pair_role": "enough",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；临界档由 student_off_P06 旋钮二分标定，探针序列 ((7, 'INFEASIBLE'), (3, 'OPTIMAL'), (5, 'OPTIMAL'), (6, 'INFEASIBLE'))"
+  },
+  {
+    "scenario_id": "BD-13-S",
+    "category": "boundary",
+    "family": "student_off_P06",
+    "title": "资源恰好差 1：学员 P06 不可用的天数 = 6 天（松 1 天即可解）",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "unavailable": {
+        "P06": [
+          "2026-01-06",
+          "2026-01-07",
+          "2026-01-08",
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-13",
+    "pair_role": "short",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；与 BD-13-E 互为「恰好」的证明"
+  },
+  {
+    "scenario_id": "BD-14-E",
+    "category": "boundary",
+    "family": "student_off_P07",
+    "title": "资源恰好够：学员 P07 不可用的天数 = 5 天（再紧 1 天即不可解）",
+    "expected_status": "SOLVED",
+    "overrides": {
+      "unavailable": {
+        "P07": [
+          "2026-01-07",
+          "2026-01-08",
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-14",
+    "pair_role": "enough",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；临界档由 student_off_P07 旋钮二分标定，探针序列 ((7, 'INFEASIBLE'), (3, 'OPTIMAL'), (5, 'OPTIMAL'), (6, 'INFEASIBLE'))"
+  },
+  {
+    "scenario_id": "BD-14-S",
+    "category": "boundary",
+    "family": "student_off_P07",
+    "title": "资源恰好差 1：学员 P07 不可用的天数 = 6 天（松 1 天即可解）",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "unavailable": {
+        "P07": [
+          "2026-01-06",
+          "2026-01-07",
+          "2026-01-08",
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-14",
+    "pair_role": "short",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；与 BD-14-E 互为「恰好」的证明"
+  },
+  {
+    "scenario_id": "BD-15-E",
+    "category": "boundary",
+    "family": "student_off_P08",
+    "title": "资源恰好够：学员 P08 不可用的天数 = 2 天（再紧 1 天即不可解）",
+    "expected_status": "SOLVED",
+    "overrides": {
+      "unavailable": {
+        "P08": [
+          "2026-01-10",
+          "2026-01-11"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-15",
+    "pair_role": "enough",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；临界档由 student_off_P08 旋钮二分标定，探针序列 ((7, 'INFEASIBLE'), (3, 'INFEASIBLE'), (1, 'OPTIMAL'), (2, 'OPTIMAL'))"
+  },
+  {
+    "scenario_id": "BD-15-S",
+    "category": "boundary",
+    "family": "student_off_P08",
+    "title": "资源恰好差 1：学员 P08 不可用的天数 = 3 天（松 1 天即可解）",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "unavailable": {
+        "P08": [
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-15",
+    "pair_role": "short",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；与 BD-15-E 互为「恰好」的证明"
+  },
+  {
+    "scenario_id": "BD-16-E",
+    "category": "boundary",
+    "family": "all_airspaces_down",
+    "title": "资源恰好够：全部空域容量同时下调的格数 = 0 格（再紧 1 格即不可解）",
+    "expected_status": "SOLVED",
+    "overrides": {
+      "airspace_capacity": {
+        "IFR": 1,
+        "RNG": 1,
+        "RT1": 1,
+        "RT2": 1,
+        "SAA": 2,
+        "SAB": 2
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-16",
+    "pair_role": "enough",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；临界档由 all_airspaces_down 旋钮二分标定，探针序列 ((2, 'INFEASIBLE'), (1, 'INFEASIBLE'))"
+  },
+  {
+    "scenario_id": "BD-16-S",
+    "category": "boundary",
+    "family": "all_airspaces_down",
+    "title": "资源恰好差 1：全部空域容量同时下调的格数 = 1 格（松 1 格即可解）",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "airspace_capacity": {
+        "IFR": 0,
+        "RNG": 0,
+        "RT1": 0,
+        "RT2": 0,
+        "SAA": 1,
+        "SAB": 1
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-16",
+    "pair_role": "short",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；与 BD-16-E 互为「恰好」的证明"
+  },
+  {
+    "scenario_id": "BD-17-E",
+    "category": "boundary",
+    "family": "student_fleet_days",
+    "title": "资源恰好够：「学员机型」飞机全部维护的天数 = 2 天（再紧 1 天即不可解）",
+    "expected_status": "SOLVED",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC10",
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        [
+          "AC27",
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        [
+          "AC34",
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        [
+          "AC49",
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        [
+          "AC61",
+          "2026-01-10",
+          "2026-01-11"
+        ],
+        [
+          "AC73",
+          "2026-01-10",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-17",
+    "pair_role": "enough",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；临界档由 student_fleet_days 旋钮二分标定，探针序列 ((7, 'INFEASIBLE'), (3, 'INFEASIBLE'), (1, 'OPTIMAL'), (2, 'OPTIMAL'))"
+  },
+  {
+    "scenario_id": "BD-17-S",
+    "category": "boundary",
+    "family": "student_fleet_days",
+    "title": "资源恰好差 1：「学员机型」飞机全部维护的天数 = 3 天（松 1 天即可解）",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC10",
+          "2026-01-09",
+          "2026-01-11"
+        ],
+        [
+          "AC27",
+          "2026-01-09",
+          "2026-01-11"
+        ],
+        [
+          "AC34",
+          "2026-01-09",
+          "2026-01-11"
+        ],
+        [
+          "AC49",
+          "2026-01-09",
+          "2026-01-11"
+        ],
+        [
+          "AC61",
+          "2026-01-09",
+          "2026-01-11"
+        ],
+        [
+          "AC73",
+          "2026-01-09",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-17",
+    "pair_role": "short",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；与 BD-17-E 互为「恰好」的证明"
+  },
+  {
+    "scenario_id": "BD-18-E",
+    "category": "boundary",
+    "family": "window_end_half_hours",
+    "title": "资源恰好够：训练窗尾部缩短的半小时数 = 22 半小时（再紧 1 半小时即不可解）",
+    "expected_status": "SOLVED",
+    "overrides": {
+      "window_end": "07:00"
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-18",
+    "pair_role": "enough",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；临界档由 window_end_half_hours 旋钮二分标定，探针序列 ((23, 'INFEASIBLE'), (11, 'OPTIMAL'), (17, 'OPTIMAL'), (20, 'OPTIMAL'), (21, 'OPTIMAL'), (22, 'OPTIMAL'))"
+  },
+  {
+    "scenario_id": "BD-18-S",
+    "category": "boundary",
+    "family": "window_end_half_hours",
+    "title": "资源恰好差 1：训练窗尾部缩短的半小时数 = 23 半小时（松 1 半小时即可解）",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "window_end": "06:30"
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-18",
+    "pair_role": "short",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；与 BD-18-E 互为「恰好」的证明"
+  },
+  {
+    "scenario_id": "BD-19-E",
+    "category": "boundary",
+    "family": "window_end_ten_min",
+    "title": "资源恰好够：训练窗尾部缩短的 10 分钟格数（细粒度） = 66 个10分钟（再紧 1 个10分钟即不可解）",
+    "expected_status": "SOLVED",
+    "overrides": {
+      "window_end": "07:00"
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-19",
+    "pair_role": "enough",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；临界档由 window_end_ten_min 旋钮二分标定，探针序列 ((71, 'INFEASIBLE'), (35, 'OPTIMAL'), (53, 'OPTIMAL'), (62, 'OPTIMAL'), (66, 'OPTIMAL'), (68, 'INFEASIBLE'), (67, 'INFEASIBLE'))"
+  },
+  {
+    "scenario_id": "BD-19-S",
+    "category": "boundary",
+    "family": "window_end_ten_min",
+    "title": "资源恰好差 1：训练窗尾部缩短的 10 分钟格数（细粒度） = 67 个10分钟（松 1 个10分钟即可解）",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "window_end": "06:50"
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-19",
+    "pair_role": "short",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；与 BD-19-E 互为「恰好」的证明"
+  },
+  {
+    "scenario_id": "BD-20-E",
+    "category": "boundary",
+    "family": "student_fleet_days_front",
+    "title": "资源恰好够：「学员机型」飞机全部维护的天数（从周一往后推） = 2 天（再紧 1 天即不可解）",
+    "expected_status": "SOLVED",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC10",
+          "2026-01-05",
+          "2026-01-06"
+        ],
+        [
+          "AC27",
+          "2026-01-05",
+          "2026-01-06"
+        ],
+        [
+          "AC34",
+          "2026-01-05",
+          "2026-01-06"
+        ],
+        [
+          "AC49",
+          "2026-01-05",
+          "2026-01-06"
+        ],
+        [
+          "AC61",
+          "2026-01-05",
+          "2026-01-06"
+        ],
+        [
+          "AC73",
+          "2026-01-05",
+          "2026-01-06"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-20",
+    "pair_role": "enough",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；临界档由 student_fleet_days_front 旋钮二分标定，探针序列 ((7, 'INFEASIBLE'), (3, 'INFEASIBLE'), (1, 'OPTIMAL'), (2, 'OPTIMAL'))"
+  },
+  {
+    "scenario_id": "BD-20-S",
+    "category": "boundary",
+    "family": "student_fleet_days_front",
+    "title": "资源恰好差 1：「学员机型」飞机全部维护的天数（从周一往后推） = 3 天（松 1 天即可解）",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC10",
+          "2026-01-05",
+          "2026-01-07"
+        ],
+        [
+          "AC27",
+          "2026-01-05",
+          "2026-01-07"
+        ],
+        [
+          "AC34",
+          "2026-01-05",
+          "2026-01-07"
+        ],
+        [
+          "AC49",
+          "2026-01-05",
+          "2026-01-07"
+        ],
+        [
+          "AC61",
+          "2026-01-05",
+          "2026-01-07"
+        ],
+        [
+          "AC73",
+          "2026-01-05",
+          "2026-01-07"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": "BD-20",
+    "pair_role": "short",
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 边界场景；与 BD-20-E 互为「恰好」的证明"
+  },
+  {
+    "scenario_id": "I1-01",
+    "category": "infeasible",
+    "family": "I1",
+    "title": "I1 变体1：三名教员全部整周不可用",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "unavailable_all_week": [
+        "P01",
+        "P02",
+        "P03"
+      ]
+    },
+    "annotated_conflict_rules": [
+      "C13",
+      "C03",
+      "C04"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 I1（三名教员全部整周不可用）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I1-02",
+    "category": "infeasible",
+    "family": "I1",
+    "title": "I1 变体2：＋成熟飞行员也整周不可用（可带飞的人一个不剩）",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "unavailable_all_week": [
+        "P01",
+        "P02",
+        "P03",
+        "P04"
+      ]
+    },
+    "annotated_conflict_rules": [
+      "C13",
+      "C03",
+      "C04"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 I1（三名教员全部整周不可用）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I1-03",
+    "category": "infeasible",
+    "family": "I1",
+    "title": "I1 变体3：＋非学员机型的飞机整周维护",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "unavailable_all_week": [
+        "P01",
+        "P02",
+        "P03"
+      ],
+      "maintenance_all_day": [
+        [
+          "AC84",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC95",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [
+      "C13",
+      "C03",
+      "C04"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 I1（三名教员全部整周不可用）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I1-04",
+    "category": "infeasible",
+    "family": "I1",
+    "title": "I1 变体4：＋训练窗压到 06:00-09:00",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "window_end": "09:00",
+      "unavailable_all_week": [
+        "P01",
+        "P02",
+        "P03"
+      ]
+    },
+    "annotated_conflict_rules": [
+      "C13",
+      "C03",
+      "C04"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 I1（三名教员全部整周不可用）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I1-05",
+    "category": "infeasible",
+    "family": "I1",
+    "title": "I1 变体5：＋一条跑道关闭",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "closed_runways": [
+        "RWY-1"
+      ],
+      "unavailable_all_week": [
+        "P01",
+        "P02",
+        "P03"
+      ]
+    },
+    "annotated_conflict_rules": [
+      "C13",
+      "C03",
+      "C04"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 I1（三名教员全部整周不可用）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I1-06",
+    "category": "infeasible",
+    "family": "I1",
+    "title": "I1 变体6：＋全部空域容量降为 1",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "airspace_capacity": {
+        "IFR": 1,
+        "RNG": 1,
+        "RT1": 1,
+        "RT2": 1,
+        "SAA": 1,
+        "SAB": 1
+      },
+      "unavailable_all_week": [
+        "P01",
+        "P02",
+        "P03"
+      ]
+    },
+    "annotated_conflict_rules": [
+      "C13",
+      "C03",
+      "C04"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 I1（三名教员全部整周不可用）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I2-01",
+    "category": "infeasible",
+    "family": "I2",
+    "title": "I2 变体1：学员机型 6 架全部整周维护",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC10",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC27",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC34",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC49",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC61",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC73",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [
+      "C06",
+      "C03"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 I2（服务学员机型的飞机全部整周维护）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I2-02",
+    "category": "infeasible",
+    "family": "I2",
+    "title": "I2 变体2：＋其余机型也整周维护（全场停飞）",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC10",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC27",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC34",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC49",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC61",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC73",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC84",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC95",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [
+      "C06",
+      "C03"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 I2（服务学员机型的飞机全部整周维护）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I2-03",
+    "category": "infeasible",
+    "family": "I2",
+    "title": "I2 变体3：＋训练窗压到 06:00-12:00",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "window_end": "12:00",
+      "maintenance_all_day": [
+        [
+          "AC10",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC27",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC34",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC49",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC61",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC73",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [
+      "C06",
+      "C03"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 I2（服务学员机型的飞机全部整周维护）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I2-04",
+    "category": "infeasible",
+    "family": "I2",
+    "title": "I2 变体4：＋一条跑道关闭",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "closed_runways": [
+        "RWY-1"
+      ],
+      "maintenance_all_day": [
+        [
+          "AC10",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC27",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC34",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC49",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC61",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC73",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [
+      "C06",
+      "C03"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 I2（服务学员机型的飞机全部整周维护）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I2-05",
+    "category": "infeasible",
+    "family": "I2",
+    "title": "I2 变体5：＋一名教员整周不可用",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "unavailable_all_week": [
+        "P01"
+      ],
+      "maintenance_all_day": [
+        [
+          "AC10",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC27",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC34",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC49",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC61",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC73",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [
+      "C06",
+      "C03"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 I2（服务学员机型的飞机全部整周维护）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I2-06",
+    "category": "infeasible",
+    "family": "I2",
+    "title": "I2 变体6：＋全部空域容量降为 1",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "airspace_capacity": {
+        "IFR": 1,
+        "RNG": 1,
+        "RT1": 1,
+        "RT2": 1,
+        "SAA": 1,
+        "SAB": 1
+      },
+      "maintenance_all_day": [
+        [
+          "AC10",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC27",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC34",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC49",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC61",
+          "2026-01-05",
+          "2026-01-11"
+        ],
+        [
+          "AC73",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [
+      "C06",
+      "C03"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 I2（服务学员机型的飞机全部整周维护）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I3-01",
+    "category": "infeasible",
+    "family": "I3",
+    "title": "I3 变体1：IFR 整周容量降为 0",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "airspace_capacity": {
+        "IFR": 0
+      }
+    },
+    "annotated_conflict_rules": [
+      "C06",
+      "C13"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 I3（承载 C 类课目的空域整周容量降为 0）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I3-02",
+    "category": "infeasible",
+    "family": "I3",
+    "title": "I3 变体2：＋再关 RNG",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "airspace_capacity": {
+        "IFR": 0,
+        "RNG": 0
+      }
+    },
+    "annotated_conflict_rules": [
+      "C06",
+      "C13"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 I3（承载 C 类课目的空域整周容量降为 0）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I3-03",
+    "category": "infeasible",
+    "family": "I3",
+    "title": "I3 变体3：＋再关 RNG/RT1",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "airspace_capacity": {
+        "IFR": 0,
+        "RNG": 0,
+        "RT1": 0
+      }
+    },
+    "annotated_conflict_rules": [
+      "C06",
+      "C13"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 I3（承载 C 类课目的空域整周容量降为 0）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I3-04",
+    "category": "infeasible",
+    "family": "I3",
+    "title": "I3 变体4：＋再关 RNG/RT1/RT2",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "airspace_capacity": {
+        "IFR": 0,
+        "RNG": 0,
+        "RT1": 0,
+        "RT2": 0
+      }
+    },
+    "annotated_conflict_rules": [
+      "C06",
+      "C13"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 I3（承载 C 类课目的空域整周容量降为 0）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I3-05",
+    "category": "infeasible",
+    "family": "I3",
+    "title": "I3 变体5：＋再关 RNG/RT1/RT2/SAA",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "airspace_capacity": {
+        "IFR": 0,
+        "RNG": 0,
+        "RT1": 0,
+        "RT2": 0,
+        "SAA": 0
+      }
+    },
+    "annotated_conflict_rules": [
+      "C06",
+      "C13"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 I3（承载 C 类课目的空域整周容量降为 0）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I3-06",
+    "category": "infeasible",
+    "family": "I3",
+    "title": "I3 变体6：＋全部空域整周容量降为 0",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "airspace_capacity": {
+        "IFR": 0,
+        "RNG": 0,
+        "RT1": 0,
+        "RT2": 0,
+        "SAA": 0,
+        "SAB": 0
+      }
+    },
+    "annotated_conflict_rules": [
+      "C06",
+      "C13"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": null,
+    "notes": "v6 §12.3 I3（承载 C 类课目的空域整周容量降为 0）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I4-01",
+    "category": "infeasible",
+    "family": "I4",
+    "title": "I4 变体1：训练窗压缩至 06:00-06:30",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "window_end": "06:30"
+    },
+    "annotated_conflict_rules": [
+      "C01",
+      "C13"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": 300.0,
+    "notes": "v6 §12.3 I4（训练窗压缩至 06:00-06:30）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I4-02",
+    "category": "infeasible",
+    "family": "I4",
+    "title": "I4 变体2：训练窗压缩至 06:00-06:25",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "window_end": "06:25"
+    },
+    "annotated_conflict_rules": [
+      "C01",
+      "C13"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": 300.0,
+    "notes": "v6 §12.3 I4（训练窗压缩至 06:00-06:30）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I4-03",
+    "category": "infeasible",
+    "family": "I4",
+    "title": "I4 变体3：训练窗压缩至 06:00-06:20",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "window_end": "06:20"
+    },
+    "annotated_conflict_rules": [
+      "C01",
+      "C13"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": 300.0,
+    "notes": "v6 §12.3 I4（训练窗压缩至 06:00-06:30）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I4-04",
+    "category": "infeasible",
+    "family": "I4",
+    "title": "I4 变体4：训练窗压缩至 06:00-06:15",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "window_end": "06:15"
+    },
+    "annotated_conflict_rules": [
+      "C01",
+      "C13"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": 300.0,
+    "notes": "v6 §12.3 I4（训练窗压缩至 06:00-06:30）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I4-05",
+    "category": "infeasible",
+    "family": "I4",
+    "title": "I4 变体5：训练窗压缩至 06:00-06:10",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "window_end": "06:10"
+    },
+    "annotated_conflict_rules": [
+      "C01",
+      "C13"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": 300.0,
+    "notes": "v6 §12.3 I4（训练窗压缩至 06:00-06:30）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I4-06",
+    "category": "infeasible",
+    "family": "I4",
+    "title": "I4 变体6：训练窗压缩至 06:00-06:05",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "window_end": "06:05"
+    },
+    "annotated_conflict_rules": [
+      "C01",
+      "C13"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": 300.0,
+    "notes": "v6 §12.3 I4（训练窗压缩至 06:00-06:30）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I5-01",
+    "category": "infeasible",
+    "family": "I5",
+    "title": "I5 变体1：服务学员机型的跑道全部关闭（RWY-1/RWY-2）",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "closed_runways": [
+        "RWY-1",
+        "RWY-2"
+      ]
+    },
+    "annotated_conflict_rules": [
+      "C09",
+      "C03",
+      "C13"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": 300.0,
+    "notes": "v6 §12.3 I5（服务学员机型的跑道全部关闭）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I5-02",
+    "category": "infeasible",
+    "family": "I5",
+    "title": "I5 变体2：＋其余跑道也关闭（全场无跑道）",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "closed_runways": [
+        "RWY-1",
+        "RWY-2"
+      ]
+    },
+    "annotated_conflict_rules": [
+      "C09",
+      "C03",
+      "C13"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": 300.0,
+    "notes": "v6 §12.3 I5（服务学员机型的跑道全部关闭）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I5-03",
+    "category": "infeasible",
+    "family": "I5",
+    "title": "I5 变体3：＋训练窗压到 06:00-09:00",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "window_end": "09:00",
+      "closed_runways": [
+        "RWY-1",
+        "RWY-2"
+      ]
+    },
+    "annotated_conflict_rules": [
+      "C09",
+      "C03",
+      "C13"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": 300.0,
+    "notes": "v6 §12.3 I5（服务学员机型的跑道全部关闭）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I5-04",
+    "category": "infeasible",
+    "family": "I5",
+    "title": "I5 变体4：＋一名教员整周不可用",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "closed_runways": [
+        "RWY-1",
+        "RWY-2"
+      ],
+      "unavailable_all_week": [
+        "P01"
+      ]
+    },
+    "annotated_conflict_rules": [
+      "C09",
+      "C03",
+      "C13"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": 300.0,
+    "notes": "v6 §12.3 I5（服务学员机型的跑道全部关闭）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I5-05",
+    "category": "infeasible",
+    "family": "I5",
+    "title": "I5 变体5：＋一架学员机型的飞机整周维护",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "closed_runways": [
+        "RWY-1",
+        "RWY-2"
+      ],
+      "maintenance_all_day": [
+        [
+          "AC10",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [
+      "C09",
+      "C03",
+      "C13"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": 300.0,
+    "notes": "v6 §12.3 I5（服务学员机型的跑道全部关闭）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "I5-06",
+    "category": "infeasible",
+    "family": "I5",
+    "title": "I5 变体6：＋全部空域容量降为 1",
+    "expected_status": "INFEASIBLE",
+    "overrides": {
+      "airspace_capacity": {
+        "IFR": 1,
+        "RNG": 1,
+        "RT1": 1,
+        "RT2": 1,
+        "SAA": 1,
+        "SAB": 1
+      },
+      "closed_runways": [
+        "RWY-1",
+        "RWY-2"
+      ]
+    },
+    "annotated_conflict_rules": [
+      "C09",
+      "C03",
+      "C13"
+    ],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": null,
+    "time_limit_s": 300.0,
+    "notes": "v6 §12.3 I5（服务学员机型的跑道全部关闭）。变体沿「让同一条约束更紧」的方向构造，冲突源标注抄自 §12.3「预期最小冲突集」列。"
+  },
+  {
+    "scenario_id": "RS-01",
+    "category": "reschedule",
+    "family": "reschedule-person",
+    "title": "局部重排：P01 临时请假两天，冻结档 CONSERVATIVE",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable": {
+        "P01": [
+          "2026-01-07",
+          "2026-01-08"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": {
+      "persons": [
+        "P01"
+      ],
+      "days": [
+        2,
+        3
+      ],
+      "reason": "P01 临时请假两天",
+      "policy": "CONSERVATIVE"
+    },
+    "time_limit_s": null,
+    "notes": "v6 §12.3 局部重排：在已批准计划上叠加扰动（v6 §3.8 三档冻结）"
+  },
+  {
+    "scenario_id": "RS-02",
+    "category": "reschedule",
+    "family": "reschedule-person",
+    "title": "局部重排：P01 临时请假两天，冻结档 BALANCED",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable": {
+        "P01": [
+          "2026-01-07",
+          "2026-01-08"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": {
+      "persons": [
+        "P01"
+      ],
+      "days": [
+        2,
+        3
+      ],
+      "reason": "P01 临时请假两天",
+      "policy": "BALANCED"
+    },
+    "time_limit_s": null,
+    "notes": "v6 §12.3 局部重排：在已批准计划上叠加扰动（v6 §3.8 三档冻结）"
+  },
+  {
+    "scenario_id": "RS-03",
+    "category": "reschedule",
+    "family": "reschedule-person",
+    "title": "局部重排：P01 临时请假两天，冻结档 AGGRESSIVE",
+    "expected_status": "EITHER",
+    "overrides": {
+      "unavailable": {
+        "P01": [
+          "2026-01-07",
+          "2026-01-08"
+        ]
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": {
+      "persons": [
+        "P01"
+      ],
+      "days": [
+        2,
+        3
+      ],
+      "reason": "P01 临时请假两天",
+      "policy": "AGGRESSIVE"
+    },
+    "time_limit_s": null,
+    "notes": "v6 §12.3 局部重排：在已批准计划上叠加扰动（v6 §3.8 三档冻结）"
+  },
+  {
+    "scenario_id": "RS-04",
+    "category": "reschedule",
+    "family": "reschedule-aircraft",
+    "title": "局部重排：AC10 临时定检整周，冻结档 CONSERVATIVE",
+    "expected_status": "EITHER",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC10",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": {
+      "aircraft": [
+        "AC10"
+      ],
+      "days": [],
+      "reason": "AC10 临时定检整周",
+      "policy": "CONSERVATIVE"
+    },
+    "time_limit_s": null,
+    "notes": "v6 §12.3 局部重排：在已批准计划上叠加扰动（v6 §3.8 三档冻结）"
+  },
+  {
+    "scenario_id": "RS-05",
+    "category": "reschedule",
+    "family": "reschedule-aircraft",
+    "title": "局部重排：AC10 临时定检整周，冻结档 BALANCED",
+    "expected_status": "EITHER",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC10",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": {
+      "aircraft": [
+        "AC10"
+      ],
+      "days": [],
+      "reason": "AC10 临时定检整周",
+      "policy": "BALANCED"
+    },
+    "time_limit_s": null,
+    "notes": "v6 §12.3 局部重排：在已批准计划上叠加扰动（v6 §3.8 三档冻结）"
+  },
+  {
+    "scenario_id": "RS-06",
+    "category": "reschedule",
+    "family": "reschedule-aircraft",
+    "title": "局部重排：AC10 临时定检整周，冻结档 AGGRESSIVE",
+    "expected_status": "EITHER",
+    "overrides": {
+      "maintenance_all_day": [
+        [
+          "AC10",
+          "2026-01-05",
+          "2026-01-11"
+        ]
+      ]
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": {
+      "aircraft": [
+        "AC10"
+      ],
+      "days": [],
+      "reason": "AC10 临时定检整周",
+      "policy": "AGGRESSIVE"
+    },
+    "time_limit_s": null,
+    "notes": "v6 §12.3 局部重排：在已批准计划上叠加扰动（v6 §3.8 三档冻结）"
+  },
+  {
+    "scenario_id": "RS-07",
+    "category": "reschedule",
+    "family": "reschedule-airspace",
+    "title": "局部重排：IFR 空域整周关闭，冻结档 CONSERVATIVE",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "IFR": 0
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": {
+      "airspaces": [
+        "IFR"
+      ],
+      "days": [],
+      "reason": "IFR 空域整周关闭",
+      "policy": "CONSERVATIVE"
+    },
+    "time_limit_s": null,
+    "notes": "v6 §12.3 局部重排：在已批准计划上叠加扰动（v6 §3.8 三档冻结）"
+  },
+  {
+    "scenario_id": "RS-08",
+    "category": "reschedule",
+    "family": "reschedule-airspace",
+    "title": "局部重排：IFR 空域整周关闭，冻结档 BALANCED",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "IFR": 0
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": {
+      "airspaces": [
+        "IFR"
+      ],
+      "days": [],
+      "reason": "IFR 空域整周关闭",
+      "policy": "BALANCED"
+    },
+    "time_limit_s": null,
+    "notes": "v6 §12.3 局部重排：在已批准计划上叠加扰动（v6 §3.8 三档冻结）"
+  },
+  {
+    "scenario_id": "RS-09",
+    "category": "reschedule",
+    "family": "reschedule-airspace",
+    "title": "局部重排：IFR 空域整周关闭，冻结档 AGGRESSIVE",
+    "expected_status": "EITHER",
+    "overrides": {
+      "airspace_capacity": {
+        "IFR": 0
+      }
+    },
+    "annotated_conflict_rules": [],
+    "pair_id": null,
+    "pair_role": null,
+    "reschedule": {
+      "airspaces": [
+        "IFR"
+      ],
+      "days": [],
+      "reason": "IFR 空域整周关闭",
+      "policy": "AGGRESSIVE"
+    },
+    "time_limit_s": null,
+    "notes": "v6 §12.3 局部重排：在已批准计划上叠加扰动（v6 §3.8 三档冻结）"
+  }
+]

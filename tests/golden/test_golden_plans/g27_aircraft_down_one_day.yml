@@ -1,0 +1,124 @@
+blocked_items: []
+content_sha256: 2479f7622a1a9d7dc51176261bd3c7824a1fdc4b9660e022f05231e7b0c29a1d
+debts: []
+naive:
+  passed: true
+  violated_rules: []
+num_candidates: 78
+num_sorties: 4
+relaxation_tier: 0
+sorties:
+- aircraft_id: AC702
+  airspace_id: NAV
+  crew:
+  - P401/教员
+  - P412/学员
+  date: '2026-03-02'
+  is_recurrent: false
+  landing: 06:40
+  mission_id: missionB-1
+  runway_id: RWY-8
+  sortie_id: S000001
+  takeoff: 06:00
+  weekday: 周一
+- aircraft_id: AC701
+  airspace_id: NAV
+  crew:
+  - P401/教员
+  - P411/学员
+  date: '2026-03-03'
+  is_recurrent: false
+  landing: 06:40
+  mission_id: missionB-1
+  runway_id: RWY-8
+  sortie_id: S000002
+  takeoff: 06:00
+  weekday: 周二
+- aircraft_id: AC701
+  airspace_id: LAD
+  crew:
+  - P412/单飞
+  date: '2026-03-07'
+  is_recurrent: false
+  landing: 06:27
+  mission_id: missionA-2
+  runway_id: RWY-7
+  sortie_id: S000003
+  takeoff: 06:00
+  weekday: 周六
+- aircraft_id: AC702
+  airspace_id: LAD
+  crew:
+  - P411/单飞
+  date: '2026-03-08'
+  is_recurrent: false
+  landing: 06:27
+  mission_id: missionA-2
+  runway_id: RWY-7
+  sortie_id: S000004
+  takeoff: 06:00
+  weekday: 周日
+status: OPTIMAL
+validation:
+  all_passed: true
+  notes:
+  - S-11：成熟飞行员到期资质转复训（自到期次日起按 7 天滑窗强制安排），系对 rules.pdf 约束2 字面语义的**业务方授权改写**（2026-08-06
+    裁定），非校验器漏判。
+  rules:
+    C01:
+      checked: 4
+      passed: true
+      violations: 0
+    C02:
+      checked: 6
+      passed: true
+      violations: 0
+    C03:
+      checked: 6
+      passed: true
+      violations: 0
+    C04:
+      checked: 9
+      passed: true
+      violations: 0
+    C05:
+      checked: 10
+      passed: true
+      violations: 0
+    C06:
+      checked: 12
+      passed: true
+      violations: 0
+    C07:
+      checked: 4
+      passed: true
+      violations: 0
+    C08:
+      checked: 6
+      passed: true
+      violations: 0
+    C09:
+      checked: 8
+      passed: true
+      violations: 0
+    C10:
+      checked: 6
+      passed: true
+      violations: 0
+    C11:
+      checked: 3
+      passed: true
+      violations: 0
+    C12:
+      checked: 10
+      passed: true
+      violations: 0
+    C13:
+      checked: 11
+      passed: true
+      violations: 0
+    C14:
+      checked: 8
+      passed: true
+      violations: 0
+  total_checked_items: 103

@@ -1,0 +1,142 @@
+blocked_items:
+- missing_prereqs:
+  - missionA-2
+  mission_id: missionB-1
+  person_id: P411
+  reason: missionA-2 未完成
+- missing_prereqs:
+  - missionB-1
+  mission_id: missionC-1
+  person_id: P411
+  reason: missionB-1 未完成
+- missing_prereqs:
+  - missionA-2
+  mission_id: missionB-1
+  person_id: P412
+  reason: missionA-2 未完成
+- missing_prereqs:
+  - missionB-1
+  mission_id: missionC-1
+  person_id: P412
+  reason: missionB-1 未完成
+content_sha256: a0abb5d04fbdbb0823b0ed60c05765e64d22fb66a0cf80856879e20d38946de8
+debts: []
+naive:
+  passed: true
+  violated_rules: []
+num_candidates: 56
+num_sorties: 4
+relaxation_tier: 0
+sorties:
+- aircraft_id: AC702
+  airspace_id: LAD
+  crew:
+  - P412/单飞
+  date: '2026-03-03'
+  is_recurrent: false
+  landing: 06:27
+  mission_id: missionA-2
+  runway_id: RWY-7
+  sortie_id: S000001
+  takeoff: 06:00
+  weekday: 周二
+- aircraft_id: AC702
+  airspace_id: LAD
+  crew:
+  - P411/单飞
+  date: '2026-03-04'
+  is_recurrent: false
+  landing: 06:27
+  mission_id: missionA-2
+  runway_id: RWY-8
+  sortie_id: S000002
+  takeoff: 06:00
+  weekday: 周三
+- aircraft_id: AC701
+  airspace_id: LAD
+  crew:
+  - P412/单飞
+  date: '2026-03-06'
+  is_recurrent: false
+  landing: 06:27
+  mission_id: missionA-2
+  runway_id: RWY-7
+  sortie_id: S000003
+  takeoff: 06:00
+  weekday: 周五
+- aircraft_id: AC701
+  airspace_id: LAD
+  crew:
+  - P411/单飞
+  date: '2026-03-07'
+  is_recurrent: false
+  landing: 06:27
+  mission_id: missionA-2
+  runway_id: RWY-8
+  sortie_id: S000004
+  takeoff: 06:00
+  weekday: 周六
+status: OPTIMAL
+validation:
+  all_passed: true
+  notes:
+  - S-11：成熟飞行员到期资质转复训（自到期次日起按 7 天滑窗强制安排），系对 rules.pdf 约束2 字面语义的**业务方授权改写**（2026-08-06
+    裁定），非校验器漏判。
+  rules:
+    C01:
+      checked: 4
+      passed: true
+      violations: 0
+    C02:
+      checked: 4
+      passed: true
+      violations: 0
+    C03:
+      checked: 6
+      passed: true
+      violations: 0
+    C04:
+      checked: 6
+      passed: true
+      violations: 0
+    C05:
+      checked: 8
+      passed: true
+      violations: 0
+    C06:
+      checked: 12
+      passed: true
+      violations: 0
+    C07:
+      checked: 2
+      passed: true
+      violations: 0
+    C08:
+      checked: 4
+      passed: true
+      violations: 0
+    C09:
+      checked: 8
+      passed: true
+      violations: 0
+    C10:
+      checked: 4
+      passed: true
+      violations: 0
+    C11:
+      checked: 2
+      passed: true
+      violations: 0
+    C12:
+      checked: 8
+      passed: true
+      violations: 0
+    C13:
+      checked: 22
+      passed: true
+      violations: 0
+    C14:
+      checked: 6
+      passed: true
+      violations: 0
+  total_checked_items: 96
