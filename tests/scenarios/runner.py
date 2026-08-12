@@ -18,6 +18,7 @@ import time
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from datetime import date
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -200,8 +201,14 @@ def run_case(
     *,
     baseline_plan: SchedulePlan | None = None,
     diagnose_infeasible: bool = True,
+    plan_sink: dict[str, Any] | None = None,
 ) -> ScenarioResult:
-    """跑一个场景：求解 → 三重校验 →（不可行则）诊断。"""
+    """跑一个场景：求解 → 三重校验 →（不可行则）诊断。
+
+    `plan_sink` 非空时把方案原样存进去（键为 `scenario_id`）—— 人工抽检的核对表
+    要把架次全量摆出来给人看（`tests/scenarios/review_sheet.py`），不能让人再去
+    重解一遍。**只存不算**，不参与任何判定。
+    """
     started = time.perf_counter()
     result = ScenarioResult(
         scenario_id=case.scenario_id,
@@ -248,6 +255,8 @@ def run_case(
             result.num_sorties = len(outcome.plan.sorties)
             ctx = load_context(session, snapshot_id=ents.snapshot_id, week_start=ents.week_start)
             _validate(outcome.plan, ctx, result)
+            if plan_sink is not None:
+                plan_sink[case.scenario_id] = outcome.plan.model_dump(mode="json")
         elif outcome.status == "INFEASIBLE" and diagnose_infeasible:
             _diagnose(bundle, outcome, case, result)
     except Exception as exc:

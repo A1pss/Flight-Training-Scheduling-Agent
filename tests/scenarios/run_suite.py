@@ -96,13 +96,14 @@ def run(root: Path, snapshot_id: str, week_start: date, only: Sequence[str] | No
     if only:
         cases = [c for c in cases if c.category in set(only)]
     results: list[ScenarioResult] = []
+    plans: dict[str, object] = {}
     with session_scope() as session:
         ents = load_entities(session, snapshot_id=snapshot_id, week_start=week_start)
         print("先解一版基准周计划（局部重排场景要用它当「已批准计划」）…")
         baseline = solve_week(session, snapshot_id=snapshot_id, week_start=week_start)
         print(f"  基准周 {baseline.status}，{len(baseline.sorties)} 架次")
         for i, case in enumerate(cases, start=1):
-            result = run_case(session, case, ents, baseline_plan=baseline.plan)
+            result = run_case(session, case, ents, baseline_plan=baseline.plan, plan_sink=plans)
             results.append(result)
             flag = "✅" if (result.status_ok and result.agrees and not result.error) else "❌"
             print(
@@ -119,7 +120,11 @@ def run(root: Path, snapshot_id: str, week_start: date, only: Sequence[str] | No
     out_json = PROJECT_ROOT / "reports" / "M2C_200场景运行结果.json"
     out_json.write_text(
         json.dumps(
-            {"summary": asdict(summary), "results": [r.to_json() for r in results]},
+            {
+                "summary": asdict(summary),
+                "results": [r.to_json() for r in results],
+                "plans": plans,
+            },
             ensure_ascii=False,
             indent=2,
         ),

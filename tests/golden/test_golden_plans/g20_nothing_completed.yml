@@ -21,7 +21,7 @@ blocked_items:
   mission_id: missionC-1
   person_id: P412
   reason: missionB-1 未完成
-content_sha256: 8d0184bb3671912c7ac6d35601ee524c38ced193cb9f9e01201c4293170c713f
+content_sha256: 600371634436e597603191d71425ad85fae31b33cf34806462692eb6f4e4005d
 debts: []
 naive:
   passed: true
