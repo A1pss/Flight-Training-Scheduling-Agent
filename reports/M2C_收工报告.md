@@ -43,27 +43,28 @@ v6 **§1.4 / §3.2 / §3.3 / §3.4 / §3.5 / §3.9 / §12.1 / §12.3**、
 
 | 文件 | 行数 | 职责 |
 |---|---|---|
-| `tests/naive_checker.py` | 900 | **第三方独立校验器**：pandas O(n²) 暴力实现 14 条（v6 §12.3 度量方式第 2 条） |
-| `tests/property/scenario.py` | 660 | `arbitrary_scenario()`：随机人员/飞机/空域/跑道/异常组合，**双投影**喂两条通道 |
-| `tests/property/world.py` | 330 | 注入用的固定小世界 + **手工排**的 5 架次合规基线 |
-| `tests/property/plans.py` | 90 | `arbitrary_schedule_plan(ctx)`：随机**合法**方案（构造保证，不靠过滤） |
-| `tests/property/injections.py` | 480 | 29 种确定性注入 + 10 种与布局无关的注入，14 条规则逐条覆盖 |
-| `tests/scenarios/catalog.py` | 790 | 200 场景的程序化构造（标签天然正确） |
-| `tests/scenarios/calibrate.py` | 330 | 边界场景「恰好」的单调旋钮二分标定 |
-| `tests/scenarios/runner.py` | 400 | 逐场景求解 + 三重校验 + 冲突集度量 |
-| `tests/scenarios/run_suite.py` | 155 | CLI：`generate` / `show` / `run` |
+| `tests/naive_checker.py` | 1131 | **第三方独立校验器**：pandas O(n²) 暴力实现 14 条（v6 §12.3 度量方式第 2 条） |
+| `tests/property/scenario.py` | 816 | `arbitrary_scenario()`：随机人员/飞机/空域/跑道/异常组合，**双投影**喂两条通道 |
+| `tests/property/world.py` | 403 | 注入用的固定小世界 + **手工排**的 5 架次合规基线 |
+| `tests/property/plans.py` | 84 | `arbitrary_schedule_plan(ctx)`：随机**合法**方案（构造保证，不靠过滤） |
+| `tests/property/injections.py` | 542 | 29 种确定性注入 + 10 种与布局无关的注入，14 条规则逐条覆盖 |
+| `tests/scenarios/catalog.py` | 839 | 200 场景的程序化构造（标签天然正确） |
+| `tests/scenarios/calibrate.py` | 413 | 边界场景「恰好」的单调旋钮二分标定 |
+| `tests/scenarios/runner.py` | 390 | 逐场景求解 + 三重校验 + 冲突集度量 |
+| `tests/scenarios/run_suite.py` | 156 | CLI：`generate` / `show` / `run` |
+| `tests/scenarios/report.py` | 218 | 只读结果 JSON → 验收报告用的四张表（不重跑求解） |
 
 **测试**（新增 6 个测试文件 + 40 个黄金基线）：
 
 | 文件 | 用例数 | 覆盖 |
 |---|---|---|
-| `tests/property/test_solver_validator_agreement.py` | 20 | **核心不变量 500 例** + 三态分离 / BLOCKED / 扰动可见性 / 编成 / 可复现性 |
-| `tests/property/test_injected_violations.py` | 76 | 基线合法性 + 29 种确定性注入 ×2 通道 + 4 处必测形态 + 5 条随机注入属性 |
-| `tests/property/test_scenario_generator.py` | 22 | 生成器自洽（引用完整性 11 条 + 双投影一致 8 条） |
+| `tests/property/test_solver_validator_agreement.py` | 21 | **核心不变量 500 例** + 三态分离 / BLOCKED / 扰动可见性 / 编成 / 可复现性 |
+| `tests/property/test_injected_violations.py` | 75 | 基线合法性 + 29 种确定性注入 ×2 通道 + 4 处必测形态 + 5 条随机注入属性 |
+| `tests/property/test_scenario_generator.py` | 21 | 生成器自洽（引用完整性 13 条 + 双投影一致 8 条） |
 | `tests/property/test_s11_class_scope.py` | 4 | **原 FTS-3003 的回归**（含反方向：整类不飞仍须报 C13） |
 | `tests/unit/test_naive_checker_independence.py` | 21 | naive checker 的独立性护栏 |
 | `tests/golden/test_golden_plans.py` | 121 | 40 个黄金用例 × 3 组断言 + 目录规模 |
-| `tests/integration/test_crosscheck_live.py` | 20 | BLOCKED 专项 / S-11 专项 / 基准周三重对拍（连库） |
+| `tests/integration/test_crosscheck_live.py` | 19 | BLOCKED 专项 / S-11 专项 / 基准周三重对拍（连库） |
 
 **数据集**：`datasets/plan_scenarios/v1/`（`scenarios.json` 200 条 + `manifest.json` +
 `calibration.json` 标定记录）。
