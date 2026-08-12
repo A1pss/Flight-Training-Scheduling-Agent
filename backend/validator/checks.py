@@ -45,7 +45,7 @@ from backend.core.ruleset import (
 )
 from backend.schemas.plan import CrewMember, SchedulePlan, Sortie
 from backend.schemas.validation import CheckResult, ValidationReport, Violation
-from backend.validator.context import WEEK_DAYS, ValidationContext
+from backend.validator.context import WEEK_DAYS, ProgressFacts, ValidationContext
 
 #: v6 §3.2 的 14 条规则名（Sheet 4 区块2 逐行照抄它）
 RULE_TITLES: dict[str, str] = {
@@ -1000,11 +1000,26 @@ def check_c13(plan: SchedulePlan, ctx: ValidationContext) -> CheckResult:
     """独立重算频率滑窗（从 PG 读 `last_done_date` 与完成状态），并断言先修。
 
     管辖范围（v6 §3.2 约束13 + §3.5）：
-    - **学员** × 未完成且先修满足的课目 → 各自 `freq_days` 滑窗
+    - **学员** × 未完成且先修满足的课目 → 各自 `freq_days` 滑窗，**逐 (人, 课目) 判**
     - **成熟飞行员**的到期资质（S-11，`is_recurrent`）→ 7 天滑窗，自到期次日起算，
-      **且不受 S-03「已完成课目不复训」的豁免**
+      **且不受 S-03「已完成课目不复训」的豁免**；**粒度是 (人, 类别)**，见下
     - 教员不排课目（S-09）；已完成课目（S-03）不受本条约束
     - 先修未满足 → 断言「该课目在方案中出现次数 = 0」
+
+    ## ⚠️ S-11 的粒度是**类别**，不是课目（业务方 2026-08-12 裁定）
+
+    M2-C 的交叉验证跑出 **FTS-3003**：一个到期类别里有多门课目时（基准周的刘斌
+    C 类 = missionC-1 + missionC-2），求解器按「该类 ≥1 次」下要求，本函数原先按
+    「每门课各自 7 天滑窗」判，于是求解器排了 C-2、校验器判 C-1 缺失。
+
+    根因是 v6 自相矛盾：§3.2 约束13 行写「S-11……同样受本条约束」（约束13 的粒度
+    是 person×mission），而 §12.3 的 S-11 专项断言写的是「≥1 次刘斌的 C-1 **或**
+    C-2」。业务方裁定取**类别**粒度 —— 与 S-02（A 类整体 ≥1 次）同构，语义都是
+    「保持熟练度」而不是「推进进度」。
+
+    落点就是下面那个 `recurrent_groups`：`is_recurrent` 的行按 (人, 类别) 归组，
+    **整类合并计数**，飞该类里任意一门都算完成本次复训。窗口起算日取组内最早的
+    `recurrent_since`，跨周锚点取组内最晚的 `last_done_date`。
     """
     started = perf_counter()
     v: list[Violation] = []
@@ -1013,6 +1028,9 @@ def check_c13(plan: SchedulePlan, ctx: ValidationContext) -> CheckResult:
     s11_identities = set(ctx.semantics.s11_identities)
     s11_on = ctx.semantics.s11_enabled
     recurrent_days = ctx.ruleset.recurrent_window_days
+
+    #: S-11 复训按 (人, 类别) 归组，循环之后统一判（见函数文档）
+    recurrent_groups: dict[tuple[str, str], list[ProgressFacts]] = {}
 
     # 受训人视角的排班日（教员带飞不算「他自己的课目进度」）
     scheduled: dict[tuple[str, str], list[int]] = {}
@@ -1045,11 +1063,16 @@ def check_c13(plan: SchedulePlan, ctx: ValidationContext) -> CheckResult:
             continue
 
         recurrent = bool(pr.is_recurrent) and s11_on and person.identity in s11_identities
-        if not recurrent:
-            if pr.completed:
-                continue  # S-03：已完成课目不受本条约束
-            if not person.is_student:
-                continue  # S-09：教员/成熟飞行员不按频率排未完成课目
+        if recurrent:
+            # ★ S-11 的粒度是**类别**，不是课目（业务方 2026-08-12 裁定，见函数文档）。
+            # 先按 (人, 类别) 归组，循环之后统一判一次。
+            group = recurrent_groups.setdefault((pr.person_id, mission.mission_class), [])
+            group.append(pr)
+            continue
+        if pr.completed:
+            continue  # S-03：已完成课目不受本条约束
+        if not person.is_student:
+            continue  # S-09：教员/成熟飞行员不按频率排未完成课目
         freq, origin_day = _c13_window_params(
             recurrent, mission.freq_days, recurrent_days, pr.recurrent_since, ctx.week_start
         )
@@ -1099,6 +1122,70 @@ def check_c13(plan: SchedulePlan, ctx: ValidationContext) -> CheckResult:
                         f"{person.name}({pr.person_id}) 的 {pr.mission_id} 在窗口 "
                         f"[第{lo}天, 第{hi - 1}天] 内没有安排（每 {freq} 天 ≥1 次）",
                         f"在第 {lo}~{hi - 1} 天之间补 1 次",
+                        severity=severity,
+                    )
+                )
+
+    # ── S-11 复训：**按 (人, 类别) 判一次**（业务方 2026-08-12 裁定）────────
+    for (person_id, mission_class), rows in sorted(recurrent_groups.items()):
+        person = ctx.persons[person_id]
+        mission_ids = sorted(r.mission_id for r in rows)
+        since = min((r.recurrent_since for r in rows if r.recurrent_since), default=None)
+        anchors = [r.last_done_date for r in rows if r.last_done_date]
+        last_done = max(anchors) if anchors else None
+        freq, origin_day = _c13_window_params(
+            True, recurrent_days, recurrent_days, since, ctx.week_start
+        )
+        start_day = max(0, origin_day)
+        if start_day > WEEK_DAYS - 1:
+            continue  # 复训周期本周还没开始
+        deadline = _c13_deadline(origin_day, freq, last_done, ctx.week_start)
+        windows = [(s, s + freq) for s in range(start_day, WEEK_DAYS - freq + 1)]
+        deadline_binds = deadline <= WEEK_DAYS - 1
+        checked += 1 + len(windows)
+        severity = (
+            "SOFT"
+            if soft and any(_disclosed_debt(plan, person_id, mid) for mid in mission_ids)
+            else "HARD"
+        )
+        anchor = f"锚点 {last_done}" if last_done else "锚点缺失（S-12：自本周周一起算）"
+        # **整类合并计数**：飞该类里任意一门都算完成本次复训
+        days = sorted({d for mid in mission_ids for d in scheduled.get((person_id, mid), [])})
+        scope = f"{mission_class} 类复训（{'、'.join(mission_ids)} 任一即可）"
+
+        if not days:
+            if deadline_binds or windows:
+                v.append(
+                    _v(
+                        "C13",
+                        [person_id, f"{mission_class}类", *mission_ids],
+                        f"{person.name}({person_id}) 的 {scope}"
+                        f"（每 {freq} 天 ≥1 次，{anchor}）本周一次都未安排",
+                        f"在第 {start_day}~{min(deadline, WEEK_DAYS - 1)} 天内排 1 次该类课目",
+                        severity=severity,
+                    )
+                )
+            continue
+        if deadline_binds and days[0] > deadline:
+            v.append(
+                _v(
+                    "C13",
+                    [person_id, f"{mission_class}类", *mission_ids],
+                    f"{person.name}({person_id}) 的 {scope} 首次执行在第 {days[0]} 天，"
+                    f"晚于截止日第 {deadline} 天（每 {freq} 天 ≥1 次，{anchor}）",
+                    f"把首次执行提前到第 {deadline} 天之前",
+                    severity=severity,
+                )
+            )
+        for lo, hi in windows:
+            if not any(lo <= d < hi for d in days):
+                v.append(
+                    _v(
+                        "C13",
+                        [person_id, f"{mission_class}类", *mission_ids],
+                        f"{person.name}({person_id}) 的 {scope} 在窗口 "
+                        f"[第{lo}天, 第{hi - 1}天] 内没有安排（每 {freq} 天 ≥1 次）",
+                        f"在第 {lo}~{hi - 1} 天之间补 1 次该类课目",
                         severity=severity,
                     )
                 )

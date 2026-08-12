@@ -1,0 +1,111 @@
+blocked_items: []
+content_sha256: a5e9d0508a85242fbe554b649887e8fcbb02b044913ccf6c5d09bdb27665a4b3
+debts: []
+naive:
+  passed: true
+  violated_rules: []
+num_candidates: 126
+num_sorties: 3
+relaxation_tier: 0
+sorties:
+- aircraft_id: AC701
+  airspace_id: LAC
+  crew:
+  - P421/复训
+  date: '2026-03-02'
+  is_recurrent: true
+  landing: 06:30
+  mission_id: missionA-1
+  runway_id: RWY-8
+  sortie_id: S000001
+  takeoff: 06:00
+  weekday: 周一
+- aircraft_id: AC702
+  airspace_id: LAC
+  crew:
+  - P412/单飞
+  date: '2026-03-03'
+  is_recurrent: false
+  landing: 06:30
+  mission_id: missionA-1
+  runway_id: RWY-8
+  sortie_id: S000002
+  takeoff: 06:00
+  weekday: 周二
+- aircraft_id: AC702
+  airspace_id: LAC
+  crew:
+  - P411/单飞
+  date: '2026-03-04'
+  is_recurrent: false
+  landing: 06:30
+  mission_id: missionA-1
+  runway_id: RWY-7
+  sortie_id: S000003
+  takeoff: 06:00
+  weekday: 周三
+status: OPTIMAL
+validation:
+  all_passed: true
+  notes:
+  - S-11：成熟飞行员到期资质转复训（自到期次日起按 7 天滑窗强制安排），系对 rules.pdf 约束2 字面语义的**业务方授权改写**（2026-08-06
+    裁定），非校验器漏判。
+  - S-11 生效实例：成熟1(P421) A 类于 2026-03-01 到期，S000001(2026-03-02) 按复训安排。
+  rules:
+    C01:
+      checked: 3
+      passed: true
+      violations: 0
+    C02:
+      checked: 3
+      passed: true
+      violations: 0
+    C03:
+      checked: 5
+      passed: true
+      violations: 0
+    C04:
+      checked: 3
+      passed: true
+      violations: 0
+    C05:
+      checked: 6
+      passed: true
+      violations: 0
+    C06:
+      checked: 9
+      passed: true
+      violations: 0
+    C07:
+      checked: 1
+      passed: true
+      violations: 0
+    C08:
+      checked: 3
+      passed: true
+      violations: 0
+    C09:
+      checked: 6
+      passed: true
+      violations: 0
+    C10:
+      checked: 3
+      passed: true
+      violations: 0
+    C11:
+      checked: 3
+      passed: true
+      violations: 0
+    C12:
+      checked: 6
+      passed: true
+      violations: 0
+    C13:
+      checked: 14
+      passed: true
+      violations: 0
+    C14:
+      checked: 6
+      passed: true
+      violations: 0
+  total_checked_items: 71

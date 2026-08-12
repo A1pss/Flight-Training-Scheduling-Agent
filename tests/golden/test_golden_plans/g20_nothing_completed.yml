@@ -1,0 +1,192 @@
+blocked_items:
+- missing_prereqs:
+  - missionA-1
+  - missionA-2
+  mission_id: missionB-1
+  person_id: P411
+  reason: missionA-1 未完成、missionA-2 未完成
+- missing_prereqs:
+  - missionB-1
+  mission_id: missionC-1
+  person_id: P411
+  reason: missionB-1 未完成
+- missing_prereqs:
+  - missionA-1
+  - missionA-2
+  mission_id: missionB-1
+  person_id: P412
+  reason: missionA-1 未完成、missionA-2 未完成
+- missing_prereqs:
+  - missionB-1
+  mission_id: missionC-1
+  person_id: P412
+  reason: missionB-1 未完成
+content_sha256: 8d0184bb3671912c7ac6d35601ee524c38ced193cb9f9e01201c4293170c713f
+debts: []
+naive:
+  passed: true
+  violated_rules: []
+num_candidates: 56
+num_sorties: 8
+relaxation_tier: 0
+sorties:
+- aircraft_id: AC702
+  airspace_id: LAD
+  crew:
+  - P411/单飞
+  date: '2026-03-03'
+  is_recurrent: false
+  landing: 06:27
+  mission_id: missionA-2
+  runway_id: RWY-7
+  sortie_id: S000001
+  takeoff: 06:00
+  weekday: 周二
+- aircraft_id: AC701
+  airspace_id: LAC
+  crew:
+  - P412/单飞
+  date: '2026-03-03'
+  is_recurrent: false
+  landing: 06:37
+  mission_id: missionA-1
+  runway_id: RWY-8
+  sortie_id: S000002
+  takeoff: 06:07
+  weekday: 周二
+- aircraft_id: AC702
+  airspace_id: LAD
+  crew:
+  - P412/单飞
+  date: '2026-03-04'
+  is_recurrent: false
+  landing: 06:27
+  mission_id: missionA-2
+  runway_id: RWY-7
+  sortie_id: S000003
+  takeoff: 06:00
+  weekday: 周三
+- aircraft_id: AC701
+  airspace_id: LAC
+  crew:
+  - P411/单飞
+  date: '2026-03-04'
+  is_recurrent: false
+  landing: 06:37
+  mission_id: missionA-1
+  runway_id: RWY-8
+  sortie_id: S000004
+  takeoff: 06:07
+  weekday: 周三
+- aircraft_id: AC702
+  airspace_id: LAD
+  crew:
+  - P411/单飞
+  date: '2026-03-06'
+  is_recurrent: false
+  landing: 06:27
+  mission_id: missionA-2
+  runway_id: RWY-7
+  sortie_id: S000005
+  takeoff: 06:00
+  weekday: 周五
+- aircraft_id: AC701
+  airspace_id: LAC
+  crew:
+  - P412/单飞
+  date: '2026-03-06'
+  is_recurrent: false
+  landing: 06:37
+  mission_id: missionA-1
+  runway_id: RWY-8
+  sortie_id: S000006
+  takeoff: 06:07
+  weekday: 周五
+- aircraft_id: AC702
+  airspace_id: LAD
+  crew:
+  - P412/单飞
+  date: '2026-03-07'
+  is_recurrent: false
+  landing: 06:27
+  mission_id: missionA-2
+  runway_id: RWY-8
+  sortie_id: S000007
+  takeoff: 06:00
+  weekday: 周六
+- aircraft_id: AC701
+  airspace_id: LAC
+  crew:
+  - P411/单飞
+  date: '2026-03-07'
+  is_recurrent: false
+  landing: 06:37
+  mission_id: missionA-1
+  runway_id: RWY-7
+  sortie_id: S000008
+  takeoff: 06:07
+  weekday: 周六
+status: OPTIMAL
+validation:
+  all_passed: true
+  notes:
+  - S-11：成熟飞行员到期资质转复训（自到期次日起按 7 天滑窗强制安排），系对 rules.pdf 约束2 字面语义的**业务方授权改写**（2026-08-06
+    裁定），非校验器漏判。
+  rules:
+    C01:
+      checked: 8
+      passed: true
+      violations: 0
+    C02:
+      checked: 8
+      passed: true
+      violations: 0
+    C03:
+      checked: 10
+      passed: true
+      violations: 0
+    C04:
+      checked: 20
+      passed: true
+      violations: 0
+    C05:
+      checked: 16
+      passed: true
+      violations: 0
+    C06:
+      checked: 24
+      passed: true
+      violations: 0
+    C07:
+      checked: 6
+      passed: true
+      violations: 0
+    C08:
+      checked: 8
+      passed: true
+      violations: 0
+    C09:
+      checked: 20
+      passed: true
+      violations: 0
+    C10:
+      checked: 8
+      passed: true
+      violations: 0
+    C11:
+      checked: 2
+      passed: true
+      violations: 0
+    C12:
+      checked: 16
+      passed: true
+      violations: 0
+    C13:
+      checked: 32
+      passed: true
+      violations: 0
+    C14:
+      checked: 12
+      passed: true
+      violations: 0
+  total_checked_items: 190
