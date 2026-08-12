@@ -32,7 +32,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Iterator, Sequence
-from datetime import date, time
+from datetime import date, time, timedelta
 from itertools import tee
 from time import perf_counter
 from typing import TypeVar
@@ -45,7 +45,12 @@ from backend.core.ruleset import (
 )
 from backend.schemas.plan import CrewMember, SchedulePlan, Sortie
 from backend.schemas.validation import CheckResult, ValidationReport, Violation
-from backend.validator.context import WEEK_DAYS, ProgressFacts, ValidationContext
+from backend.validator.context import (
+    WEEK_DAYS,
+    PersonFacts,
+    ProgressFacts,
+    ValidationContext,
+)
 
 #: v6 §3.2 的 14 条规则名（Sheet 4 区块2 逐行照抄它）
 RULE_TITLES: dict[str, str] = {
@@ -315,6 +320,16 @@ def check_c02(plan: SchedulePlan, ctx: ValidationContext) -> CheckResult:
 # ─────────────────────────────────────────────────────────────────────
 # 约束3 · 角色配置（S-02 + S-13 + §3.1.1）
 # ─────────────────────────────────────────────────────────────────────
+def _fully_unavailable(person: PersonFacts, ctx: ValidationContext) -> bool:
+    """该人本周**每一天**都不可用（S-13 例外的判据，v6 `Z-9`）。
+
+    刻意**不**问「他有没有可行候选」：候选为空可能是飞机全在修、空域关了、
+    跑道关了 —— 那些是资源不足，必须如实判不可行。只有「人不在」才豁免。
+    """
+    week = {ctx.week_start + timedelta(days=i) for i in range(WEEK_DAYS)}
+    return week <= set(person.unavailable_dates)
+
+
 def check_c03(plan: SchedulePlan, ctx: ValidationContext) -> CheckResult:
     """机组角色配置 + 每名学员每周至少 1 次「每周必飞」类课目。
 
@@ -424,6 +439,11 @@ def check_c03(plan: SchedulePlan, ctx: ValidationContext) -> CheckResult:
         for student in ctx.students():
             if student.qualification_of(mission_class) is None:
                 # 不持该类资质的学员飞它本身违反约束4；要求他每周必飞会自相矛盾
+                continue
+            if ctx.semantics.s13_exclude_unavailable and _fully_unavailable(student, ctx):
+                # S-13 的例外（2026-08-12 裁定，v6 Z-9）：本周一天都不可用的学员
+                # 不计入约束3 —— 要求一个整周不在的人「每周至少飞 1 次」不成立。
+                # **判据只看可用性**：还有一天可用就照常要求（见 `_fully_unavailable`）。
                 continue
             checked += 1
             flown = sum(

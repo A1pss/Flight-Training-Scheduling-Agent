@@ -460,6 +460,16 @@ class Semantics:
     def s13_all_students(self) -> bool:
         return self.value("S-13") == "all_students"
 
+    @property
+    def s13_exclude_unavailable(self) -> bool:
+        """约束3 是否豁免「本周一天都不可用」的学员（2026-08-12 追加，v6 `Z-9`）。
+
+        **判据只看人员可用性，不看资源。** 只要该学员本周还有一天可用，约束3 就
+        照常生效 —— 那天排不上是资源不足，必须如实判不可行，不能借这条例外把
+        资源问题悄悄放过（这正是它没被实现成「无可行候选即豁免」的原因）。
+        """
+        return bool(self.switches["S-13"].get("exclude_unavailable", False))
+
 
 def parse_semantics(raw: Mapping[str, Any]) -> Semantics:
     version = str(raw.get("semantics_version") or "")

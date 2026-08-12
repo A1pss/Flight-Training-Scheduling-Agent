@@ -41,7 +41,7 @@ from __future__ import annotations
 import math
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 
 import pandas as pd
 
@@ -396,7 +396,13 @@ def check_c03(plan: SchedulePlan, sf: pd.DataFrame, ctx: ValidationContext, acc:
     if not weekly_classes:
         return
     minimum = ctx.ruleset.weekly_class_min
+    week_dates = {ctx.week_start + timedelta(days=i) for i in range(7)}
     for person in ctx.students():
+        # S-13 的例外（2026-08-12 裁定，v6 Z-9）：整周每一天都不可用的学员本周
+        # 不计入约束3。**只看人不在，不看排不排得上** —— 候选为空还可能是飞机全
+        # 在修 / 空域关了，那是资源问题，必须照常判违规。
+        if ctx.semantics.s13_exclude_unavailable and week_dates <= set(person.unavailable_dates):
+            continue
         if sf.empty:
             count = 0
         else:

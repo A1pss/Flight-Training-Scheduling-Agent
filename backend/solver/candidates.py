@@ -677,7 +677,21 @@ def build_requirements(
                     )
 
             # ── 约束3：每周必飞（S-02 类整体 + S-13 全部学员） ────────
+            #
+            # S-13 的例外（2026-08-12 裁定，v6 Z-9）：**本周每一天都不可用的学员
+            # 不计入约束3**。要求一个整周不在的人「每周至少飞 1 次」在语义上不成立，
+            # 而不加这条时，任何一名学员整周请假都会让整周判 INFEASIBLE
+            # （M2-C 的 200 场景实测，SP-ABS-05~08）。
+            #
+            # ⚠️ 判据只看 `person.unavailable`，**不看有没有可行候选**。只要还有
+            # 一天可用，约束3 照常下 —— 那天排不上是资源问题，必须如实判不可行。
+            week_dates = {data.date_of(d) for d in all_days}
+            fully_unavailable = (
+                semantics.s13_exclude_unavailable and week_dates <= person.unavailable
+            )
             for mission_class in data.weekly_required_classes:
+                if fully_unavailable:
+                    continue
                 targets = [
                     mid
                     for mid in data.missions_of_class(mission_class)

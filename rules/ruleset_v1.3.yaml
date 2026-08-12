@@ -83,12 +83,18 @@ rules:
       weekly_a_class_min: 1
       a_class_scope: [missionA-1, missionA-2]   # S-02：A 类整体合并计数
       applies_to: 全部学员                       # S-13：不论完成状态
+      # ★ 2026-08-12 追加的例外（v6 Z-9，落在 semantics.yaml 的 S-13.exclude_unavailable）：
+      #   本周**每一天**都不可用的学员不计入本条。判据只看人员可用性，不看有没有
+      #   可行候选 —— 只要还有一天可用就照常要求，那天排不上属资源不足，须如实判不可行。
+      excludes_fully_unavailable: true
     solver_encoding: >-
       带飞候选构造为 (1 教员, 1 学员)，单飞候选为 (1 人)，编成由 §3.1.1 判定式决定；
-      Σ x[c] ≥ 1 for c ∈ 学员 p 的全部 A 类候选（A-1 与 A-2 合并计数）。
+      Σ x[c] ≥ 1 for c ∈ 学员 p 的全部 A 类候选（A-1 与 A-2 合并计数）；
+      **整周不可用的学员不生成本条要求**（S-13 例外，Z-9）。
     validator_check: >-
       统计每个带飞架次教员数==1、学员数==1；单飞架次人数==1；
-      对每名学员统计其 A 类（A-1+A-2）周计数 ≥1。
+      对每名学员统计其 A 类（A-1+A-2）周计数 ≥1，
+      **本周每一天都不可用的学员跳过**（S-13 例外，Z-9）。
 
   - id: 4
     check_id: C04
