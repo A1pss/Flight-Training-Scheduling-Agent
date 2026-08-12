@@ -29,7 +29,7 @@ from datetime import date as date_type
 from datetime import time
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 Weekday = Literal["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 CrewRole = Literal["教员", "学员", "单飞", "复训"]
@@ -83,6 +83,21 @@ class Sortie(BaseModel):
     runway_id: str = Field(pattern=RUNWAY_ID_PATTERN)  # ★ v6 新增（S-05）
     is_recurrent: bool = False  # ★ v6 新增（S-11）
     crew: list[CrewMember] = Field(min_length=1, max_length=2)
+
+    @field_validator("takeoff", "landing")
+    @classmethod
+    def _naive_time_only(cls, value: time) -> time:
+        """时刻**不得带时区偏移**——全系统按本场当地时间记时。
+
+        M3 的 schemathesis 契约测试抓到的：Pydantic 会把 `"06:00:00Z"` 解析成一个
+        带 tzinfo 的 `time`，随后 `_time_consistency` 拿它与朴素的训练窗边界比较，
+        直接 `TypeError: can't compare offset-naive and offset-aware times` ——
+        本该是一条 422 契约错误，却成了 500。**在字段层挡下**，比在比较处补
+        try/except 干净：带偏移的时刻在本领域里本就没有意义。
+        """
+        if value.tzinfo is not None:
+            raise ValueError(f"时刻不得带时区偏移（本场当地时间），实际 {value!r}")
+        return value
 
     @model_validator(mode="after")
     def _time_consistency(self) -> Sortie:
