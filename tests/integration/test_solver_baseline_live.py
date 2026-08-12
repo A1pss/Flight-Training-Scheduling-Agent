@@ -283,6 +283,15 @@ def test_baseline_is_byte_reproducible(session: Session, snapshot: str) -> None:
     `test_baseline_week_is_optimal` 用默认 30s 预算验；这里给足预算，专验
     「跑完之后是不是同一个方案」。带 coverage 插桩时求解会慢出 50%（实测），
     两件事混在一条用例里会得到一个和被测性质无关的偶发红。
+
+    ⚠️ **预算 90s → 240s（M2-D 调整）。** 90s 在开发机上绰绰有余（优化阶段实测
+    10~12s），但 GitHub Actions 的 2 核 runner 叠加 coverage 插桩之后不够：
+    2026-08-12 的 CI 上三次连跑出现 `['OPTIMAL', 'FEASIBLE', 'OPTIMAL']`，
+    重跑即绿 —— 典型的贴着预算的抛硬币。
+
+    **这不是放宽断言**：三次仍然必须全部 `OPTIMAL` 且 `content_sha256` 逐字节相同。
+    改的只是「给求解器多少时间把最优性证完」，而「求解跑完」正是本用例明写的前提。
+    证完就立刻返回，所以在快的机器上这个上限一秒都不会多花。
     """
     digests: set[str] = set()
     statuses: list[str] = []
@@ -291,7 +300,7 @@ def test_baseline_is_byte_reproducible(session: Session, snapshot: str) -> None:
             session,
             snapshot_id=snapshot,
             week_start=BASELINE_WEEK,
-            time_limit_s=90.0,
+            time_limit_s=240.0,
             materialize=False,
         )
         outcome = solve(bundle)
