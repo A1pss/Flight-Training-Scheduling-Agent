@@ -54,6 +54,7 @@ v6 相对 v5.2 的实质变化来自两个源头：
 | **Z-13** | **§3.11 求解预算表** | **常规档 `max_time_in_seconds` 由 30 s 提到 60 s** | 基准周实测 18~21 s 证到 `OPTIMAL`，对 30 s 只剩约 9 s 余量；M4-A 全量回归（coverage 插桩 + 并行静态检查）下落到 `FEASIBLE`，而 `FEASIBLE` 按 §3.11.1 **不保证逐字节可复现**（顶着铁律 9）。同一现象在未改动的 `main` 上复现过，与任何窗口的改动无关。求解器证完最优性立刻返回，**提预算在正常情况下零成本**。业务方 2026-08-13 裁定。⚠️ 这是「多给时间把最优性证完」，不是放宽约束；`INFEASIBLE` 与时间无关，不许拿加预算去「解决」不可行 |
 | **Z-14** | **§7.6 端到端延迟表** | **端到端那一格由「按实测单次调用合成」换成真链路实测：36.0 s = 求解 17.8 s + LLM 与其余 18.3 s，LLM 调用 4 次（route 0 / planner 2 / explain 2）** | M4-A 当时没有可跑的完整链路（图在 M4-B 才装起来），只能给合成值并写明「M4-B 装完图后要用真链路复测并替换这一格」。M4-B 装完图后照做：`tests/integration/test_graph_ollama_live.py`，基准周 2026W02、快照 `snap_9724982865ee`、`LLM_PROVIDER=ollama`、GPU 3。**`route: 0` 不是漏计**——「给所有人排班」命中一级规则表，按 §7.2.1 就该是 0 次调用，所以总调用数比 §7.6 上表的 ~5 次略低（铁律 6：回填实测，不留合成值） |
 | **Z-15** | **§3.11 求解预算（测试环境）** | **插桩环境（`pytest --cov`）的求解墙钟设为 180 s；产品默认仍是 60 s，一个字未动** | M4-B 把基准周级别的真求解从 2 次增加到 9 次（Skill 隔离 S1/S2/S4 各一次、HITL 两个子进程各一次、诊断两次、端到端两次），叠加 coverage 插桩后，同一个最优性证明在 60 s 内跑不完，M2-A 的 `test_baseline_week_is_optimal` 偶发 `FEASIBLE`。**无插桩实测 `OPTIMAL` / 18.8~26.0 s，模型规模 2276 候选 / 12568 变量与 M2-A 逐字相同** —— 是测量工具的开销，不是求解器变慢。业务方 2026-08-14 裁定只抬测试环境（落 `tests/conftest.py` + `.github/workflows/ci.yml`，本地与 CI 自动一致）。⚠️ 参照基准是那个 18.8~26.0 s 区间；墙钟明显偏离时**当回归查，不要继续加预算**。同样地，`INFEASIBLE` 与时间无关（铁律 8） |
+| **Z-16** | **§6.3 新增 6.3.3「完成」的判据** | **一门课飞完完整周期才算完成**：`cycle_required = (cycle_weeks × 7) // freq_days`（A 类 28 次、B~F 类 16 次、G/H 类 10 次）。`commit_plan_node` 攒满后同时置 `training_progress.status='COMPLETED'` **并往 `person_completed_missions` 写事实行** | M4-B 实现 `commit_plan_node` 时发现设计方案从未定义结业标准：进度只能推到 `IN_PROGRESS`，`COMPLETED` 永远要靠人工更新「已完成课目」表。而这条标准直接反噬约束13 的先修判定（按「飞一次就算完成」自动置位的话，何超飞一次 A-2 就把 B 类课目全解锁了），所以 M4-B 按铁律 5 停下来问。业务方 2026-08-14 裁定「飞完完整周期」。⚠️ **只升不降**：摄取期读进来的 `COMPLETED`（`completed_count=1`）是业务方给的事实，不许被计次公式推翻 |
 
 > **Z-2 / Z-3 / Z-4 / Z-8 四条的共同点**：都是「文档某一处已经改对了，另一处没跟着改」造成的内部不一致。找规格时**先查有没有更晚的裁定**（§1.1 的 S-xx、本节的 D-xx / Z-xx），再看正文。
 >
@@ -1416,6 +1417,45 @@ CREATE TABLE training_progress (
     PRIMARY KEY (person_id, mission_id, cycle_start)
 );
 ```
+
+#### 6.3.3 「完成」的判据：飞完完整周期（`Z-16`，业务方 2026-08-14 裁定）
+
+> **一门课飞完完整周期才算完成。**
+
+周期长度是 `cycle_weeks` 周，周期内的要求是「每 `freq_days` 天 ≥1 次」，
+所以完整周期需要**周期里完整频率窗口的个数**：
+
+```
+cycle_required = (cycle_weeks × 7) // freq_days
+```
+
+| 类别 | `cycle_weeks` | `freq_days` | 完整周期次数 |
+|---|---|---|---|
+| A 类 | 12 | 3 | **28** |
+| B~F 类 | 16 | 7 | **16** |
+| G/H 类 | 20 | 14 | **10** |
+
+取**完整窗口**而不是向上取整，与 §3.5.2 的周内窗口口径一致（那里同样只枚举
+完整窗口，末尾残段不构成要求）。基准数据下两种取法一致，换一批数据才会分岔。
+
+**`commit_plan_node` 在人工确认之后做两件事，缺一不可**（落点
+`backend/core/ruleset.py::cycle_required_for` + `backend/nodes/commit_plan.py`）：
+
+1. `training_progress.status = 'COMPLETED'`；
+2. **往 `person_completed_missions` 插一行**。
+
+第 2 件是关键：本表是**由** `person_completed_missions` 物化而来的（§6.1），
+先修判定（§3.5.3 的 `progress.prereq_met`，实现在
+`retrieval.prereq_cte.evaluate_prereq`）读的也是那张事实表。只翻 `status`
+不写事实表，会出现「这门课显示已完成，但它作为先修的那几门课还是解锁不了」
+——同一个事实在两处不一致，而且不一致的那一侧恰好是排班真正用的那一侧。
+
+⚠️ **反过来不成立**：`COMPLETED` 不会被降回 `IN_PROGRESS`。摄取期从
+`personnel.pdf`「已完成课目」列读进来的行 `completed_count=1`，远小于一个完整
+周期，但它是**业务方直接给的事实**，拿计次公式去推翻它是本末倒置。
+
+完成之后该课目按 **S-03** 退出约束13 的频率滑窗（§3.5.3 第一行的
+`if progress.status == "COMPLETED": continue`），也就不再产生候选。
 
 **S-11 在本表的落点**：刘斌（P04）C 类到期日 2026-01-07 → 排班当日由 `compile_spec_node` 写入 `is_recurrent=TRUE, recurrent_since='2026-01-08'`，`last_done_date` 保持其上次实际执行日。基准周的复训窗口 `[2026-01-08, 2026-01-14]` 跨出 W02，**本周不强制安排**，但锚点必须落库，使 W03 排班能正确接续。
 

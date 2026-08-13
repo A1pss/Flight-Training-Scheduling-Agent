@@ -36,6 +36,9 @@
    `skills_loader`）。见 §3.4 与 §3.5 —— **谁顺手加一行 re-export，两处都会红。**
 5. **v6 §7.6 的端到端那一格已用真链路复测并回填**（M4-A 留的是合成值）。
    见 §5.7。
+6. **「完成」的判据已由业务方裁定并落地**（`Z-16`）：**一门课飞完完整周期才算
+   完成**。攒满后**必须同时写 `person_completed_missions`**，只翻
+   `training_progress.status` 会让先修永远解锁不了。见 §3.9。
 
 ---
 
@@ -255,17 +258,50 @@ v6 §7.2.1 的意图路由兜底要的是「**受约束解码**到 6 类枚举 +
 **认不出就返回 `None` 并抛「这句没能翻译成增量约束」，不瞎猜一个 `kind`。**
 翻译成一条错约束然后排出一版没人要的方案，比直接说「没听懂」糟得多。
 
-### 3.9 `commit_plan` 推进进度，但**不自动置 COMPLETED**
+### 3.9 「完成」的判据：飞完完整周期（业务方 2026-08-14 裁定，`Z-16`）
 
-一门课目要飞几次才算「完成」，设计方案里没有定义。
-`training_progress.status = COMPLETED` 的事实来源是 `person_completed_missions`
-（v6 §6.1），那是**业务方给的数据**。在这里按「飞过一次就算完成」自动置位，
-等于替业务方发明一条结业标准，而这条标准会立刻反噬到约束13 的先修判定上——
-何超飞了一次 A-2 就被判 A 类完成，B 类课目当场解锁。
+实现 `commit_plan_node` 时发现**设计方案从未定义结业标准**：进度只能推到
+`IN_PROGRESS`，`COMPLETED` 永远要靠人工更新「已完成课目」表。而这条标准会直接
+反噬约束13 的先修判定——按「飞一次就算完成」自动置位的话，何超飞一次 A-2 就把
+B 类课目全解锁了。所以按铁律 5 停下来问，**业务方裁定「一门课飞完完整周期才算完成」**。
 
-按铁律 5，这属于「设计方案没定义就停下来问」。本窗口只做
-`NOT_STARTED → IN_PROGRESS`，**COMPLETED 一个都不动**。⚠️ **这是给业务方的
-一个待裁决项**，见 §9.2。
+**落法**：周期长度 `cycle_weeks` 周、周期内每 `freq_days` 天 ≥1 次，故
+
+```
+cycle_required = (cycle_weeks × 7) // freq_days
+```
+
+| 类别 | `cycle_weeks` | `freq_days` | 完整周期次数 |
+|---|---|---|---|
+| A 类 | 12 | 3 | **28** |
+| B~F 类 | 16 | 7 | **16** |
+| G/H 类 | 20 | 14 | **10** |
+
+取**完整窗口**个数而非向上取整，与 §3.5.2 的周内窗口口径一致（那里同样只枚举
+完整窗口）。基准数据下 `cycle_weeks × 7` 恰好整除，两种取法一致；换一批数据
+才会分岔，届时按「完整窗口」走。唯一定义点：
+`backend/core/ruleset.py::cycle_required_for`（`req_max_for` 的周期版，同源于
+`freq_days`）。
+
+**攒满后同时做两件事，缺一不可**：
+
+1. `training_progress.status = 'COMPLETED'`；
+2. **往 `person_completed_missions` 插一行**。
+
+第 2 件是要害。`person_completed_missions` 是先修判定的**事实来源**
+（v6 §6.1：进度表由它物化而来，不是反过来），`evaluate_prereq` 读的就是它。
+只翻 `status` 不写事实表，会出现「这门课显示已完成，但它作为先修的那几门课
+还是解锁不了」——**同一个事实在两处不一致，而且不一致的那一侧恰好是排班真正
+用的那一侧**。
+
+⚠️ **只升不降**：`COMPLETED` 不会被降回 `IN_PROGRESS`。摄取期从
+`personnel.pdf`「已完成课目」列读进来的行 `completed_count=1`，远小于一个完整
+周期，但它是**业务方直接给的事实**，拿我们的计次公式去推翻它是本末倒置。
+
+**求解侧不用改**：完成后按 S-03 自动退出约束13 的频率滑窗
+（§3.5.3 第一行 `if progress.status == "COMPLETED": continue`），也就不再产生候选。
+
+实测见 §5.8。
 
 ### 3.10 `query` / `ingest` / `export` 三类意图在图内到 `END` 为止
 
@@ -493,6 +529,25 @@ Planner 的九个工具**声明了但没接 handler**（M4-A §9.3 写着「Plan
 `state` 之后接线（handler 要闭包住当前名录 / 当前方案 / 当前角色）。
 **单测用 `FakeHarness` 是照不出这个的** —— 这就是真机端到端必须跑一次的理由。
 
+### 5.8 「完成」判据的实测（`Z-16`）
+
+`tests/integration/test_commit_plan_live.py` 7 项全绿，逐条：
+
+| 断言 | 结果 |
+|---|---|
+| 基准课目表代入：B~F 类 16 周 / 每 7 天 → **16 次** | ✅ |
+| 机组两人都计次（教员带飞那趟对教员也是一次执行） | ✅ 与约束11/12 的数法一致 |
+| **飞一次不算完成** | ✅ `NOT_STARTED → IN_PROGRESS`，`newly_completed=False` |
+| **攒满 16 次 → `COMPLETED`** | ✅ `status` 翻转 |
+| **同时往 `person_completed_missions` 写事实行** | ✅ 写入前后各查一次，从「无」变「有」 |
+| 已是 `COMPLETED` 的行不被降级 | ✅（摄取期给的 `completed_count=1` 不被计次公式推翻） |
+| 超过周期次数仍是 `COMPLETED` | ✅ |
+| 锚点 `last_done_date` = 本周最后一次飞行日 | ✅ |
+
+单元侧另有 7 项钉住 `cycle_required_for`：三类课目逐个代入、只数完整窗口
+（10 周 / 每 8 天 → 8 次而非 9 次）、与 `req_max_for` 的关系、四种非正入参抛错、
+以及「周期装不下一个频率窗口」时抛而不是悄悄返回 0。
+
 ---
 
 ## 6. 与 M4-A 的接口约定逐条核对
@@ -651,23 +706,22 @@ app = build_graph(deps, checkpointer=saver, store=store)
    另一套（v6 §8.2 的过程回放）。两者都在，但**图的整体重放（§12.5.2 的
    `replay(trace_id)` 复现最终状态）在 W11 造数据集时才需要串起来**。
 
-### 9.2 ⚠️ 需要业务方裁决的遗留问题
+### 9.2 ✅ 原「需要业务方裁决」的那一项已裁决并落地
 
-**一门课目飞几次算「完成」？**（§3.9）
+**一门课目飞几次算「完成」？** —— 业务方 2026-08-14 裁定：**飞完完整周期**。
 
-`commit_plan_node` 目前只做 `NOT_STARTED → IN_PROGRESS`，**COMPLETED 一个都不动**。
-原因是设计方案里没有定义结业标准，而这条标准会直接反噬到约束13 的先修判定上：
-何超飞一次 A-2 就被判 A 类完成的话，B 类课目当场解锁。
+已落地，见 §3.9 与 §5.8。落点：
 
-三种可能的口径，需要业务方选一个（或给第四种）：
+| 落点 | 内容 |
+|---|---|
+| `backend/core/ruleset.py::cycle_required_for` | 唯一定义点：`(cycle_weeks × 7) // freq_days` |
+| `backend/nodes/commit_plan.py::advance_progress` | 攒满 → `status='COMPLETED'` **+ 写 `person_completed_missions`** |
+| v6 §6.3.3 + 本版说明 `Z-16` | 设计方案落点 |
+| `CLAUDE.md` §4 速查表 + §11 反模式清单 | 常驻指令，下一个窗口开工即可见 |
+| `skills/rule-interpretation/SKILL.md` | 知识层的人话说法（「还差 N 次飞完一个周期」） |
+| `tests/integration/test_commit_plan_live.py`（7）+ `tests/unit/test_ruleset_loader.py`（7） | 回归 |
 
-| 口径 | 含义 | 后果 |
-|---|---|---|
-| ① 保持现状 | `COMPLETED` 只由 `person_completed_missions`（业务方给的数据）决定 | 进度永远不会自动推进到完成，每个周期要人工更新已完成课目表 |
-| ② 按 `cycle_weeks` 计次 | 飞满 `ceil(cycle_weeks / freq_days * 7)` 次算完成 | 需要业务方确认这个换算是不是他们的实际标准 |
-| ③ 按课目自带的「结业次数」列 | 课目文件加一列 | 要改摄取与课目表结构 |
-
-**本窗口按 ① 执行**（不猜，铁律 5）。
+**本窗口不再有待裁决项。**
 
 ### 9.3 给下一个窗口的前置条件
 

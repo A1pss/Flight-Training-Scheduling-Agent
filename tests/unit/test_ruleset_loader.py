@@ -16,6 +16,7 @@ from backend.core.ruleset import (
     LEVEL_INSTRUCTOR,
     LEVEL_SOLO,
     REQUIRED_SWITCHES,
+    cycle_required_for,
     get_ruleset,
     get_semantics,
     load_ruleset,
@@ -221,3 +222,45 @@ def test_airspace_capacity_cross_check_reports_diffs() -> None:
 def test_singletons_are_cached() -> None:
     assert get_ruleset() is get_ruleset()
     assert get_semantics() is get_semantics()
+
+
+# ─────────────────────────────────────────────────────────────────────
+# `Z-16`：一门课飞完完整周期才算完成（业务方 2026-08-14 裁定）
+# ─────────────────────────────────────────────────────────────────────
+@pytest.mark.parametrize(
+    ("cycle_weeks", "freq_days", "expected"),
+    [
+        (12, 3, 28),  # A 类：12 周 / 每 3 天 ≥1 次
+        (16, 7, 16),  # B~F 类：16 周 / 每 7 天 ≥1 次
+        (20, 14, 10),  # G/H 类：20 周 / 每 14 天 ≥1 次
+    ],
+)
+def test_cycle_required_matches_the_baseline_syllabus(
+    cycle_weeks: int, freq_days: int, expected: int
+) -> None:
+    """基准课目表（v6 §1.3.3）逐类代入。"""
+    assert cycle_required_for(cycle_weeks, freq_days) == expected
+
+
+def test_cycle_required_counts_complete_windows_only() -> None:
+    """取的是**完整窗口**个数，与 §3.5.2 的周内窗口口径一致（末尾残段不计）。"""
+    # 10 周 = 70 天，每 8 天一个窗口 → 8 个完整窗口 + 6 天残段
+    assert cycle_required_for(10, 8) == 8
+
+
+def test_cycle_required_is_the_period_sibling_of_req_max() -> None:
+    """`req_max_for` 管一周的上限，本函数管一个周期的总量，同源于 `freq_days`。"""
+    assert req_max_for(3) == 3  # A 类一周最多 3 次
+    assert cycle_required_for(1, 3) == 2  # 一周里有 2 个完整的 3 天窗口
+
+
+@pytest.mark.parametrize(("cycle_weeks", "freq_days"), [(0, 7), (-1, 7), (16, 0), (16, -3)])
+def test_cycle_required_rejects_nonpositive_inputs(cycle_weeks: int, freq_days: int) -> None:
+    with pytest.raises(RuleParseError):
+        cycle_required_for(cycle_weeks, freq_days)
+
+
+def test_cycle_shorter_than_one_window_is_rejected() -> None:
+    """周期装不下一个频率窗口 —— 课目文件对不上，抛而不是悄悄返回 0。"""
+    with pytest.raises(RuleParseError, match="装不下"):
+        cycle_required_for(1, 14)

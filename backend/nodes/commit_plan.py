@@ -19,16 +19,32 @@
 |---|---|---|
 | `completed_count` | `+= 本周该 (人,课目) 的架次数` | 事实 |
 | `last_done_date` | `= 本周该组合最后一次飞行的日期` | 事实，且是跨周锚点 |
-| `status` | `NOT_STARTED → IN_PROGRESS` | 飞过就不再是没开始 |
 | `debt_count` | `+= 本周结算出的欠账` | 事实 |
-| `status → COMPLETED` | **不动** | ⚠️ 见下 |
+| `status` | `NOT_STARTED → IN_PROGRESS`；**攒满一个完整周期 → `COMPLETED`** | 业务方 2026-08-14 裁定（`Z-16`） |
 
-**为什么不自动置 COMPLETED**：一门课目要飞几次才算「完成」，设计方案里没有
-定义。`training_progress.status = COMPLETED` 的事实来源是
-`person_completed_missions`（v6 §6.1），那是**业务方给的数据**。在这里按
-「飞过一次就算完成」自动置位，等于替业务方发明了一条结业标准，而这条标准会
-立刻反噬到约束13 的先修判定上——何超飞了一次 A-2 就被判定 A 类完成，
-B 类课目当场解锁。按铁律 5，这属于「设计方案没定义就停下来问」，本窗口不猜。
+## 「完成」的判据（业务方 2026-08-14 裁定，`Z-16`）
+
+> **一门课飞完完整周期才算完成。**
+
+周期长度是 `cycle_weeks` 周、周期内的要求是「每 `freq_days` 天 ≥1 次」，
+所以完整周期需要 `(cycle_weeks × 7) // freq_days` 次
+（:func:`backend.core.ruleset.cycle_required_for`）。基准数据下 A 类 28 次、
+B~F 类 16 次、G/H 类 10 次。
+
+**攒满就同时做两件事，缺一不可**：
+
+1. `training_progress.status = "COMPLETED"`；
+2. **往 `person_completed_missions` 插一行**。
+
+第 2 件是关键。`person_completed_missions` 是先修判定的**事实来源**
+（v6 §6.1：进度表由它物化而来，不是反过来），而
+`retrieval.prereq_cte.evaluate_prereq` 读的就是它。只翻 `status` 不写事实表，
+会出现「这门课显示已完成，但它作为先修的那几门课还是解锁不了」——
+**同一个事实在两处不一致，而且不一致的那一侧恰好是排班真正用的那一侧。**
+
+⚠️ **反过来不成立**：`COMPLETED` 不会被降回 `IN_PROGRESS`。摄取期从
+「已完成课目」列读进来的行 `completed_count=1`，远小于一个完整周期，
+但它是**业务方直接给的事实**——拿我们的计次公式去推翻它是本末倒置。
 
 ## 归档产物由 M3 的报表层负责
 
@@ -51,8 +67,11 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from backend.core.config import get_settings
+from backend.core.ruleset import cycle_required_for
 from backend.graph.events import emit
 from backend.graph.state import FTSState, model_get
+from backend.models.entities import Mission as MissionRow
+from backend.models.entities import PersonCompletedMission as PersonCompletedMissionRow
 from backend.models.planning import BlockedItem as BlockedItemRow
 from backend.models.planning import Plan as PlanRow
 from backend.models.planning import Sortie as SortieRow
@@ -83,6 +102,14 @@ class ProgressAdvance:
     debt_delta: int
     status_before: str
     status_after: str
+    #: 攒满一个完整周期所需的次数（`Z-16`）。0 表示课目已不在本快照里
+    cycle_required: int = 0
+    completed_count: int = 0
+
+    @property
+    def newly_completed(self) -> bool:
+        """本次归档把它推到「完成」了。"""
+        return self.status_before != "COMPLETED" and self.status_after == "COMPLETED"
 
 
 def flown_counts(plan: SchedulePlan) -> dict[tuple[str, str], list[date]]:
@@ -124,6 +151,8 @@ def advance_progress(
             select(TrainingProgress).where(TrainingProgress.snapshot_id == snapshot_id)
         ).scalars()
     }
+    freq_days = _freq_days(session, snapshot_id)
+    already_completed = _completed_facts(session, snapshot_id)
 
     advances: list[ProgressAdvance] = []
     for key in sorted(keys):
@@ -133,6 +162,7 @@ def advance_progress(
         dates = counts.get(key, [])
         debt_delta = debts.get(key, 0)
         status_before = row.status
+        required = _cycle_required(row, freq_days)
 
         if dates:
             row.completed_count += len(dates)
@@ -141,7 +171,17 @@ def advance_progress(
             last = max(dates)
             if row.last_done_date is None or last > row.last_done_date:
                 row.last_done_date = last
-            if row.status == "NOT_STARTED":
+            # ★ `Z-16`：攒满一个完整周期才算完成
+            if row.status != "COMPLETED" and required and row.completed_count >= required:
+                row.status = "COMPLETED"
+                if key not in already_completed:
+                    session.add(
+                        PersonCompletedMissionRow(
+                            person_id=key[0], snapshot_id=snapshot_id, mission_id=key[1]
+                        )
+                    )
+                    already_completed.add(key)
+            elif row.status == "NOT_STARTED":
                 row.status = "IN_PROGRESS"
         if debt_delta:
             row.debt_count += debt_delta
@@ -156,10 +196,48 @@ def advance_progress(
                 debt_delta=debt_delta,
                 status_before=status_before,
                 status_after=row.status,
+                cycle_required=required,
+                completed_count=row.completed_count,
             )
         )
     session.flush()
     return advances
+
+
+def _cycle_required(row: TrainingProgress, freq_days: Mapping[str, int]) -> int:
+    """这一行攒满一个完整周期要多少次。课目不在本快照里就返回 0（不推断）。"""
+    freq = freq_days.get(row.mission_id)
+    if freq is None:
+        return 0
+    return cycle_required_for(row.cycle_weeks, freq)
+
+
+def _freq_days(session: Session, snapshot_id: str) -> dict[str, int]:
+    """本快照各课目的 `freq_days`。
+
+    从 `missions` 读而不是从 `ConstraintSpec` 拿：`commit_plan` 归档的是**已经
+    校验过的方案**，它该问的是「库里现在这门课的周期是多少」，而不是
+    「编译那一刻规格里记的是多少」。两者一致时无差别，不一致时以库为准
+    ——课目文件换过一版而方案是旧规格编的，那正是 `resume_guard` 要拦的场景。
+    """
+    return {
+        row.mission_id: row.freq_days
+        for row in session.execute(
+            select(MissionRow).where(MissionRow.snapshot_id == snapshot_id)
+        ).scalars()
+    }
+
+
+def _completed_facts(session: Session, snapshot_id: str) -> set[tuple[str, str]]:
+    """本快照已登记的「已完成课目」事实。"""
+    return {
+        (row.person_id, row.mission_id)
+        for row in session.execute(
+            select(PersonCompletedMissionRow).where(
+                PersonCompletedMissionRow.snapshot_id == snapshot_id
+            )
+        ).scalars()
+    }
 
 
 # ─────────────────────────────────────────────────────────────────────
