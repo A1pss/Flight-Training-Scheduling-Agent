@@ -90,11 +90,36 @@ class Settings(BaseSettings):
     PROBE_MAX_CALLS: int = Field(default=5, ge=0)
     PROBE_TOTAL_BUDGET_S: float = Field(default=120.0, gt=0)
 
-    # ── Harness 预算（§7.6 / FTS-4003）──────────────────────────────
-    HARNESS_MAX_LLM_CALLS: int = Field(default=12, ge=1)
-    HARNESS_MAX_TOKENS: int = Field(default=120_000, ge=1)
-    HARNESS_WALL_CLOCK_S: float = Field(default=180.0, gt=0)
-    HARNESS_MAX_RETRIES: int = Field(default=2, ge=0)
+    # ── Harness 预算（§7.7.1 第 4 行 / FTS-4003）────────────────────
+    # 四条上限**照抄 v6 §7.7.1**：LLM 调用 ≤10、工具调用 ≤20、墙钟 ≤180s、
+    # token ≤40k。M0 当时写的是 12 / 120k，与设计方案不符，M4-A 已改正。
+    # `BudgetLimits` 对这四项设了 `le=` 上界：配置只能往严里调，调不松。
+    HARNESS_MAX_LLM_CALLS: int = Field(default=10, ge=1, le=10)
+    HARNESS_MAX_TOOL_CALLS: int = Field(default=20, ge=1, le=20)
+    HARNESS_MAX_TOKENS: int = Field(default=40_000, ge=1, le=40_000)
+    HARNESS_WALL_CLOCK_S: float = Field(default=180.0, gt=0, le=180.0)
+    HARNESS_MAX_RETRIES: int = Field(default=2, ge=0, le=2)
+
+    # ── Harness 上下文装配（§7.7.1 第 5 行）─────────────────────────
+    #: 给模型输出留的 token 余量（输入预算 = LLM_NUM_CTX − 本项）
+    HARNESS_RESERVE_OUTPUT_TOKENS: int = Field(default=1024, ge=1)
+    #: 历史消息滑窗：只保留最近这么多条历史块
+    HARNESS_HISTORY_WINDOW: int = Field(default=6, ge=1)
+
+    # ── Harness 双模式调用的统计阈值（§7.7.1 第 2 行）───────────────
+    # 注意这里配的是**阈值**，不是模式本身 —— 模式由运行时统计决定，
+    # 配置里没有 `LLM_CALL_MODE` 这种开关，也不许加。
+    HARNESS_MODE_WINDOW: int = Field(default=20, ge=1)
+    HARNESS_MODE_SWITCH_THRESHOLD: float = Field(default=0.30, gt=0.0, le=1.0)
+    HARNESS_MODE_RECOVER_THRESHOLD: float = Field(default=0.10, gt=0.0, le=1.0)
+    HARNESS_MODE_MIN_SAMPLES: int = Field(default=5, ge=1)
+
+    # ── Harness 结果缓存（§7.7.1 第 6 行）───────────────────────────
+    #: 兜底 TTL；正常失效路径是快照生命周期结束时 `invalidate_snapshot()`
+    HARNESS_CACHE_TTL_S: int = Field(default=86_400, ge=1)
+
+    # ── 提示词（§7.7.1 第 8 行）─────────────────────────────────────
+    PROMPTS_DIR: Path = PROJECT_ROOT / "prompts"
 
     # ── Planner（§7.3.3）────────────────────────────────────────────
     BLAST_RADIUS_THRESHOLD: int = Field(default=20, ge=0)

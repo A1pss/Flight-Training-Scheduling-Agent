@@ -331,6 +331,44 @@ class ExportVerifyError(FTSError):
     code = ErrorCode.EXPORT_VERIFY_FAILED
 
 
+class ToolPermissionDeniedError(FTSError):
+    """LLM 组件试图调用**权限矩阵之外**的工具（v6 §7.7.2，运行时拦截）。
+
+    v6 §9.3 的 14 个码里**没有为越权单列一个码**。这里复用 FTS-4002 作为对外
+    呈现口径——越权的 tool call 本质上就是一次「模型输出不符契约」——但保留
+    独立的异常类型，护栏测试才能精确断言拦截而不是撞上别的校验。
+    `details["violation"]` 固定写 `"acl"`，供日志与 §12.5.1 的统计区分。
+
+    **注意它与 FTS-4002 的处置不同**：schema 违规要回灌重试，越权**直接抛**
+    （§7.7.2「运行时拦截，不依赖提示词自觉」）——把越权做成可重试，等于允许
+    模型试探到成功为止。
+    """
+
+    code = ErrorCode.LLM_SCHEMA_VIOLATION
+
+    def __init__(self, message: str, **kwargs: Any) -> None:
+        super().__init__(message, **kwargs)
+        self.details.setdefault("violation", "acl")
+
+
+class ArchitecturalBanError(ToolPermissionDeniedError):
+    """踩到 v6 §7.7.2 最后两行的**架构级禁令**。
+
+    两条：六个确定性节点（`solve` / `validate` / `compile_spec` /
+    `resume_guard` / `human_gate` / `commit_plan`）不得注册为任何 LLM 组件的
+    工具；除 `memory.write` 外任何数据写入禁止。
+
+    与上面那个的区别是**严重度**：越权是「这个组件不该调这个工具」，属运行时
+    权限；架构级禁令是「这个工具压根不该存在于工具表里」，属架构缺陷，按
+    v6 §12.5.3 的口径「任何一条失败都视为架构缺陷而非 bug」，故默认 CRITICAL。
+    """
+
+    def __init__(self, message: str, **kwargs: Any) -> None:
+        kwargs.setdefault("severity", "CRITICAL")
+        super().__init__(message, **kwargs)
+        self.details["violation"] = "architectural_ban"
+
+
 class EgressDeniedError(FTSError):
     """出网被 `core/http.py` 的 allowlist 拒绝（v6 §11.5 / §12.5.4 E1）。
 
@@ -344,6 +382,7 @@ class EgressDeniedError(FTSError):
 
 __all__ = [
     "ERROR_REGISTRY",
+    "ArchitecturalBanError",
     "BudgetExceededError",
     "DataConflictError",
     "EgressDeniedError",
@@ -364,5 +403,6 @@ __all__ = [
     "SnapshotStaleError",
     "SolveTimeoutError",
     "Stage",
+    "ToolPermissionDeniedError",
     "ValidatorSolverDisagreementError",
 ]
