@@ -36,7 +36,10 @@ jobs:
     timeout-minutes: 40
 
     steps:
+      # fetch-depth: 0 —— 「提示词改了没有」要靠与基线 diff 判定，浅克隆看不到基线
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: 安装 PostgreSQL 16 与 Redis 7（裸装，非容器）
         run: |
@@ -113,6 +116,33 @@ jobs:
 
       - name: E2/E3 —— egress 静态扫描
         run: bash deploy/scripts/check_egress.sh
+
+      # ── v6 §7.7.1 第 8 行：提示词版本治理 ──────────────────────────
+      # 两步：① 锁文件与正文必须一致（改正文没换版本号 → 红）；
+      #       ② `prompts/**` 有改动时跑该组件的 eval 子集。
+      # 第 ② 步的判据是 git diff，不是「有没有人记得跑」。
+      - name: 提示词锁文件核对
+        run: bash deploy/scripts/check_prompt_versions.sh
+
+      - name: 检测提示词改动
+        id: prompt_changes
+        run: |
+          BASE="${{ github.event.pull_request.base.sha }}"
+          # 拿不到基线（push 事件、浅克隆…）一律**当成改过**：多跑一次 eval 子集
+          # 只是慢几秒，漏跑一次则是「提示词改了没验」，代价完全不对等。
+          CHANGED=true
+          if [ -n "$BASE" ] && git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
+            if git diff --name-only "$BASE" HEAD -- prompts/ | grep -q .; then
+              git diff --name-only "$BASE" HEAD -- prompts/
+            else
+              CHANGED=false
+            fi
+          fi
+          echo "changed=$CHANGED" >> "$GITHUB_OUTPUT"
+
+      - name: 提示词 eval 子集（仅在 prompts/ 改动时）
+        if: steps.prompt_changes.outputs.changed == 'true'
+        run: pytest -m prompt_eval -q
 
       - name: 收尾停服
         if: always()

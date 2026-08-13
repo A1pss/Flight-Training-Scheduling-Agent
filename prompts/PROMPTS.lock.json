@@ -1,0 +1,26 @@
+{
+  "diagnosis/system": {
+    "prompt_version": "v1",
+    "sha256": "82fdf2e7356e81e4a2cf99af84eb0c89ec74d439ddbe52ed6c492aa87630d67a"
+  },
+  "explain/system": {
+    "prompt_version": "v1",
+    "sha256": "d9612ac7b3e1e3b3beb99eaf87319bb28321acfbf994355eca0be8389fce56fd"
+  },
+  "extract/system": {
+    "prompt_version": "v1",
+    "sha256": "d076b2b224baec49f5c833d41361f2287fcd12058a9840f3872b455a9923b179"
+  },
+  "knowledge/system": {
+    "prompt_version": "v1",
+    "sha256": "b55e3efbdca8262cc80e7789fe9dac03ff75a52ebf7c1026bbb50873026aac1b"
+  },
+  "planner/system": {
+    "prompt_version": "v1",
+    "sha256": "7d48f4d030691254ce22e33b2c35f5a1af59d3ab772b37173857dc59c3908e5f"
+  },
+  "route/system": {
+    "prompt_version": "v1",
+    "sha256": "c13fdd86d45e9908772e37fd2bba1dc0a372b70bb85381c91c3d6edb5548f1ce"
+  }
+}

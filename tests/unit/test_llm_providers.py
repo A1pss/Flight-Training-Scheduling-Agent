@@ -18,10 +18,16 @@ import pytest
 
 from backend.core.config import Settings, get_settings
 from backend.core.errors import LLMSchemaError, LLMUnavailableError
-from backend.llm.mock import DEFAULT_RESPONSE, MockProvider
+from backend.llm.mock import DEFAULT_RESPONSE, MockProvider, tool_response
 from backend.llm.ollama import OllamaProvider, parse_json_output
-from backend.llm.provider import LLMProvider, build_provider, request_key
+from backend.llm.provider import (
+    LLMProvider,
+    build_provider,
+    request_fingerprint,
+    request_key,
+)
 from backend.llm.replay import ReplayProvider, record_entry
+from backend.llm.types import LLMRequest, ToolSchema
 
 MESSAGES = [{"role": "user", "content": "给何超排班，出本周的训练计划"}]
 
@@ -175,7 +181,86 @@ def test_replay_load_order_is_stable(tmp_path: Path) -> None:
         json.dumps({"request_key": key, "response": "first"}) + "\n", encoding="utf-8"
     )
     cfg = Settings(_env_file=None, REPLAY_TRACE_DIR=tmp_path)  # type: ignore[call-arg]
-    assert ReplayProvider(cfg).complete(MESSAGES) == "second"  # b 后装载，覆盖 a
+    provider = ReplayProvider(cfg)
+    # a 先装载 → 严格按次序回放时先出 "first"
+    assert provider.complete(MESSAGES) == "first"
+    assert provider.complete(MESSAGES) == "second"
+
+
+def test_replay_is_strictly_ordered(tmp_path: Path) -> None:
+    """M4-A 改动：按次序回放 + 逐次核对指纹。
+
+    只按指纹查表的话，「少调一次 / 多调一次 / 两次调用换个顺序」全都查得到、
+    全都「通过」——而这三件事恰恰是重构最容易引入的 bug（v6 §12.5.2）。
+    """
+    first = [{"role": "user", "content": "第一问"}]
+    second = [{"role": "user", "content": "第二问"}]
+    (tmp_path / "run.jsonl").write_text(
+        record_entry(first, "A") + "\n" + record_entry(second, "B") + "\n", encoding="utf-8"
+    )
+    cfg = Settings(_env_file=None, REPLAY_TRACE_DIR=tmp_path)  # type: ignore[call-arg]
+
+    provider = ReplayProvider(cfg)
+    assert provider.complete(first) == "A"
+    assert provider.complete(second) == "B"
+    assert provider.remaining == 0
+
+    # 换个顺序问 → 指纹对不上，抛
+    out_of_order = ReplayProvider(cfg)
+    with pytest.raises(LLMUnavailableError, match="请求指纹不匹配"):
+        out_of_order.complete(second)
+
+
+def test_replay_exhaustion_is_an_error_not_a_fallback(tmp_path: Path) -> None:
+    (tmp_path / "run.jsonl").write_text(record_entry(MESSAGES, "A") + "\n", encoding="utf-8")
+    cfg = Settings(_env_file=None, REPLAY_TRACE_DIR=tmp_path)  # type: ignore[call-arg]
+    provider = ReplayProvider(cfg)
+    provider.complete(MESSAGES)
+    with pytest.raises(LLMUnavailableError, match="已耗尽"):
+        provider.complete(MESSAGES)
+
+
+def test_replay_rewind(tmp_path: Path) -> None:
+    """同一份轨迹连跑两遍——重放一致性要比两次结果。"""
+    (tmp_path / "run.jsonl").write_text(record_entry(MESSAGES, "A") + "\n", encoding="utf-8")
+    cfg = Settings(_env_file=None, REPLAY_TRACE_DIR=tmp_path)  # type: ignore[call-arg]
+    provider = ReplayProvider(cfg)
+    assert provider.complete(MESSAGES) == "A"
+    provider.rewind()
+    assert provider.complete(MESSAGES) == "A"
+
+
+def test_replay_skips_non_llm_trace_events(tmp_path: Path) -> None:
+    """Harness 轨迹里还有 tool / note 事件，Provider 只认 llm 那些行。"""
+    lines = [
+        json.dumps({"kind": "tool", "seq": 0, "component": "route", "tool": "resolve_person"}),
+        json.dumps(
+            {
+                "kind": "llm",
+                "request_key": request_key(MESSAGES, None, 0.0),
+                "response": {"text": "从轨迹来的"},
+            }
+        ),
+    ]
+    (tmp_path / "events.jsonl").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    cfg = Settings(_env_file=None, REPLAY_TRACE_DIR=tmp_path)  # type: ignore[call-arg]
+    provider = ReplayProvider(cfg)
+    assert provider.size == 1
+    assert provider.complete(MESSAGES) == "从轨迹来的"
+
+
+def test_replay_non_strict_mode_falls_back_to_lookup(tmp_path: Path) -> None:
+    """非严格模式仍可用（按指纹查表），但**不是默认**。"""
+    (tmp_path / "run.jsonl").write_text(
+        record_entry([{"role": "user", "content": "x"}], "X")
+        + "\n"
+        + record_entry(MESSAGES, "Y")
+        + "\n",
+        encoding="utf-8",
+    )
+    cfg = Settings(_env_file=None, REPLAY_TRACE_DIR=tmp_path)  # type: ignore[call-arg]
+    provider = ReplayProvider(cfg, strict_order=False)
+    assert provider.complete(MESSAGES) == "Y"
 
 
 # ─── OllamaProvider：用假 transport 覆盖协议行为，不碰真实服务 ───────
@@ -301,3 +386,146 @@ def test_parse_json_output() -> None:
     assert parse_json_output('{"a": 1}') == {"a": 1}
     with pytest.raises(LLMSchemaError, match="不是合法 JSON"):
         parse_json_output("not json")
+
+
+# ─── M4-A 新增：chat() 全量契约（工具 / token / logprobs）───────────
+
+
+def test_ollama_chat_sends_tools_and_parses_tool_calls(monkeypatch: pytest.MonkeyPatch) -> None:
+    body = {
+        "model": "qwen2.5:14b-instruct-q4_K_M",
+        "message": {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {"function": {"name": "resolve_person", "arguments": {"surface": "何超"}}}
+            ],
+        },
+        "prompt_eval_count": 155,
+        "eval_count": 21,
+        "done_reason": "stop",
+    }
+    client = _FakeClient(_FakeResponse(200, body))
+    _patch_client(monkeypatch, client)
+    cfg = Settings(_env_file=None, LLM_PROVIDER="ollama")  # type: ignore[call-arg]
+
+    tools = (ToolSchema(name="resolve_person", description="解析人名", parameters={}),)
+    response = OllamaProvider(cfg).chat(LLMRequest(messages=MESSAGES, tools=tools))
+
+    assert client.last_payload is not None
+    assert client.last_payload["tools"][0]["function"]["name"] == "resolve_person"
+    assert response.tool_calls[0].name == "resolve_person"
+    assert response.tool_calls[0].arguments == {"surface": "何超"}
+    # token 计数取实测值（预算记账靠它，铁律 6）
+    assert (response.prompt_tokens, response.completion_tokens) == (155, 21)
+    assert response.total_tokens == 176
+    assert response.finish_reason == "stop"
+
+
+def test_ollama_keeps_malformed_arguments_verbatim(monkeypatch: pytest.MonkeyPatch) -> None:
+    """畸形参数要原样留住，才能在 Harness 里判成 json_malformed 而不是被吞掉。"""
+    body = {
+        "message": {
+            "content": "",
+            "tool_calls": [{"function": {"name": "resolve_person", "arguments": '{"surface": '}}],
+        }
+    }
+    _patch_client(monkeypatch, _FakeClient(_FakeResponse(200, body)))
+    cfg = Settings(_env_file=None, LLM_PROVIDER="ollama")  # type: ignore[call-arg]
+    response = OllamaProvider(cfg).chat(LLMRequest(messages=MESSAGES))
+    assert response.tool_calls[0].arguments == '{"surface": '
+
+
+def test_ollama_requests_logprobs_when_asked(monkeypatch: pytest.MonkeyPatch) -> None:
+    client = _FakeClient(_FakeResponse(200, {"message": {"content": "x"}}))
+    _patch_client(monkeypatch, client)
+    cfg = Settings(_env_file=None, LLM_PROVIDER="ollama")  # type: ignore[call-arg]
+    OllamaProvider(cfg).chat(LLMRequest(messages=MESSAGES, logprobs=True, top_logprobs=3))
+    assert client.last_payload is not None
+    assert client.last_payload["logprobs"] is True
+    assert client.last_payload["top_logprobs"] == 3
+
+
+def test_ollama_logprobs_absent_means_none_not_a_made_up_number(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """本机 Ollama 0.6.8 不返回 logprobs —— 那就是 None，不许拿别的量凑（铁律 6）。"""
+    _patch_client(monkeypatch, _FakeClient(_FakeResponse(200, {"message": {"content": "x"}})))
+    cfg = Settings(_env_file=None, LLM_PROVIDER="ollama")  # type: ignore[call-arg]
+    response = OllamaProvider(cfg).chat(LLMRequest(messages=MESSAGES, logprobs=True))
+    assert response.sequence_logprob is None
+    assert response.token_logprobs == ()
+
+
+def test_ollama_parses_logprobs_when_present(monkeypatch: pytest.MonkeyPatch) -> None:
+    """装上支持该字段的 Ollama 就该立刻可用——解析路径先写好。"""
+    body = {
+        "message": {
+            "content": "你好",
+            "logprobs": {"content": [{"logprob": -0.5}, {"logprob": -1.5}]},
+        }
+    }
+    _patch_client(monkeypatch, _FakeClient(_FakeResponse(200, body)))
+    cfg = Settings(_env_file=None, LLM_PROVIDER="ollama")  # type: ignore[call-arg]
+    response = OllamaProvider(cfg).chat(LLMRequest(messages=MESSAGES, logprobs=True))
+    assert response.token_logprobs == (-0.5, -1.5)
+    assert response.sequence_logprob == pytest.approx(-2.0)
+
+
+def test_request_fingerprint_covers_tools() -> None:
+    base = LLMRequest(messages=MESSAGES)
+    with_tools = LLMRequest(
+        messages=MESSAGES, tools=(ToolSchema(name="resolve_person", parameters={}),)
+    )
+    assert request_fingerprint(base) != request_fingerprint(with_tools)
+    assert request_fingerprint(base) == request_fingerprint(LLMRequest(messages=MESSAGES))
+
+
+# ─── M4-A 新增：MockProvider 的场景桩 ───────────────────────────────
+
+
+def test_mock_scenario_replays_in_order(tmp_path: Path) -> None:
+    cfg = Settings(_env_file=None, MOCK_FIXTURE_DIR=tmp_path)  # type: ignore[call-arg]
+    provider = MockProvider(cfg)
+    provider.register_scenario(
+        "retry",
+        [tool_response("resolve_person", {}), tool_response("resolve_person", {"surface": "何超"})],
+    )
+    provider.activate("retry")
+
+    first = provider.chat(LLMRequest(messages=MESSAGES))
+    second = provider.chat(LLMRequest(messages=MESSAGES))
+    assert first.tool_calls[0].arguments == {}
+    assert second.tool_calls[0].arguments == {"surface": "何超"}
+    assert provider.remaining == 0
+
+
+def test_mock_scenario_exhaustion_raises(tmp_path: Path) -> None:
+    """耗尽即抛，不循环最后一条——循环会把「少调了一次」伪装成通过。"""
+    cfg = Settings(_env_file=None, MOCK_FIXTURE_DIR=tmp_path)  # type: ignore[call-arg]
+    provider = MockProvider(cfg)
+    provider.register_scenario("one", ["只有一条"])
+    provider.activate("one")
+    provider.chat(LLMRequest(messages=MESSAGES))
+    with pytest.raises(LLMUnavailableError, match="已耗尽"):
+        provider.chat(LLMRequest(messages=MESSAGES))
+
+
+def test_mock_unknown_scenario_raises(tmp_path: Path) -> None:
+    cfg = Settings(_env_file=None, MOCK_FIXTURE_DIR=tmp_path)  # type: ignore[call-arg]
+    with pytest.raises(LLMUnavailableError, match="未登记的 mock 场景"):
+        MockProvider(cfg).activate("nope")
+
+
+def test_mock_deactivate_returns_to_content_matching(tmp_path: Path) -> None:
+    (tmp_path / "stubs.json").write_text(
+        json.dumps({"rules": [{"when_contains": ["排班"], "response": "按内容匹配"}]}),
+        encoding="utf-8",
+    )
+    cfg = Settings(_env_file=None, MOCK_FIXTURE_DIR=tmp_path)  # type: ignore[call-arg]
+    provider = MockProvider(cfg)
+    provider.register_scenario("s", ["按场景"])
+    provider.activate("s")
+    assert provider.complete(MESSAGES) == "按场景"
+    provider.deactivate()
+    assert provider.complete(MESSAGES) == "按内容匹配"

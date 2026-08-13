@@ -107,6 +107,7 @@ markers = [
     "golden: 黄金用例，逐字节比对",
     "guardrail: 护栏测试（越权/预算/egress/Skill 隔离）",
     "e2e: 端到端，需要全栈在线",
+    "prompt_eval: 提示词 eval 子集（v6 §7.7.1 第 8 行：prompts/ 改动时 CI 必跑）",
 ]
 filterwarnings = ["error::DeprecationWarning:backend.*"]
 

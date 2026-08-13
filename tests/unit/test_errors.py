@@ -1,6 +1,6 @@
 """错误码与错误契约单测（v6 §9.3）。
 
-核心断言：**14 个码一个不少**，且 `UNKNOWN` 与 `INFEASIBLE` 在类型层就分开
+核心断言：**15 个码一个不少**，且 `UNKNOWN` 与 `INFEASIBLE` 在类型层就分开
 （铁律 8）。
 """
 
@@ -21,7 +21,7 @@ from backend.core.errors import (
     ValidatorSolverDisagreementError,
 )
 
-#: v6 §9.3 表格逐字列出的 14 个码。
+#: v6 §9.3 表格逐字列出的 15 个码。
 EXPECTED_CODES = {
     "FTS-1001",
     "FTS-1002",
@@ -36,13 +36,14 @@ EXPECTED_CODES = {
     "FTS-4001",
     "FTS-4002",
     "FTS-4003",
+    "FTS-4004",
     "FTS-5001",
 }
 
 
-def test_all_thirteen_codes_present() -> None:
+def test_all_fifteen_codes_present() -> None:
     assert {c.value for c in ErrorCode} == EXPECTED_CODES
-    assert len(ErrorCode) == 14
+    assert len(ErrorCode) == 15
 
 
 def test_registry_covers_every_code() -> None:
