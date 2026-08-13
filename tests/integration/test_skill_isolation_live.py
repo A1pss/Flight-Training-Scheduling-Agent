@@ -40,10 +40,10 @@ from backend.graph.graph import GraphDeps, build_graph
 from backend.graph.state import initial_state
 from backend.ingestion.adapters import extract_pdf
 from backend.ingestion.diff import normalize_facts
-from backend.ingestion.loader import active_snapshot_id
 from backend.ingestion.parsers.aircraft import parse_aircraft_document
 from backend.routing.entities import directory_from_session
 from backend.skills_loader import SkillLibrary, load_library
+from tests.fixtures.baseline_snapshot import ensure_baseline_snapshot
 
 pytestmark = pytest.mark.integration
 
@@ -55,10 +55,14 @@ AIRCRAFT_PDF = PROJECT_ROOT / "data" / "origin" / "aircraft.pdf"
 
 @pytest.fixture(scope="module")
 def snapshot() -> str:
+    """一个 ACTIVE 快照。**库里没有就现建一份**（CLAUDE.md §6）。
+
+    不写成 `assert 库里应当已经有` —— 那是在断言「有人在测试之外先跑过某个
+    命令」，本地绿、CI 红。本文件按字母序排在 `test_ingestion_pipeline_live.py`
+    **之前**，全新的 CI 库跑到这里时还没有任何快照。
+    """
     with session_scope() as session:
-        snap = active_snapshot_id(session)
-    assert snap, "库里没有 ACTIVE 快照 —— 先跑 `python -m backend.ingestion.cli --baseline`"
-    return snap
+        return ensure_baseline_snapshot(session)
 
 
 @contextmanager

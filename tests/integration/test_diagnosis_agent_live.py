@@ -26,10 +26,10 @@ from sqlalchemy.orm import Session
 from backend.agents.diagnosis import DIAGNOSIS_TOOLS, run_diagnosis
 from backend.core.config import Settings
 from backend.core.db import get_session_factory, session_scope
-from backend.ingestion.loader import active_snapshot_id
 from backend.nodes.compile_spec import compile_spec
 from backend.solver.data import ScenarioOverrides
 from backend.solver.diagnose import ProbeBudget
+from tests.fixtures.baseline_snapshot import ensure_baseline_snapshot
 from tests.fixtures.graph_fixtures import FakeHarness, FakeRegistry, degraded_output, tool_output
 
 pytestmark = pytest.mark.integration
@@ -53,10 +53,14 @@ def shared_session() -> Iterator[Session]:
 
 @pytest.fixture(scope="module")
 def snapshot() -> str:
+    """一个 ACTIVE 快照。**库里没有就现建一份**（CLAUDE.md §6）。
+
+    不写成 `assert 库里应当已经有` —— 那是在断言「有人在测试之外先跑过某个
+    命令」，本地绿、CI 红。本文件按字母序排在 `test_ingestion_pipeline_live.py`
+    **之前**，全新的 CI 库跑到这里时还没有任何快照。
+    """
     with session_scope() as session:
-        snap = active_snapshot_id(session)
-    assert snap, "库里没有 ACTIVE 快照 —— 先跑 `python -m backend.ingestion.cli --baseline`"
-    return snap
+        return ensure_baseline_snapshot(session)
 
 
 @pytest.fixture(scope="module")
