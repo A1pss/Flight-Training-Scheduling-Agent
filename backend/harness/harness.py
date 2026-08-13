@@ -295,7 +295,15 @@ class Harness:
         **纯生成型组件（不给工具、也不要求工具调用）永远走 `native`**：
         `constrained_json` 是把输出约束成 `{"tool": …, "arguments": …}` 的形状，
         对「写一段给人看的解释」既无意义，工具名的 enum 还会是空数组。
+
+        **结构化输出型组件例外**（`AgentSpec.structured_output`，M4-B 新增）：
+        v6 §7.2.1 的意图路由兜底要的是「受约束解码到 6 类枚举 + 槽位」，产物是
+        一个对象而不是 tool call。它同样不给工具，但给了 `output_schema`——
+        那正是要交给 `format=<schema>` 的东西，落回 `native` 等于把受约束解码
+        这一步悄悄取消掉。
         """
+        if agent.structured_output:
+            return "constrained_json"
         if not agent.tools and not agent.requires_tool_call:
             return "native"
         return self._modes.pick(agent.name)
@@ -346,6 +354,9 @@ class Harness:
     def _parse_and_validate(
         self, agent: AgentSpec, response: LLMResponse, mode: CallMode
     ) -> tuple[list[ValidatedCall], list[ValidationFailure]]:
+        if agent.structured_output:
+            return [], _validate_structured(response)
+
         raw_calls, parse_failure = extract_tool_calls(response, mode)
         if parse_failure is not None:
             return [], [parse_failure]
@@ -591,6 +602,47 @@ def constrained_schema(tools: Sequence[str]) -> dict[str, Any]:
         },
         "required": ["tool", "arguments"],
     }
+
+
+def _validate_structured(response: LLMResponse) -> list[ValidationFailure]:
+    """结构化输出型组件的契约校验：只判「是不是一个合法 JSON 对象」。
+
+    **细粒度校验刻意留给调用方**（如 `routing.classify` 把它喂进 Pydantic）：
+    这一层不知道那个 schema 的业务含义，硬要在这里判就得把六类意图的定义搬进
+    Harness，而那正是 §7.7 想避免的耦合。这里只保证「拿到的是能解析的对象」——
+    解析不了就归 `json_malformed` 走回灌重试，与工具调用路径同一套统计口径。
+    """
+    text = response.text.strip()
+    if not text:
+        return [
+            ValidationFailure(
+                mode=FailureMode.JSON_MALFORMED,
+                expected="受约束解码要求的 JSON 对象",
+                actual="",
+                message="本次要求结构化输出，但模型什么都没吐",
+            )
+        ]
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError as exc:
+        return [
+            ValidationFailure(
+                mode=FailureMode.JSON_MALFORMED,
+                expected="受约束解码要求的 JSON 对象",
+                actual=_preview(text),
+                message=f"输出不是合法 JSON：{exc}",
+            )
+        ]
+    if not isinstance(payload, dict):
+        return [
+            ValidationFailure(
+                mode=FailureMode.JSON_MALFORMED,
+                expected="JSON 对象",
+                actual=_preview(repr(payload)),
+                message="结构化输出必须是对象，不能是数组或标量",
+            )
+        ]
+    return []
 
 
 def extract_tool_calls(

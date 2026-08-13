@@ -32,11 +32,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, timedelta
 
+from langgraph.types import Command
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from backend.core.errors import RequiredInputMissingError
+from backend.core.errors import DataConflictError, RequiredInputMissingError
 from backend.core.ruleset import Ruleset, Semantics, get_ruleset, get_semantics, req_max_for
+from backend.graph.events import emit
+from backend.graph.state import FTSState, model_get
+from backend.graph.state import get as state_get
 from backend.models.progress import TrainingProgress
 from backend.retrieval.prereq_cte import evaluate_prereq
 from backend.schemas.intent import ConstraintSpec, ObjectiveWeights, SolveIntent
@@ -346,13 +350,150 @@ def week_dates(week_start: date) -> tuple[date, ...]:
     return tuple(week_start + timedelta(days=i) for i in range(WEEK_DAYS))
 
 
+# ─────────────────────────────────────────────────────────────────────
+# 图节点（M4-B）
+# ─────────────────────────────────────────────────────────────────────
+def intent_from_spec(spec: ConstraintSpec) -> SolveIntent:
+    """从已编译的 `ConstraintSpec` 反推出等价的 `SolveIntent`。
+
+    **为什么需要它**：`SpecBundle` 里的 `ProblemData` 不进黑板——它有几万个
+    字段，塞进 checkpoint 既撑爆存储，也让「跨日恢复」变成「跨日反序列化一个
+    快照的全量实体」。所以黑板上只留 `ConstraintSpec`（一个扁平的 Pydantic
+    模型），要用时由 :func:`bundle_from_spec` 按它重新装配。
+
+    反推是**无损**的：`compile_spec` 从 `SolveIntent` 里只取范围、权重、增量
+    约束三样，三样都原样落在了 `ConstraintSpec` 上。冻结策略与预授权档位不
+    参与编译（前者在 Planner 侧决定冻结集，后者已折算成 `relaxation_tier`），
+    所以这里给的是中性值，且**不会影响重新装配的结果**。
+    """
+    return SolveIntent(
+        scope_persons=spec.scope_persons,
+        scope_missions=spec.scope_missions,
+        freeze_policy="BALANCED",
+        freeze_reason="由 ConstraintSpec 反推（冻结策略不参与编译，见 intent_from_spec）",
+        objective_weights=spec.objective_weights,
+        pre_authorized_tiers=[spec.relaxation_tier],
+        incremental_constraints=list(spec.incremental_constraints),
+        estimated_blast_radius=0,
+        open_questions=[],
+    )
+
+
+def bundle_from_spec(
+    session: Session,
+    spec: ConstraintSpec,
+    *,
+    overrides: ScenarioOverrides = NO_OVERRIDES,
+    materialize: bool = False,
+) -> SpecBundle:
+    """按黑板上的 `ConstraintSpec` 重新装配 `SpecBundle`。
+
+    `materialize=False` 是默认值：`training_progress` 已经在
+    :func:`compile_spec_node` 那一步物化过了，重复物化既慢又会在同一次运行里
+    写两遍同样的行。
+
+    编译是确定性的，所以重新装配出来的 `spec` 必须与传进来的**逐字段相等**；
+    不等就说明快照在两次编译之间变了。那种情况下继续跑，会得到一个「按新数据
+    求解、按旧规格记账」的方案 —— 本函数直接抛，不猜。
+    """
+    rebuilt = compile_spec(
+        session,
+        snapshot_id=spec.snapshot_id,
+        week_start=spec.week_start,
+        intent=intent_from_spec(spec),
+        relaxation_tier=spec.relaxation_tier,
+        overrides=overrides,
+        time_limit_s=spec.solver_time_limit_s,
+        workers=spec.solver_workers,
+        seed=spec.solver_seed,
+        materialize=materialize,
+    )
+    if rebuilt.spec != spec:
+        raise DataConflictError(
+            "按黑板上的 ConstraintSpec 重新编译，得到的规格与原规格不一致 —— "
+            "快照或规则集在两次编译之间变了。继续跑会按新数据求解、按旧规格记账",
+            details={
+                "snapshot_id": spec.snapshot_id,
+                "iso_week": spec.iso_week,
+                "ruleset_version": (spec.ruleset_version, rebuilt.spec.ruleset_version),
+                "semantics_version": (spec.semantics_version, rebuilt.spec.semantics_version),
+            },
+            suggestions=["回到 planner 基于当前快照重解（resume_guard 的 FTS-3004 路径）"],
+        )
+    return rebuilt
+
+
+def compile_spec_node(
+    state: FTSState,
+    session: Session,
+    *,
+    overrides: ScenarioOverrides = NO_OVERRIDES,
+) -> Command[str]:
+    """确定性节点 ①：`ruleset.yaml + semantics.yaml + SolveIntent → ConstraintSpec`。
+
+    **不经 Harness、不读 Skill、不注册为任何 LLM 组件的工具**（铁律 4）。
+    两项额外职责（S-01 类别先修展开、S-11 复训标记写入）由
+    :func:`compile_spec` 承担，本节点只负责取参数、落黑板、决定下一跳。
+    """
+    snapshot_id = state_get(state, "snapshot_id", "")
+    week_start_text = state_get(state, "week_start", "")
+    if not snapshot_id:
+        raise RequiredInputMissingError(
+            "没有数据快照，无法编译规格。请先完成摄取并激活一个快照",
+            details={"stage": "compile_spec"},
+            suggestions=["运行 `python -m backend.ingestion.cli --baseline` 或上传数据文件"],
+        )
+    if not week_start_text:
+        raise RequiredInputMissingError(
+            "没有排班周起点。请指明要排哪一周（如 2026W02）",
+            details={"stage": "compile_spec"},
+            suggestions=["在请求里给出周次，或改用 POST /api/v1/schedule 传入 week_start"],
+        )
+
+    intent = model_get(state, "solve_intent", SolveIntent) or default_intent()
+    tier = int(state_get(state, "relaxation_tier", 0))
+    bundle = compile_spec(
+        session,
+        snapshot_id=snapshot_id,
+        week_start=date.fromisoformat(week_start_text),
+        intent=intent,
+        relaxation_tier=tier,
+        overrides=overrides,
+        materialize=True,
+    )
+    spec = bundle.spec
+    return Command(
+        goto="solve",
+        update={
+            "constraint_spec": spec,
+            "ruleset_version": spec.ruleset_version,
+            "semantics_version": spec.semantics_version,
+            "trace_events": emit(
+                state,
+                "compile_spec",
+                "decision",
+                {
+                    "iso_week": spec.iso_week,
+                    "relaxation_tier": spec.relaxation_tier,
+                    "incremental_constraints": len(spec.incremental_constraints),
+                    "semantics_version": spec.semantics_version,
+                    "ruleset_version": spec.ruleset_version,
+                },
+            ),
+        },
+    )
+
+
 __all__ = [
     "ProgressUpdate",
     "SpecBundle",
     "blocked_reason_text",
+    "bundle_from_spec",
     "compile_spec",
+    "compile_spec_node",
     "compute_progress_updates",
     "default_intent",
+    "intent_from_spec",
     "materialize_progress",
     "recurrent_since_for",
     "week_dates",

@@ -127,6 +127,27 @@ class Settings(BaseSettings):
     # ── Planner（§7.3.3）────────────────────────────────────────────
     BLAST_RADIUS_THRESHOLD: int = Field(default=20, ge=0)
     SELF_CONSISTENCY_SAMPLES: int = Field(default=3, ge=1)
+    #: self-consistency 的采样温度（v6 §7.3.5 伪码里的 `temperature=0.7`）。
+    #: 采样必须**有温度**，否则 n 次采到同一条，一致率恒为 1.0，信号一失效。
+    SELF_CONSISTENCY_TEMPERATURE: float = Field(default=0.7, gt=0.0, le=2.0)
+
+    # ── 置信度阈值（§7.3.5 / §7.5 `CONFIDENCE_THRESHOLD`）───────────
+    # ⚠️ **这是未拟合期的保守占位值，不是校准结果**（铁律 6）。
+    # v6 §7.3.5 要求它由「误执行率 ≤4%」在 §12.2 的 360 条标注数据上反推，
+    # 那批数据 W11 才有。业务方 2026-08-13 选定 0.75 作为拟合前的默认值。
+    # 做成配置项而不是常量，就是为了 W11/W13 拿到数反推后**改 .env 即可**。
+    CONFIDENCE_THRESHOLD: float = Field(default=0.75, ge=0.0, le=1.0)
+    #: 已拟合校准器的落盘位置。文件不存在时用未拟合的启发式回退（如实标记）。
+    CALIBRATOR_PATH: Path = PROJECT_ROOT / "datasets" / "calibrator.json"
+
+    # ── 图与 HITL（§7.5 / §9.2）─────────────────────────────────────
+    #: `validate → solve` 的驳回回环上限（v6 §7.5 `MAX_ATTEMPTS`）。
+    #: 正常情况下这条回环**一次都不该触发**——触发即 FTS-3003 CRITICAL。
+    MAX_SOLVE_ATTEMPTS: int = Field(default=2, ge=1)
+    #: `explain` 的 Critic 重写轮数上限（v6 §7.2.3「重写（≤N 轮）」）
+    EXPLAIN_MAX_REWRITES: int = Field(default=1, ge=0, le=3)
+    #: DiagnosisAgent 的自主轮数上限（探针预算另由 §3.9.2 的独立池管）
+    DIAGNOSIS_MAX_ROUNDS: int = Field(default=3, ge=1)
 
     # ── 规则与语义（§1.1）───────────────────────────────────────────
     RULESET_PATH: Path = PROJECT_ROOT / "rules" / "ruleset_v1.3.yaml"
