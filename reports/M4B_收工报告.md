@@ -558,6 +558,18 @@ app = build_graph(deps, checkpointer=saver, store=store)
 
 ## 9. 业务方裁决落地 / 已知限制 / 给下一个窗口的前置条件
 
+### 9.0 顺带发现的一件事（不是本窗口的文件，但下一个窗口该知道）
+
+`tests/integration/test_crosscheck_live.py` 在没有 ACTIVE 快照时走的是
+`pytest.skip`，而它按文件名顺序排在 `test_ingestion_pipeline_live.py`
+**之前**——也就是说，**在全新的 CI 库上，M2-C 的交叉验收一直是被静默跳过的**。
+本地永远绿（库里早有数据），CI 上永远没真跑。
+
+本窗口**没有改它**（不是我的文件，改了会变动 CI 实际跑的内容）。
+修法现成：把它的 fixture 也换成 `tests/fixtures/baseline_snapshot.py` 的
+`ensure_baseline_snapshot()`，与本窗口三个文件同一口径。**建议下一个窗口顺手做掉**
+——「跳过」和「通过」在 CI 的绿勾里长得一模一样。
+
 ### 9.1 已知限制
 
 1. **`KnowledgeAgent` 未交付**（W8）。图里没有 `knowledge` 节点，`query` 意图

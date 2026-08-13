@@ -31,11 +31,21 @@ TEST_SOLVER_TIME_LIMIT_S = "180"
 
 
 @pytest.fixture(autouse=True)
-def _force_mock_provider(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
-    """全局默认 mock provider、插桩期求解墙钟，并清掉配置单例缓存。"""
+def _force_mock_provider(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[None]:
+    """全局默认 mock provider；**只给集成用例**抬高插桩期求解墙钟。
+
+    ⚠️ **墙钟只对 `@pytest.mark.integration` 生效，不是全局 setenv。**
+    全局设了会连 `test_core_config_logging.py::test_solver_budget_defaults`
+    一起改掉——那条守的正是「产品默认 60s」，而 `Settings(_env_file=None)`
+    仍然会读 `os.environ`。**守默认值的测试必须看得见真正的默认值**，
+    否则这个门禁就白设了（实测踩过：`assert 180.0 == 60.0`）。
+    """
     monkeypatch.setenv("LLM_PROVIDER", "mock")
     monkeypatch.setenv("APP_ENV", "ci")
-    monkeypatch.setenv("SOLVER_TIME_LIMIT_S", TEST_SOLVER_TIME_LIMIT_S)
+    if request.node.get_closest_marker("integration") is not None:
+        monkeypatch.setenv("SOLVER_TIME_LIMIT_S", TEST_SOLVER_TIME_LIMIT_S)
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()
