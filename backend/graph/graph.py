@@ -68,6 +68,7 @@ from backend.nodes.resume_guard import resume_guard
 from backend.nodes.solve import solve_node
 from backend.nodes.validate import validate_node
 from backend.planner.calibration import DEFAULT_CALIBRATOR, ConfidenceCalibrator
+from backend.planner.tools import planner_tool_handlers
 from backend.routing.entities import EntityDirectory
 from backend.schemas.intent import ConstraintSpec
 from backend.schemas.plan import SchedulePlan
@@ -148,13 +149,39 @@ def default_deps(*, load_skills: bool = True, **kwargs: Any) -> GraphDeps:
 #    显式标注成 `Callable[[FTSState], Command[str]]` 的值会让那组 overload
 #    全部匹配失败（langgraph 1.2 的 `_Node` 是带具名形参的 Protocol）。
 #    `build_graph` 里因此用嵌套 `def` 把 deps 闭包进去，而不是传闭包变量。
+def _harness_for(state: FTSState, deps: GraphDeps) -> Harness | None:
+    """取本次调用的 Harness，**并把 route/Planner 那两行的工具接上**。
+
+    接线必须在这里做而不是在 `harness_factory` 里：handler 要闭包住
+    「当前名录 / 当前方案 / 当前角色」，那三样只有拿到 `state` 才知道。
+
+    没接线的后果不是静默的——`ToolRegistry` 会抛
+    `ToolNotBoundError: 工具 'resolve_week' 在目录中但没有接上实现`。
+    真机第一次跑端到端就是这么发现漏接的（`FakeHarness` 照不出来）。
+    """
+    harness = deps.harness_factory(state)
+    if harness is None:
+        return None
+    harness.registry.register_many(
+        dict(
+            planner_tool_handlers(
+                directory=deps.directory,
+                today=deps.today,
+                prev_plan=model_get(state, "solution", SchedulePlan),
+                user_role=str(state_get(state, "user_role", "scheduler")),
+            )
+        )
+    )
+    return harness
+
+
 def _route(state: FTSState, deps: GraphDeps) -> Command[str]:
     return _retarget(
         route_node(
             state,
             directory=deps.directory,
             today=deps.today,
-            harness=deps.harness_factory(state),
+            harness=_harness_for(state, deps),
             calibrator=deps.calibrator,
             settings=deps.config(),
         )
@@ -166,7 +193,7 @@ def _planner(state: FTSState, deps: GraphDeps) -> Command[str]:
         planner_node(
             state,
             directory=deps.directory,
-            harness=deps.harness_factory(state),
+            harness=_harness_for(state, deps),
             settings=deps.config(),
             window_start=deps.window_start,
             horizon_minutes=deps.horizon_minutes,

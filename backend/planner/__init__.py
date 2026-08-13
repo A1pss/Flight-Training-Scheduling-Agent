@@ -61,6 +61,7 @@ from backend.planner.scope import (
     downgrade_freeze,
     estimate_scope,
 )
+from backend.planner.tools import planner_tool_handlers, route_tool_handlers
 
 __all__ = [
     "DEFAULT_CALIBRATOR",
@@ -96,8 +97,10 @@ __all__ = [
     "heuristic_confidence",
     "normalize_role",
     "plan_solve_intent",
+    "planner_tool_handlers",
     "reliability_bins",
     "required_role_for",
+    "route_tool_handlers",
     "rule_translate",
     "translate_revision",
 ]

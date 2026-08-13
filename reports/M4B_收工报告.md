@@ -462,24 +462,68 @@ $ python tests/integration/_hitl_worker.py resume hitl-xxxx /tmp/...
 | `probe_solve` 的可见范围 | ✅ 只有 `diagnosis`（§7.7.2 的唯一例外） |
 | 各组件暴露的工具 ⊆ 其 ACL 行 | ✅ route / planner / extract / explain / diagnosis 逐个核对 |
 
-### 5.7 端到端延迟（v6 §7.6 复测）
+### 5.7 端到端延迟：v6 §7.6 那一格已用真链路复测替换（`Z-14`）
 
-见 §7 的门禁输出与 v6 §7.6 的回填。
+M4-A 给的是合成值（4×0.39 + 1~2×5.22 = 6.8~12.0 s），并写明「M4-B 装完图后
+要用真链路复测并替换这一格」。照做了：
+
+```
+── v6 §7.6 端到端实测（M4-B，真链路）──
+   Provider ollama · 模型 qwen2.5:14b-instruct-q4_K_M · GPU 3
+   端到端墙钟（到人工门禁）：36.0 s
+   其中求解：17.8 s（状态 OPTIMAL）
+   其中 LLM + 其余：18.3 s，LLM 调用 4 次
+   逐组件调用数：{'route': 0, 'planner': 2, 'explain': 2}
+   架次 14 · 校验全绿 True
+```
+
+口径：一次完整排班请求 `route → planner → compile_spec → solve → validate →
+explain → resume_guard → human_gate`，停在人工门禁；基准周 2026W02、
+快照 `snap_9724982865ee`、`LLM_PROVIDER=ollama`。
+
+**`route: 0` 不是漏计**——「给所有人排班」命中一级规则表，按 §7.2.1 就该是
+0 次调用。所以总调用数 4 次比 §7.6 上表的 ~5 次略低，**低的正是路由那一次**。
+
+⚠️ 这个用例**不设延迟阈值**：它是测量不是性能门禁（铁律 6：报实测，不报目标）。
+
+⚠️ **这次真机跑还照出一个漏接**：第一次跑当场抛
+`ToolNotBoundError: 工具 'resolve_week' 在目录中但没有接上实现` ——
+Planner 的九个工具**声明了但没接 handler**（M4-A §9.3 写着「Planner 类是 M4-B」，
+我漏了）。已补 `backend/planner/tools.py`，由 `graph._harness_for()` 在拿到
+`state` 之后接线（handler 要闭包住当前名录 / 当前方案 / 当前角色）。
+**单测用 `FakeHarness` 是照不出这个的** —— 这就是真机端到端必须跑一次的理由。
+
+---
+
+## 6. 与 M4-A 的接口约定逐条核对
+
+M4-A 收工报告 §8 给了八条，逐条对照：
+
+| # | 约定 | 本窗口 |
+|---|---|---|
+| 1 | `AgentSpec.tools` 必须是 ACL 行的子集 | ✅ 五个 AgentSpec 逐个过 `assert_exposable` |
+| 2 | 工具要先接线，handler 返回值可 JSON 序列化 | ✅ `planner/tools.py`（**第一次漏了，真机照出来后补上**，见 §5.7） |
+| 3 | 实体索引要传给 `Harness` | ⚠️ **未传**，见 §9.1 第 7 条 |
+| 4 | 一个请求一本预算账 | ✅ `harness_factory(state)` 每请求一个 |
+| 5 | 三种出口分开处理；越权异常不要 `except Exception` 吞掉 | ✅ 只捕 `FTSError`，越权（`ToolPermissionDeniedError`）照常向上抛 |
+| 6 | 确定性节点自己调，不注册成工具 | ✅ 36 条越权用例逐个确认 |
+| 7 | 录制：`Harness(recorder=...)` | ⚠️ **图层面未接**，见 §9.1 第 6 条 |
+| 8 | manifest 的 `prompt_versions` 可以填了 | ✅ `GraphDeps.prompt_versions` → `commit_plan` → manifest |
 
 ---
 
 ## 8. 给下一个窗口的接口约定（编排层直接用这些）
 
 ```python
-from backend.graph.graph import GraphDeps, build_graph      # ← 不要从 backend.graph 导
+from backend.graph.graph import GraphDeps, build_graph  # ← 不要从 backend.graph 导
 from backend.graph.state import initial_state, model_get
-from backend.nodes.solve import solve_node                  # ← 不要从 backend.nodes 导
+from backend.nodes.solve import solve_node  # ← 不要从 backend.nodes 导
 
 deps = GraphDeps(
     session_factory=session_scope,
     directory=directory_from_session(session, snapshot_id),  # 名录来自**当前快照**
     library=load_library(),
-    today=date.today(),          # ← 由外部给，图里不调 date.today()（重放要它稳定）
+    today=date.today(),  # ← 由外部给，图里不调 date.today()（重放要它稳定）
     harness_factory=lambda state: Harness(snapshot_id=..., trace_id=state["trace_id"]),
     plans_root=None,
     prompt_versions=PromptRegistry.load().versions(),
@@ -533,7 +577,14 @@ app = build_graph(deps, checkpointer=saver, store=store)
 5. **`extract_llm` 的真机路径未在本窗口实测**。它走 Harness 的受约束解码
    （新增的 `structured_output` 一档，§3.6），单测用 `FakeHarness` 覆盖；
    真 Ollama 下的抽取质量是 M1 已经验过的事，本窗口只改了「经不经 Harness」。
-6. **`traces/` 的录制没有在图层面接上**。`GraphDeps` 没有 `recorder` 字段——
+7. **`Harness` 没有传 `entity_index`**（M4-A §8 第 3 条）。后果是
+   `entity_hallucination` 这一类失败在**契约校验层**只做格式校验，查不出
+   「编号格式对但库里没有」。**但这不是敞口**：本窗口的设计里模型根本不写编号
+   ——`route` 与 `planner` 拿到的都是**原文表述**，编号一律由 `resolve_*`
+   的字典匹配决定，库里没有就是 `not_found`（§5.5）。把 `EntityDirectory`
+   接成 `EntityIndex` 是个十行的适配器，留给 W8 顺手做，届时 §12.5.1 的
+   失败模式分布表才能把这一类单独计出来。
+8. **`traces/` 的录制没有在图层面接上**。`GraphDeps` 没有 `recorder` 字段——
    M4-A 的 `TraceRecorder` 是挂在 `Harness` 上的，图层面的 `trace_events` 是
    另一套（v6 §8.2 的过程回放）。两者都在，但**图的整体重放（§12.5.2 的
    `replay(trace_id)` 复现最终状态）在 W11 造数据集时才需要串起来**。
