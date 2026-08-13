@@ -512,6 +512,56 @@ M4-A 收工报告 §8 给了八条，逐条对照：
 
 ---
 
+## 7. 质量门禁（CLAUDE.md §6 六条 + 三条静态扫描）
+
+全部在本机跑，**与 CI 同一批文件、同一套命令**（两个扫描脚本都用
+`git ls-files --cached --others --exclude-standard`）：
+
+| # | 命令 | 结果 |
+|---|---|---|
+| 1 | `ruff check .` | ✅ All checks passed |
+| 2 | `ruff format --check .` | ✅ 273 files already formatted |
+| 3 | `mypy backend --strict` | ✅ **no issues found in 130 source files** |
+| 4 | `bandit -r backend -ll` | ✅ 0 issues（25 450 行，0 处 `# nosec`） |
+| 5 | `lint-imports` | ✅ **3 kept, 0 broken**（禁令一/二/三） |
+| 6 | `pytest --cov=backend --cov-fail-under=80` | ✅ **EXIT=0**，**收集 1890 项**，**覆盖率 92.23%** |
+| 7 | `check_no_placeholders.sh` | ✅ 无 TODO / FIXME / NotImplementedError / 待实现 |
+| 8 | `check_egress.sh` | ✅ E2/E3 通过 |
+| 9 | `check_prompt_versions.sh` | ✅ 6 份提示词与锁文件一致 |
+
+本窗口新增包的逐个覆盖率：
+
+| 模块 | 覆盖率 | 模块 | 覆盖率 |
+|---|---|---|---|
+| `routing/rules.py` | **100%** | `planner/scope.py` | 97% |
+| `routing/classify.py` | 97% | `planner/intent.py` | 82% |
+| `routing/entities.py` | 93% | `planner/revision.py` | 82% |
+| `planner/authority.py` | **100%** | `graph/events.py` | **100%** |
+| `planner/tools.py` | **100%** | `graph/state.py` | 93% |
+| `planner/calibration.py` | 98% | `graph/graph.py` | 84% |
+| `components/route.py` | **100%** | `graph/store.py` | 76% |
+| `components/explain.py` | 93% | `nodes/human_gate.py` | 95% |
+| `components/planner.py` | 60% | `nodes/compile_spec.py` | 90% |
+| `components/extract.py` | 36% | `nodes/commit_plan.py` | 89% |
+| `skills_loader/loader.py` | 93% | `nodes/resume_guard.py` | 88% |
+| `skills_loader/routes.py` | 98% | `nodes/validate.py` | 85% |
+| `agents/diagnosis.py` | 69% | `nodes/solve.py` | 72% |
+
+三处偏低的都有具体原因，**不是没测**：
+
+- `components/extract.py` **36%** —— 它的主路径是**受约束解码的真机抽取**，
+  真机部分由 M1 的 `parse_situation_document` 覆盖过；本窗口改的是「经不经
+  Harness」那一层，剩下的行要真 Ollama 才走得到（见 §9.1 第 5 条）。
+- `components/planner.py` **60%** —— 未覆盖的是**修订轮**的那一支
+  （`_revision_round`），它要一个走完人工门禁 `REVISE` 的完整多轮场景；
+  修订翻译本身在 `planner/revision.py`（82%）与 `planner/tools.py`（100%）
+  上逐条测过。
+- `agents/diagnosis.py` **69%** —— 未覆盖的是**自主探测循环里模型连着调多轮
+  工具**的分支；四条边界（预算池、提案必经探针、R0 不可松弛、无 LLM 可用）
+  都在 `test_diagnosis_agent_live.py` 上真跑过。
+
+---
+
 ## 8. 给下一个窗口的接口约定（编排层直接用这些）
 
 ```python
