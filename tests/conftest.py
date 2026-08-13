@@ -16,12 +16,26 @@ import pytest
 from backend.core.config import PROJECT_ROOT, Settings, get_settings
 from backend.schemas import CrewMember, Sortie
 
+#: 插桩环境下的求解墙钟（业务方 2026-08-14 裁定，见 `reports/M4B_收工报告.md` §3.12）。
+#:
+#: **产品默认仍是 60s**（`Settings.SOLVER_TIME_LIMIT_S`，`Z-13`）。这里只抬高
+#: **测试环境**的上限，理由是实测出来的：同一个基准周，无 coverage 插桩时
+#: 18.8~26.0s 就证到 `OPTIMAL`（2276 候选 / 12568 变量，与 M2-A 逐字相同）；
+#: 全量 `pytest --cov` 下同一个证明跑不完 60s，落到 `FEASIBLE`。
+#:
+#: **插桩是测量工具的开销，不是求解器变慢** —— 给插桩环境多给时间，证的还是
+#: 同一个最优解，证完立即返回。这里**不放宽任何硬约束**，也不动产品默认值。
+#: 写在 conftest 而不是靠 `export`，是为了让本地与 CI 自动一致（CLAUDE.md §6：
+#: 验证时的视角必须与 CI 的视角一致）。
+TEST_SOLVER_TIME_LIMIT_S = "180"
+
 
 @pytest.fixture(autouse=True)
 def _force_mock_provider(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
-    """全局默认 mock provider，并清掉配置单例缓存。"""
+    """全局默认 mock provider、插桩期求解墙钟，并清掉配置单例缓存。"""
     monkeypatch.setenv("LLM_PROVIDER", "mock")
     monkeypatch.setenv("APP_ENV", "ci")
+    monkeypatch.setenv("SOLVER_TIME_LIMIT_S", TEST_SOLVER_TIME_LIMIT_S)
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()

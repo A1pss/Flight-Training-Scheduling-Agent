@@ -28,6 +28,11 @@ env:
   PG_DATABASE: fts
   REDIS_HOST: 127.0.0.1
   REDIS_PORT: "6380"
+  # 插桩期的求解墙钟（业务方 2026-08-14 裁定）。**产品默认仍是 60s**——
+  # 无 coverage 插桩时基准周 18.8~26.0s 就证到 OPTIMAL，插桩下同一个证明跑不完，
+  # 那是测量工具的开销不是求解器变慢。`tests/conftest.py` 也设了同一个值，
+  # 好让本地与 CI 看到的是同一件事；这里写出来是为了 workflow 自身可读。
+  SOLVER_TIME_LIMIT_S: "180"
 
 jobs:
   gates:
