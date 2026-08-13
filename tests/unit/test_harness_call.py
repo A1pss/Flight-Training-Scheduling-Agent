@@ -373,6 +373,61 @@ def test_stats_track_first_pass_and_failure_modes() -> None:
     assert harness.stats.failure_mode_counter["missing_field"] == 1
 
 
+def test_calibration_features_are_available_for_m4b() -> None:
+    """v6 §7.3.5（`Z-11`）：置信度校准的 Harness 侧特征必须现成可取。
+
+    logprob 那一路信号在本机 Ollama 0.6.8 上拿不到，业务方 2026-08-13 裁定改用
+    这组特征——它们是 Harness 本来就要记的量，校准器直接取，不额外发请求。
+    """
+    harness, _, _ = build_harness(
+        [
+            tool_response("prereq_cte", {"person_id": "何超", "mission_id": "missionB-1"}),
+            tool_response("prereq_cte", {"person_id": "P08", "mission_id": "missionB-1"}),
+        ]
+    )
+    out = harness.call(KNOWLEDGE)
+
+    assert out.calibration_features() == {
+        "first_pass": False,
+        "retries": 1,
+        "worst_failure_mode": "entity_hallucination",
+        "degraded": False,
+        "llm_calls": 2,
+    }
+
+
+def test_calibration_features_on_a_clean_first_pass() -> None:
+    harness, _, _ = build_harness([tool_response("resolve_person", {"surface": "何超"})])
+    features = harness.call(ROUTE).calibration_features()
+    assert features["first_pass"] is True
+    assert features["retries"] == 0
+    assert features["worst_failure_mode"] == ""
+
+
+def test_worst_failure_mode_ranks_hallucination_above_the_rest() -> None:
+    """严重度序按「回灌能不能救回来」排——编造实体是硬地板，排最前。"""
+    from backend.llm.types import LLMResponse as _Resp
+
+    harness, _, _ = build_harness(
+        [
+            _Resp(
+                tool_calls=(
+                    RawToolCall(name="prereq_cte", arguments={"mission_id": "missionB-1"}),
+                    RawToolCall(
+                        name="prereq_cte",
+                        arguments={"person_id": "何超", "mission_id": "missionB-1"},
+                    ),
+                )
+            ),
+            tool_response("prereq_cte", {"person_id": "P08", "mission_id": "missionB-1"}),
+        ]
+    )
+    out = harness.call(KNOWLEDGE)
+    modes = {f.mode.value for a in out.attempts for f in a.failures}
+    assert modes == {"missing_field", "entity_hallucination"}
+    assert out.worst_failure_mode is FailureMode.ENTITY_HALLUCINATION
+
+
 def test_tokens_are_marked_estimated_under_mock() -> None:
     """mock 没有实测 token 计数——账本必须如实标记，不许当实测数上报。"""
     harness, _, _ = build_harness([tool_response("resolve_person", {"surface": "何超"})])

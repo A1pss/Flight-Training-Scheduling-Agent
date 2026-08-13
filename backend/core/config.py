@@ -81,7 +81,10 @@ class Settings(BaseSettings):
     # ── 求解预算（§3.11）─────────────────────────────────────────────
     SOLVER_WORKERS: int = Field(default=4, ge=1)
     SOLVER_SEED: int = 42
-    SOLVER_TIME_LIMIT_S: float = Field(default=30.0, gt=0)
+    # 常规档 2026-08-13 由 30 提到 60（v6 §3.11 `Z-13`）：基准周 18~21 s 证到
+    # OPTIMAL，30 s 余量太薄，机器一忙就落到 FEASIBLE —— 而 FEASIBLE 不保证
+    # 逐字节可复现（§3.11.1，顶着铁律 9）。求解器证完立刻返回，提预算零成本。
+    SOLVER_TIME_LIMIT_S: float = Field(default=60.0, gt=0)
     SOLVER_RESCHEDULE_TIME_LIMIT_S: float = Field(default=120.0, gt=0)
     SOLVER_DIAGNOSE_TIME_LIMIT_S: float = Field(default=300.0, gt=0)
 

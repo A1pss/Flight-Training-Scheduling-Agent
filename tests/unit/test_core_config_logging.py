@@ -43,7 +43,7 @@ def test_solver_budget_defaults() -> None:
     cfg = Settings(_env_file=None)  # type: ignore[call-arg]
     assert cfg.SOLVER_SEED == 42  # 可复现性硬要求（铁律 9）
     assert cfg.SOLVER_WORKERS == 4
-    assert cfg.SOLVER_TIME_LIMIT_S == 30.0
+    assert cfg.SOLVER_TIME_LIMIT_S == 60.0
     assert cfg.SOLVER_RESCHEDULE_TIME_LIMIT_S == 120.0
     assert cfg.SOLVER_DIAGNOSE_TIME_LIMIT_S == 300.0
     assert (cfg.PROBE_TIME_LIMIT_S, cfg.PROBE_MAX_CALLS, cfg.PROBE_TOTAL_BUDGET_S) == (

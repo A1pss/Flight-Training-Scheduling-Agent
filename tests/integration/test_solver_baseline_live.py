@@ -73,7 +73,7 @@ def snapshot(session: Session) -> str:
 
 @pytest.fixture(scope="module")
 def baseline(session: Session, snapshot: str) -> SolveOutcome:
-    """基准周按**默认预算**（§3.11 的 30s）求解一次，全模块共用。
+    """基准周按**默认预算**（§3.11 的 60s，`Z-13` 由 30s 提上来）求解一次，全模块共用。
 
     ⚠️ **刻意不开 `capture_log`**：CP-SAT 的日志回调是从 C++ 调回 Python 的，
     在 coverage 插桩下每行日志都被计量，实测能让求解慢出 50%，把
@@ -206,7 +206,7 @@ def test_baseline_solver_log_can_be_captured(session: Session, snapshot: str) ->
     """求解日志可采集（出口标准要贴 solver log）。
 
     单独给 90s 预算：日志回调本身有成本（见 `baseline` fixture 的说明），
-    这条验的是「能采到日志」，不是「30s 内证到最优」——后者由
+    这条验的是「能采到日志」，不是「默认预算内证到最优」——后者由
     `test_baseline_week_is_optimal` 用默认预算验。
     """
     bundle = compile_spec(
@@ -274,13 +274,13 @@ def test_takeoff_separation_is_airport_wide(baseline: SolveOutcome) -> None:
 def test_baseline_is_byte_reproducible(session: Session, snapshot: str) -> None:
     """同 snapshot + 同 seed=42 + 同 worker 数，连跑 3 次逐字节一致（铁律 9）。
 
-    **刻意给 90s 而不是默认的 30s。** 可复现性是「求解**跑完了**」这个前提下的性质：
+    **刻意给 90s 而不是默认预算。** 可复现性是「求解**跑完了**」这个前提下的性质：
     靠证明结束的求解（`OPTIMAL`）逐字节可复现；被预算截断的求解（`FEASIBLE`）
     切在哪一步取决于这台机器当时有多忙，本来就不该保证一致 —— 而 `FEASIBLE`
     这个状态本身就在说「这不是最优解」。
 
     所以这条用例把「预算够不够」和「可复现性」两件事拆开：预算够不够由
-    `test_baseline_week_is_optimal` 用默认 30s 预算验；这里给足预算，专验
+    `test_baseline_week_is_optimal` 用默认预算验；这里给足预算，专验
     「跑完之后是不是同一个方案」。带 coverage 插桩时求解会慢出 50%（实测），
     两件事混在一条用例里会得到一个和被测性质无关的偶发红。
 

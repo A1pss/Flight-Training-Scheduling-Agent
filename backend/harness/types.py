@@ -206,6 +206,55 @@ class AgentOutput(BaseModel):
         """首次输出即通过契约校验（§12.5.1 的「一次通过率」分子）。"""
         return bool(self.attempts) and self.attempts[0].passed
 
+    @property
+    def retries(self) -> int:
+        """契约重试次数（首次不算）。"""
+        return max(len(self.attempts) - 1, 0)
+
+    @property
+    def worst_failure_mode(self) -> FailureMode | None:
+        """本次调用出现过的**最严重**失败模式；全程没失败则为 None。
+
+        严重度序按「回灌能不能救回来」排：`entity_hallucination` 最重——它是
+        §12.5.1 的硬地板，模型不知道「何超」对应哪个 `person_id`，回灌一百次
+        还是在猜；`missing_field` 最轻——指出来基本就补上了。
+        """
+        seen = {f.mode for a in self.attempts for f in a.failures}
+        for mode in _FAILURE_SEVERITY_ORDER:
+            if mode in seen:
+                return mode
+        return None
+
+    def calibration_features(self) -> dict[str, Any]:
+        """置信度校准的 Harness 侧特征（v6 §7.3.5，`Z-11`）。
+
+        业务方 2026-08-13 裁定把原方案的「序列 logprob」换成这组特征——本机
+        Ollama v0.6.8 不返回任何 logprob 字段（M4-A 实测），而升级推理端会踩
+        M0 记过的 CUDA 版本坑。
+
+        **这三个量是免费的**：Harness 本来就要记它们（§12.5.1 的统计口径），
+        校准器直接取，不额外发一次请求。M4-B 的 `calibrated_confidence()`
+        把它们与 self-consistency 一致率一起喂给逻辑回归。
+        """
+        worst = self.worst_failure_mode
+        return {
+            "first_pass": self.first_pass,
+            "retries": self.retries,
+            "worst_failure_mode": worst.value if worst is not None else "",
+            "degraded": self.degraded,
+            "llm_calls": self.llm_calls,
+        }
+
+
+#: 失败模式的严重度序（重 → 轻），仅用于 `AgentOutput.worst_failure_mode`。
+_FAILURE_SEVERITY_ORDER: Final[tuple[FailureMode, ...]] = (
+    FailureMode.ENTITY_HALLUCINATION,
+    FailureMode.JSON_MALFORMED,
+    FailureMode.ENUM_OUT_OF_RANGE,
+    FailureMode.TYPE_ERROR,
+    FailureMode.MISSING_FIELD,
+)
+
 
 __all__ = [
     "ALL_COMPONENTS",
