@@ -491,6 +491,11 @@ check_prompt_versions.sh  ✅ 6 份提示词与锁文件一致（本窗口新增
 > **判据是退出码**，不是肉眼看输出（CLAUDE.md §6 那条坑）。`EXIT=0` 由
 > `--cov-fail-under=80` 与「任一用例失败」共同把关。
 
+**CI 同样全绿**（PR #8，`LLM_PROVIDER=mock` / `EMBED_PROVIDER=hash`，无 GPU、无 Ollama）：
+`质量门禁六条 pass 29m59s`。CI 这一跑同时验证了本窗口新加的两步——
+提示词锁文件核对、以及「`prompts/**` 有改动 → 跑 `pytest -m prompt_eval`」
+（本 PR 新增了 6 份提示词，所以这一步确实被触发并通过）。
+
 本窗口新增代码的覆盖率：
 
 ```
