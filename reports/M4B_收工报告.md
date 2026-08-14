@@ -579,7 +579,7 @@ M4-A 收工报告 §8 给了八条，逐条对照：
 | 3 | `mypy backend --strict` | ✅ **no issues found in 130 source files** |
 | 4 | `bandit -r backend -ll` | ✅ 0 issues（25 450 行，0 处 `# nosec`） |
 | 5 | `lint-imports` | ✅ **3 kept, 0 broken**（禁令一/二/三） |
-| 6 | `pytest --cov=backend --cov-fail-under=80` | ✅ **EXIT=0**，**收集 1890 项**，**覆盖率 92.23%** |
+| 6 | `pytest --cov=backend --cov-fail-under=80` | ✅ **EXIT=0**，**收集 1907 项**，**覆盖率 92.23%** |
 | 7 | `check_no_placeholders.sh` | ✅ 无 TODO / FIXME / NotImplementedError / 待实现 |
 | 8 | `check_egress.sh` | ✅ E2/E3 通过 |
 | 9 | `check_prompt_versions.sh` | ✅ 6 份提示词与锁文件一致 |
