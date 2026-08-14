@@ -584,6 +584,18 @@ M4-A 收工报告 §8 给了八条，逐条对照：
 | 8 | `check_egress.sh` | ✅ E2/E3 通过 |
 | 9 | `check_prompt_versions.sh` | ✅ 6 份提示词与锁文件一致 |
 
+**CI 实测**（GitHub Actions，**全新的 PG 库**）：
+
+| 项 | 结果 |
+|---|---|
+| PR #10 「质量门禁六条」 | ✅ **pass，34m30s**（run `31756253171`） |
+| 上一轮（`Z-16` 落地前） | ✅ pass，29m26s（run `31754489662`） |
+
+⚠️ **CI 这一次才真正验到了「集成用例自建快照」那个修复**：CI 的库是全新的，
+`test_diagnosis_agent_live` / `test_graph_live` / `test_commit_plan_live` 三个
+文件按字母序都排在 `test_ingestion_pipeline_live` **之前**，靠 `assert 库里
+应当已经有快照` 的写法在那里必红。本地永远照不出来这件事（库里早有数据）。
+
 本窗口新增包的逐个覆盖率：
 
 | 模块 | 覆盖率 | 模块 | 覆盖率 |
