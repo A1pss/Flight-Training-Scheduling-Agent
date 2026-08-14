@@ -28,6 +28,11 @@ env:
   PG_DATABASE: fts
   REDIS_HOST: 127.0.0.1
   REDIS_PORT: "6380"
+  # ⚠️ 插桩期的求解墙钟**刻意不在这里设**（业务方 2026-08-14 裁定，`Z-15`）。
+  # 它由 `tests/conftest.py` 只给 `@pytest.mark.integration` 的用例设成 180s：
+  # 在这里全局 setenv 会连「产品默认是 60s」那条单测一起改掉
+  # （`Settings(_env_file=None)` 仍然读 os.environ），门禁就白设了。
+  # 产品默认仍是 60s；理由与参照基准（无插桩 18.8~26.0s）见 v6 §3.11。
 
 jobs:
   gates:

@@ -897,8 +897,22 @@ class _Builder:
         """
         for inc in self.spec.incremental_constraints:
             targets = set(inc.targets)
+            # ★ `day_index`（0=周一 … 6=周日）把约束限制在某一天。缺省为 None
+            # 表示整周 —— 业务方 2026-08-13 裁定补上这一档（M4-B）：
+            # v6 §7.3.4 的「刘斌周五别排了」原本就写着 `day=周五`，而不带 day 过滤
+            # 的实现会禁掉他**整周**的候选。这是**缩小**作用范围，不新增也不放宽
+            # 任何硬约束；不带 `day_index` 的调用方行为与改动前逐字相同。
+            day_index = (
+                None if inc.params.get("day_index") is None else int(inc.params["day_index"])
+            )
+
+            def same_day(cand: Candidate, day_index: int | None = day_index) -> bool:
+                return day_index is None or cand.day == day_index
+
             if inc.kind == "FORBID":
                 for idx, cand in enumerate(self.cset.candidates):
+                    if not same_day(cand):
+                        continue
                     if targets & set(cand.crew_ids) or cand.aircraft_id in targets:
                         self.m.add(self.x[idx] == 0)
             elif inc.kind == "PIN_RUNWAY":
@@ -940,7 +954,13 @@ class _Builder:
                         self.m.add(self.x[idx] == 0)
             elif inc.kind == "REDUCE_DENSITY":
                 cap = int(inc.params.get("max_takeoffs_per_day", self.data.horizon_minutes))
-                for day in self.data.days:
+                # 同上：给了 `day_index` 就只限那一天。v6 §7.3.4 的
+                # 「周三上午挪两个到下午」本来就只说周三，不带 day 过滤会把
+                # 周一到周日全限住。**半日窗口级的密度仍做不到**（起飞时刻是变量，
+                # 要为「落在 [t1,t2) 内」引入 reified 布尔），所以 Planner 侧把
+                # 这条的粒度如实降到「整日」并在回显里说明。
+                days = self.data.days if day_index is None else [int(day_index)]
+                for day in days:
                     idxs = [i for i, c in enumerate(self.cset.candidates) if c.day == day]
                     if idxs:
                         self.m.add(sum(self.x[i] for i in idxs) <= cap)

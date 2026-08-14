@@ -18,6 +18,13 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from backend.schemas.plan import RunwayModel
 
+#: 六类意图（v6 §7.2.1 / §7.4）。`unknown` 不是失败，是「规则没命中且 LLM 也不确定」，
+#: 它的正确去向是追问，不是猜一个。
+Intent = Literal["schedule", "reschedule", "query", "ingest", "export", "unknown"]
+
+#: 四档角色（v6 §7.4 `user_role`）。松弛档位的授权门槛按它判（§7.3.3）。
+UserRole = Literal["viewer", "scheduler", "director", "admin"]
+
 FreezePolicy = Literal["CONSERVATIVE", "BALANCED", "AGGRESSIVE"]
 RevisionKind = Literal[
     "FORBID",
@@ -27,6 +34,49 @@ RevisionKind = Literal[
     "REDUCE_DENSITY",
     "PIN_RUNWAY",
 ]
+
+
+class SchedulingRequest(BaseModel):
+    """排班/重排请求（v6 §7.4 `state.request` 的一支）。
+
+    它是**槽位的容器**，不是求解输入 —— 求解输入是 `SolveIntent`。两者分开的
+    理由：槽位来自「用户这句话里提到了谁、哪一周」，而 `SolveIntent` 还要叠加
+    影响面探测、冻结档位、权限校验的结果。混成一个的话，「用户说了什么」与
+    「系统据此决定怎么排」就再也分不开，Sheet 4 的 `freeze_reason` 也就没法
+    如实回答「为什么选这一档」。
+
+    **编号一律是已消解的结果**（`resolve_person` / `resolve_aircraft` 的产物），
+    不接受人名。消解不了就该在 `ambiguities` 里触发反问，而不是塞个名字进来。
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["schedule", "reschedule"]
+    raw_text: str = Field(min_length=1, description="用户原话，供审计与回显")
+    iso_week: str | None = Field(default=None, pattern=r"^\d{4}W\d{2}$")
+    week_start: date_type | None = None
+    persons: list[str] = Field(default_factory=list)
+    aircraft: list[str] = Field(default_factory=list)
+    missions: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _week_start_is_monday(self) -> SchedulingRequest:
+        if self.week_start is not None and self.week_start.weekday() != 0:
+            raise ValueError(f"排班周起点必须是周一，实际 {self.week_start}")
+        return self
+
+
+class QueryRequest(BaseModel):
+    """问答/导出类请求（v6 §7.4 `state.request` 的另一支）。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["query", "ingest", "export"]
+    raw_text: str = Field(min_length=1)
+    question: str = Field(default="", description="改写后的检索问句；为空时取 raw_text")
+    iso_week: str | None = Field(default=None, pattern=r"^\d{4}W\d{2}$")
+    persons: list[str] = Field(default_factory=list)
+    aircraft: list[str] = Field(default_factory=list)
 
 
 class ObjectiveWeights(BaseModel):
@@ -140,7 +190,11 @@ __all__ = [
     "ConstraintSpec",
     "FreezePolicy",
     "IncrementalConstraint",
+    "Intent",
     "ObjectiveWeights",
+    "QueryRequest",
     "RevisionKind",
+    "SchedulingRequest",
     "SolveIntent",
+    "UserRole",
 ]

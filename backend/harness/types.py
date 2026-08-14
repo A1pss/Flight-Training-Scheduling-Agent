@@ -166,6 +166,19 @@ class AgentSpec(BaseModel):
     #: `constrained_json` 模式下的目标 schema；为空时用工具表的联合 schema
     output_schema: dict[str, Any] | None = None
 
+    @property
+    def structured_output(self) -> bool:
+        """本次调用要的是**受约束的结构化输出**，不是工具调用。
+
+        v6 §7.2.1 的意图路由兜底就是这一形态：「受约束解码到 6 类枚举 + 槽位」
+        —— 产物是一个 `{"intent": ..., "slots": ...}` 对象，不是 tool call。
+        判据是三者同时成立：给了 `output_schema`、没给工具、也不要求工具调用。
+
+        **不要把它和「纯生成」混起来**：`explain_llm` 写一段给人看的解释同样
+        不给工具，但它没有 `output_schema`，走的是 `native`。区别就在这一个字段。
+        """
+        return self.output_schema is not None and not self.tools and not self.requires_tool_call
+
 
 class AttemptRecord(BaseModel):
     """单次尝试的结果（首次 + 重试各算一次），供 §12.5.1 统计。"""

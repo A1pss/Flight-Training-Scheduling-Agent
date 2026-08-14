@@ -535,7 +535,11 @@ def get_semantics() -> Semantics:
     return load_semantics()
 
 
-def req_max_for(freq_days: int, week_days: int = 7) -> int:
+#: 排班周长度（天）。排班周恒为周一~周日，参数化只为让公式的来源显式化。
+WEEK_DAYS: Final[int] = 7
+
+
+def req_max_for(freq_days: int, week_days: int = WEEK_DAYS) -> int:
     """约束14：`req_max = ceil(7 / freq_days)`（v6 §3.2）。
 
     A 类（freq_days=3）→ 3；B~F 类（7）→ 1；G/H 类（14）→ 1。
@@ -544,6 +548,52 @@ def req_max_for(freq_days: int, week_days: int = 7) -> int:
     if freq_days <= 0:
         raise RuleParseError(f"freq_days 必须为正，实际 {freq_days}")
     return math.ceil(week_days / freq_days)
+
+
+def cycle_required_for(cycle_weeks: int, freq_days: int) -> int:
+    """一门课目**飞完完整周期**所需的执行次数（业务方 2026-08-14 裁定，`Z-16`）。
+
+    > **一门课飞完完整周期才算完成。**
+
+    周期长度是 `cycle_weeks` 周，周期内的要求是「每 `freq_days` 天 ≥1 次」，
+    所以整个周期需要的次数 = 周期里**完整频率窗口的个数**：
+
+    ```
+    cycle_required = (cycle_weeks × 7) // freq_days
+    ```
+
+    基准数据代入（v6 §1.3.3）：
+
+    | 类别 | `cycle_weeks` | `freq_days` | 完整周期次数 |
+    |---|---|---|---|
+    | A 类 | 12 | 3 | **28** |
+    | B~F 类 | 16 | 7 | **16** |
+    | G/H 类 | 20 | 14 | **10** |
+
+    ## 为什么是整除而不是向上取整
+
+    取的是**完整窗口**的个数，与 v6 §3.5.2 的周内窗口口径一致——那里
+    `for s in range(0, 7 - F + 1)` 同样只枚举完整窗口，末尾不足一个窗口的
+    残段不构成要求。基准数据下 `cycle_weeks × 7` 恰好被 `freq_days` 整除，
+    两种取法一致；**换一批数据时它们才会分岔**，届时按「完整窗口」这条口径走。
+
+    ## 它是 `req_max_for` 的周期版
+
+    `req_max_for` 是**一周**的上限（`ceil(7 / freq_days)`，约束14），
+    本函数是**一个周期**的总量。两者同源于 `freq_days`，放在一起是为了让
+    「周内上限」与「周期总量」这对概念只有一处定义。
+    """
+    if cycle_weeks <= 0:
+        raise RuleParseError(f"cycle_weeks 必须为正，实际 {cycle_weeks}")
+    if freq_days <= 0:
+        raise RuleParseError(f"freq_days 必须为正，实际 {freq_days}")
+    required = (cycle_weeks * WEEK_DAYS) // freq_days
+    if required <= 0:
+        raise RuleParseError(
+            f"周期 {cycle_weeks} 周装不下一个 {freq_days} 天的频率窗口 —— "
+            "这门课目的周期与频率对不上，请核对课目文件"
+        )
+    return required
 
 
 __all__ = [
@@ -555,10 +605,12 @@ __all__ = [
     "LEVEL_INSTRUCTOR",
     "LEVEL_SOLO",
     "REQUIRED_SWITCHES",
+    "WEEK_DAYS",
     "RelaxationStep",
     "RuleSpec",
     "Ruleset",
     "Semantics",
+    "cycle_required_for",
     "get_ruleset",
     "get_semantics",
     "load_ruleset",
