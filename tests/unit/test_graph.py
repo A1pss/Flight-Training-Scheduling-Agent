@@ -45,12 +45,12 @@ def deps(**kwargs: Any) -> GraphDeps:
 # 结构
 # ─────────────────────────────────────────────────────────────────────
 def test_graph_has_exactly_the_v6_node_set() -> None:
-    """4 个 LLM 组件 + 6 个确定性节点 + 1 个 Agent。`knowledge` 由 W8 承接。"""
+    """4 个 LLM 组件 + 6 个确定性节点 + **2 个 Agent**（M5 接进了 `knowledge`）。"""
     app = build_graph(deps())
     nodes = set(app.get_graph().nodes) - {"__start__", "__end__"}
     assert nodes == set(NODE_NAMES)
     assert set(DETERMINISTIC_NODE_NAMES) <= nodes
-    assert "knowledge" not in nodes
+    assert "knowledge" in nodes, "M5 起 KnowledgeAgent 在图内（M4-B §8 第 8 条留的口子）"
 
 
 def test_start_goes_to_route() -> None:
@@ -95,8 +95,12 @@ def test_commit_plan_terminates() -> None:
 # ─────────────────────────────────────────────────────────────────────
 # 走一条不碰库的路径
 # ─────────────────────────────────────────────────────────────────────
-def test_query_intent_finishes_without_touching_the_database() -> None:
-    """问答意图在图内到此为止 —— 由 W8 的 KnowledgeAgent 承接。"""
+def test_query_intent_now_reaches_the_knowledge_agent() -> None:
+    """M5 起 `query` 不再是图外承接：`route → knowledge → END`。
+
+    这里给的 `deps()` 没有 `snapshot_id`，所以 KnowledgeAgent 走的是
+    「缺输入即如实说明」那一支——**不碰库**，与本文件其余用例同一前提。
+    """
     app = build_graph(deps())
     state = initial_state(
         trace_id="t1",
@@ -107,7 +111,8 @@ def test_query_intent_finishes_without_touching_the_database() -> None:
     assert result["intent"] == "query"
     assert result["request"].kind == "query"
     kinds = [e.kind for e in result["trace_events"]]
-    assert "handoff" in kinds
+    assert "agent_end" in kinds, "knowledge 节点必须留下一条轨迹事件"
+    assert "数据快照" in (result["explanation"] or "")
 
 
 def test_ambiguity_stops_at_the_human_gate() -> None:
@@ -205,6 +210,6 @@ def test_end_literal_is_translated_at_the_graph_boundary() -> None:
     from backend.graph.graph import _retarget
     from backend.routing.rules import next_node_for
 
-    assert next_node_for("query") == "END"
+    assert next_node_for("ingest") == "END"
     assert _retarget(Command(goto="END")).goto is END
     assert _retarget(Command(goto="planner")).goto == "planner"

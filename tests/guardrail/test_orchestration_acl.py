@@ -21,12 +21,13 @@ from pathlib import Path
 import pytest
 
 from backend.agents.diagnosis import DIAGNOSIS_AGENT, DIAGNOSIS_TOOLS
+from backend.agents.knowledge import KNOWLEDGE_AGENT, KNOWLEDGE_MAX_STEPS, KNOWLEDGE_TOOLS
 from backend.components.explain import EXPLAIN_AGENT
 from backend.components.extract import EXTRACT_AGENT
 from backend.core.config import PROJECT_ROOT
 from backend.core.errors import ArchitecturalBanError, ToolPermissionDeniedError
 from backend.harness import ACL_MATRIX, TOOL_CATALOG, ToolACL
-from backend.harness.acl import WRITE_TOOL_ALLOWLIST
+from backend.harness.acl import FORBIDDEN_NODES, WRITE_TOOL_ALLOWLIST
 from backend.nodes import DETERMINISTIC_NODE_NAMES
 from backend.planner.intent import PLANNER_AGENT, PLANNER_TOOLS
 from backend.routing.classify import ROUTE_AGENT
@@ -78,6 +79,23 @@ def test_knowledge_calling_memory_write_is_denied() -> None:
     assert ACL.is_allowed("extract", "memory.write")
 
 
+def test_knowledge_agent_exposes_only_read_only_tools() -> None:
+    """M5：`KnowledgeAgent` 的七个工具全部只读（v6 §7.2.2「只读工具」）。
+
+    **不是靠 handler 自觉**：工具表里 `writes=True` 的只有 `memory.write` 一个，
+    而它不在 `KNOWLEDGE_TOOLS` 里。加一个写工具进去会被这条用例当场拦下。
+    """
+    assert "memory.write" not in KNOWLEDGE_TOOLS
+    assert not any(TOOL_CATALOG[name].writes for name in KNOWLEDGE_TOOLS)
+    # 六个确定性节点一个都不在（铁律 4）—— 物理上就调不到
+    assert not (set(KNOWLEDGE_TOOLS) & FORBIDDEN_NODES)
+
+
+def test_knowledge_step_limit_matches_the_spec() -> None:
+    """v6 §7.2.2 写死「步数上限 6」。改这个数要先改设计方案。"""
+    assert KNOWLEDGE_MAX_STEPS == 6
+
+
 def test_memory_write_is_the_only_write_tool() -> None:
     assert frozenset({"memory.write"}) == WRITE_TOOL_ALLOWLIST
     assert {name for name, spec in TOOL_CATALOG.items() if spec.writes} == {"memory.write"}
@@ -93,7 +111,7 @@ def test_advance_progress_is_not_a_tool_at_all() -> None:
 # ─────────────────────────────────────────────────────────────────────
 @pytest.mark.parametrize(
     "agent",
-    [ROUTE_AGENT, PLANNER_AGENT, EXTRACT_AGENT, EXPLAIN_AGENT, DIAGNOSIS_AGENT],
+    [ROUTE_AGENT, PLANNER_AGENT, EXTRACT_AGENT, EXPLAIN_AGENT, DIAGNOSIS_AGENT, KNOWLEDGE_AGENT],
     ids=lambda a: a.name,
 )
 def test_agent_specs_expose_only_allowed_tools(agent: object) -> None:

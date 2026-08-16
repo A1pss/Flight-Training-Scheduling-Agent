@@ -11,6 +11,14 @@
     "prompt_version": "v1",
     "sha256": "d076b2b224baec49f5c833d41361f2287fcd12058a9840f3872b455a9923b179"
   },
+  "knowledge/answer": {
+    "prompt_version": "v1",
+    "sha256": "81c88db6634a3b80b5da10da9047c42f6d93b3eb82e9b927e03378087bdf86d5"
+  },
+  "knowledge/rewrite": {
+    "prompt_version": "v1",
+    "sha256": "d53b65943e43b45d20767bd581b34c238314088b9e26f77df3e7591f27651561"
+  },
   "knowledge/system": {
     "prompt_version": "v1",
     "sha256": "b55e3efbdca8262cc80e7789fe9dac03ff75a52ebf7c1026bbb50873026aac1b"

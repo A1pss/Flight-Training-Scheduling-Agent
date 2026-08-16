@@ -32,6 +32,7 @@ from backend.memory.collections import (
     ALL_COLLECTIONS,
     COLLECTION_DESCRIPTIONS,
     COLLECTION_ENTITIES,
+    COLLECTION_EPISODIC,
     COLLECTION_REPORTS,
     COLLECTION_RULES,
     COLLECTION_SITUATIONS,
@@ -66,6 +67,15 @@ METADATA_SCHEMAS: Final[dict[str, dict[str, tuple[type, ...]]]] = {
     COLLECTION_SITUATIONS: {
         "doc_id": (str,),
         "page": (int,),
+    },
+    COLLECTION_EPISODIC: {
+        "memory_id": (str,),
+        "session_id": (str,),
+        "kind": (str,),
+        # ISO 字符串。Chroma 的 metadata 只吃标量，时间过滤在 PG 侧做
+        # （§6.4：PG 存权威内容，Chroma 只存摘要向量）
+        "valid_from": (str,),
+        "archived": (bool,),
     },
 }
 

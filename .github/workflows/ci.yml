@@ -29,7 +29,8 @@ env:
   REDIS_HOST: 127.0.0.1
   REDIS_PORT: "6380"
   # ⚠️ 插桩期的求解墙钟**刻意不在这里设**（业务方 2026-08-14 裁定，`Z-15`）。
-  # 它由 `tests/conftest.py` 只给 `@pytest.mark.integration` 的用例设成 180s：
+  # 它由 `tests/conftest.py` 只给 `@pytest.mark.integration` 的用例设成 300s
+  # （M5 从 180s 抬上来，业务方 2026-08-15 裁定，理由见那个文件的注释）：
   # 在这里全局 setenv 会连「产品默认是 60s」那条单测一起改掉
   # （`Settings(_env_file=None)` 仍然读 os.environ），门禁就白设了。
   # 产品默认仍是 60s；理由与参照基准（无插桩 18.8~26.0s）见 v6 §3.11。
@@ -38,7 +39,16 @@ jobs:
   gates:
     name: 质量门禁六条
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    # 40 → 60（M5）。**这不是放宽判据，是别让作业被掐死后报一个假红。**
+    #
+    # 实测：M5 全量在开发机上跑 **32m53s**（M4-B 那次 CI 是 34m30s，而 M5 的
+    # `test_revision_live.py` 又新增了约 13 次基准级真求解 —— 出口标准要求
+    # 五种表述各自重解、undo 连做 3 轮再撤两次、不可行回滚要真跑出 INFEASIBLE）。
+    # GitHub 托管跑机普遍比开发机慢，40 分钟大概率不够。
+    #
+    # 超时被 kill 与「用例失败」在绿勾里长得不一样，但同样浪费一整轮 CI；
+    # 而抬这个数**掩盖不了任何失败** —— 失败照样是失败，只是跑得完了。
+    timeout-minutes: 60
 
     steps:
       # fetch-depth: 0 —— 「提示词改了没有」要靠与基线 diff 判定，浅克隆看不到基线

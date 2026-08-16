@@ -356,10 +356,18 @@ def resolve_week(surface: str, *, today: date) -> Resolution:
     if day is not None:
         return _week_resolution(surface, day, reason="exact_id")
 
-    for phrase, offset in _RELATIVE_WEEKS.items():
+    # ⚠️ **必须按表述长度降序匹配**（M5 实测修复）。
+    #
+    # 「上周」是「上上周」的子串，「下周」是「下下周」的子串。按字典插入顺序扫，
+    # 「上上周」会先命中「上周」——用户说上上周、系统查上周，**而且不报错**：
+    # 它返回的是一个格式完全正确的 ISO 周，只是差了一周。这类错答在检索层
+    # 表现为「召回到的是另一周的记录」，排查时看不出任何异常。
+    for phrase in sorted(_RELATIVE_WEEKS, key=len, reverse=True):
         if phrase in text:
             return _week_resolution(
-                surface, monday_of(today) + timedelta(weeks=offset), reason="relative"
+                surface,
+                monday_of(today) + timedelta(weeks=_RELATIVE_WEEKS[phrase]),
+                reason="relative",
             )
 
     return Resolution(kind="week", surface=surface, reason="not_found")

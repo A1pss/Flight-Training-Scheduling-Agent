@@ -75,6 +75,15 @@ class FTSState(MessagesState, total=False):
     revision_round: int
     needs_clarification: bool
     user_role: UserRole
+    #: 修订翻译的回显文案（v6 §7.3.4 第 4 条）。**不能与 `explanation` 合并**——
+    #: 后者归 `explain` 节点所有，每轮末尾会被方案解释覆盖，而回显必须活到
+    #: 用户点确认的那一刻
+    revision_echo: str | None
+    #: 有一条**已翻译、待用户确认**的修订。为真时 `human_gate` 的 APPROVE
+    #: 意思是「你理解对了，去重解」，而不是「归档这版方案」
+    pending_revision: bool
+    #: 用户在回显确认页上否掉了这条修订 → `planner` 弹栈撤回
+    revision_cancelled: bool
 
     # ── 求解 ──────────────────────────────────────────────────────────
     constraint_spec: ConstraintSpec | None
@@ -138,6 +147,7 @@ _NULLABLE: tuple[str, ...] = (
     "schema_check",
     "workbook_path",
     "explanation",
+    "revision_echo",
     "grounding_report",
     "human_decision",
     "week_start",
@@ -173,6 +183,8 @@ def initial_state(
         "relaxation_tier": 0,
         "solve_attempts": 0,
         "needs_human": False,
+        "pending_revision": False,
+        "revision_cancelled": False,
     }
     for key in _EMPTY_LISTS:
         state[key] = []

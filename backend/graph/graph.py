@@ -77,7 +77,10 @@ from backend.schemas.validation import ValidationReport
 from backend.skills_loader import SkillLibrary, load_library
 
 #: 图里全部节点名。**与 v6 §7.5 的节点集一致**：4 个 LLM 组件 + 6 个确定性节点
-#: + 1 个 Agent（diagnosis）。`knowledge` 不在图内——问答链路由 W8 承接。
+#: + 2 个 Agent（knowledge / diagnosis）。
+#:
+#: `knowledge` 是 M5 接进来的（M4-B §8 第 8 条留的那个口子）：`INTENT_NEXT_NODE`
+#: 里 `query` 的去向从 `"END"` 改成 `"knowledge"`，图里加这一个节点，其余一行没动。
 NODE_NAMES: tuple[str, ...] = (
     "route",
     "planner",
@@ -85,6 +88,7 @@ NODE_NAMES: tuple[str, ...] = (
     "solve",
     "validate",
     "explain",
+    "knowledge",
     "diagnosis",
     "resume_guard",
     "human_gate",
@@ -275,6 +279,71 @@ def _explain(state: FTSState, deps: GraphDeps) -> Command[str]:
     )
 
 
+def _knowledge(state: FTSState, deps: GraphDeps) -> Command[str]:
+    """`KnowledgeAgent` 问答（v6 §7.2.2）。**它到 `END` 为止，不碰排班链路。**
+
+    去向恒为 `END`：问答不产出方案，也就没有要人工确认或归档的东西。
+    用户看完答案要排班，那是下一句话的事（重新走 `route`）。
+
+    `snapshot_id` 缺席时如实报「还没有可用的数据快照」而不是去猜一个 ——
+    与 §5.1.1「缺输入即提问」同一条规矩。
+    """
+    from backend.agents.knowledge import ask
+    from backend.graph.state import user_utterance
+
+    question = user_utterance(state)
+    snapshot_id = state_get(state, "snapshot_id", "")
+    if not question or not snapshot_id:
+        missing = "问题内容" if not question else "数据快照"
+        return Command(
+            goto=END,
+            update={
+                "explanation": f"没能回答：缺少{missing}。请先完成数据摄取，或把问题再说一遍。",
+                "trace_events": emit(
+                    state, "knowledge", "agent_end", {"answered": False, "missing": missing}
+                ),
+            },
+        )
+
+    with deps.session() as session:
+        outcome = ask(
+            question,
+            session=session,
+            snapshot_id=snapshot_id,
+            directory=deps.directory,
+            today=deps.today,
+            harness=_harness_for(state, deps),
+            settings=deps.config(),
+        )
+    return Command(
+        goto=END,
+        update={
+            "explanation": outcome.text,
+            "grounding_report": outcome.answer.report,
+            "trace_events": emit(
+                state,
+                "knowledge",
+                "agent_end",
+                {
+                    "summary": outcome.summary(),
+                    "steps": outcome.steps,
+                    "steps_exhausted": outcome.steps_exhausted,
+                    "autonomous": outcome.autonomous,
+                    "llm_calls": outcome.llm_calls,
+                    "tool_calls": list(outcome.tool_calls),
+                    "contexts": len(outcome.retrieval.contexts),
+                    "structured_answers": len(outcome.retrieval.answers),
+                    "per_route": dict(outcome.retrieval.per_route),
+                    "rerank": outcome.retrieval.rerank_provider,
+                    "supported_ratio": round(outcome.answer.report.supported_ratio, 4),
+                    "fallback": outcome.answer.fallback,
+                    "notes": list(outcome.notes),
+                },
+            ),
+        },
+    )
+
+
 def _diagnosis(state: FTSState, deps: GraphDeps) -> Command[str]:
     spec = model_get(state, "constraint_spec", ConstraintSpec)
     if spec is None:
@@ -370,6 +439,9 @@ def build_graph(
     def explain(state: FTSState) -> Command[str]:
         return _explain(state, d)
 
+    def knowledge(state: FTSState) -> Command[str]:
+        return _knowledge(state, d)
+
     def diagnosis(state: FTSState) -> Command[str]:
         return _diagnosis(state, d)
 
@@ -379,15 +451,18 @@ def build_graph(
     def commit(state: FTSState) -> Command[str]:
         return _commit_plan(state, d)
 
-    g.add_node("route", route, destinations=("planner", "human_gate", END))
+    g.add_node("route", route, destinations=("planner", "knowledge", "human_gate", END))
     g.add_node("planner", planner, destinations=("compile_spec", "solve", "route", "human_gate"))
     g.add_node("compile_spec", compile_spec, destinations=("solve",))
     g.add_node("solve", solve, destinations=("validate", "diagnosis", "human_gate"))
     g.add_node("validate", validate, destinations=("explain", "solve", "diagnosis"))
     g.add_node("explain", explain, destinations=("resume_guard",))
+    g.add_node("knowledge", knowledge, destinations=(END,))
     g.add_node("diagnosis", diagnosis, destinations=("human_gate",))
     g.add_node("resume_guard", resume, destinations=("human_gate", "planner"))
-    g.add_node("human_gate", human_gate, destinations=("commit_plan", "planner", END))
+    # `solve` 是 M5 加的那条边：回显确认页上按 APPROVE = 「理解对了，去重解」
+    # （v6 §7.3.4 第 4 条），不是「归档」。见 `nodes/human_gate.py` 那张表。
+    g.add_node("human_gate", human_gate, destinations=("commit_plan", "planner", "solve", END))
     g.add_node("commit_plan", commit, destinations=(END,))
 
     g.add_edge(START, "route")

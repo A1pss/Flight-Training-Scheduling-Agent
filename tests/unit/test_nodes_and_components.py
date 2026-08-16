@@ -161,9 +161,20 @@ def test_route_asks_when_the_name_is_ambiguous() -> None:
     assert "高超(P02)" in update["explanation"]
 
 
-def test_route_hands_off_query_intent_out_of_the_graph() -> None:
+def test_route_sends_query_intent_to_the_knowledge_agent() -> None:
+    """M5 起 `query` 走图内的 `knowledge` 节点，不再是图外承接。"""
     command = route_node(
         state(messages=[{"role": "user", "content": "何超的训练进度"}]),
+        directory=directory(),
+        today=TODAY,
+    )
+    assert command.goto == "knowledge"
+
+
+def test_route_still_hands_off_export_intent_out_of_the_graph() -> None:
+    """导出仍是图外承接（`GET /api/v1/schedule/{id}/export`）。"""
+    command = route_node(
+        state(messages=[{"role": "user", "content": "导出这周的表"}]),
         directory=directory(),
         today=TODAY,
     )

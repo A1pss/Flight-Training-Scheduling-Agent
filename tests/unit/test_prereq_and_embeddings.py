@@ -160,10 +160,18 @@ def test_build_embedder_honours_provider_setting(monkeypatch: pytest.MonkeyPatch
     get_settings.cache_clear()
 
 
-def test_collection_names_are_the_three_v6_names_plus_situations() -> None:
+def test_collection_names_are_the_three_v6_names_plus_two() -> None:
+    """§6.1 的三个 + `situation_docs`（M1）+ `episodic_summaries`（M5）。
+
+    两个增补各有各的理由，都写在 `memory/collections.py` 的常量注释里：
+    §6.1 那张表列的是**文档**向量的落点，既没覆盖 §5.3 的情况文件/通知，
+    也没给 §6.2 的情景记忆摘要留位置。塞进 `historical_reports` 会污染
+    那一路召回 —— 三者的时效语义完全不同。
+    """
     assert ALL_COLLECTIONS == (
         "rule_texts",
         "entity_summaries",
         "historical_reports",
         "situation_docs",
+        "episodic_summaries",
     )
