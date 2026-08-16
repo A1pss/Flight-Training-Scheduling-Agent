@@ -48,7 +48,7 @@ _COMPILED: Final[tuple[tuple[re.Pattern[str], Intent], ...]] = tuple(
 INTENT_NEXT_NODE: Final[dict[Intent, str]] = {
     "schedule": "planner",
     "reschedule": "planner",
-    "query": "END",
+    "query": "knowledge",
     "ingest": "END",
     "export": "END",
     "unknown": "human_gate",
@@ -56,7 +56,8 @@ INTENT_NEXT_NODE: Final[dict[Intent, str]] = {
 
 #: 图外承接方（写进 `handoff` 轨迹事件，让「为什么这里就结束了」查得到）。
 INTENT_HANDOFF: Final[dict[Intent, str]] = {
-    "query": "KnowledgeAgent（W8）/ POST /api/v1/chat",
+    # `query` 不在这里了 —— M5 把 `KnowledgeAgent` 接进了图（`INTENT_NEXT_NODE`
+    # 那一行从 "END" 改成 "knowledge"），它不再是图外承接。
     "ingest": "POST /api/v1/ingest（M1 摄取管线）",
     "export": "GET /api/v1/schedule/{id}/export（M3 报表层）",
 }

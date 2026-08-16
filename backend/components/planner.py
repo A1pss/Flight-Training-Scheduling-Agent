@@ -34,7 +34,13 @@ from backend.graph.state import FTSState, model_get, model_list, user_utterance
 from backend.graph.state import get as state_get
 from backend.harness import Harness
 from backend.planner.intent import plan_solve_intent
-from backend.planner.revision import RevisionStack, for_solver, translate_revision
+from backend.planner.revision import (
+    RevisionStack,
+    for_solver,
+    translate_revision,
+    undo_echo,
+    undo_times,
+)
 from backend.routing.entities import EntityDirectory
 from backend.schemas.common import HumanDecision
 from backend.schemas.intent import (
@@ -58,6 +64,10 @@ def planner_node(
     horizon_minutes: int = 720,
 ) -> Command[str]:
     """LLM 节点 ②。按 `revision_round` 分流到两种调用之一。"""
+    # ★ 用户在回显确认页上按了 REJECT：「你理解错了，这条不要了」。
+    #   弹栈撤回，**不重解** —— 方案还是上一版，一个字都没动过。
+    if bool(state_get(state, "revision_cancelled", False)):
+        return _cancel_pending_revision(state)
     if int(state_get(state, "revision_round", 0)) > 0:
         return _revision_round(
             state,
@@ -140,6 +150,13 @@ def _revision_round(
     stack = RevisionStack.from_state(model_list(state, "revision_stack", IncrementalConstraint))
     utterance = _revision_utterance(state)
 
+    # ★ 用户发起的 undo（v6 §7.3.4 第 2 条）：弹栈后**照常走完整 solve → validate**。
+    #   撤销不是「把上一版方案取回来」，是「去掉那条约束再解一次」——
+    #   前者会在快照变了的时候给出一版早已失效的方案。
+    times = undo_times(utterance)
+    if times:
+        return _undo_round(state, stack=stack, spec=spec, utterance=utterance, times=times)
+
     try:
         translation = translate_revision(
             utterance,
@@ -186,11 +203,14 @@ def _revision_round(
         else None
     )
 
+    echo = _echo_with_warnings(translation.echo, translation.warnings)
     update: dict[str, Any] = {
         "revision_stack": list(stack.items),
-        # ★ 回显确认（v6 §7.3.4 第 4 条）：UI 先展示「我理解为：……」，
-        #   用户确认后才重解。这一步不能省。
-        "explanation": _echo_with_warnings(translation.echo, translation.warnings),
+        # ★ 回显确认（v6 §7.3.4 第 4 条）：先展示「我理解为：……」，
+        #   **用户确认后才重解**。落点是 `human_gate` 的一次往返，见下方 goto。
+        "revision_echo": echo,
+        "pending_revision": True,
+        "needs_human": True,
         "trace_events": emit(
             state,
             "planner",
@@ -210,7 +230,98 @@ def _revision_round(
     }
     if updated_spec is not None:
         update["constraint_spec"] = updated_spec
-    return Command(goto="compile_spec" if updated_spec is None else "solve", update=update)
+    # ★ **不直接去 solve**：先回人工门禁把回显摆出来，APPROVE 之后才重解。
+    #   顺序是规格要求的（§7.3.4 第 4 条「用户确认后才重解」），不是可选项 ——
+    #   先解再问等于「翻译错了也已经排了一版」，而修订翻译恰恰是高风险的语义映射。
+    return Command(goto="human_gate", update=update)
+
+
+def _cancel_pending_revision(state: FTSState) -> Command[str]:
+    """回显确认被否掉 → 弹栈撤回那条修订，回门禁（v6 §7.3.4 第 4 条的反面）。
+
+    **与不可行回滚（FTS-3005）是两回事**：那边是「解出来发现不行」，这边是
+    「用户说我压根没听懂」。后者一次求解都不该发生 —— 这正是把回显放在
+    `solve` 之前的全部意义。
+    """
+    stack = RevisionStack.from_state(model_list(state, "revision_stack", IncrementalConstraint))
+    spec = model_get(state, "constraint_spec", ConstraintSpec)
+    popped = stack.undo()
+    update: dict[str, Any] = {
+        "revision_stack": list(stack.items),
+        "revision_cancelled": False,
+        "pending_revision": False,
+        "needs_human": True,
+        "revision_echo": (
+            f"已撤回这条修订（您的原话：「{popped.origin_utterance}」），方案保持不变。"
+            if popped is not None
+            else "没有待确认的修订，方案保持不变。"
+        ),
+        "trace_events": emit(
+            state,
+            "planner",
+            "negotiation",
+            {
+                "action": "cancel_pending",
+                "cancelled_round": popped.round_no if popped is not None else None,
+                "remaining": len(stack.items),
+            },
+        ),
+    }
+    if spec is not None and popped is not None:
+        kept = [c for c in spec.incremental_constraints if c.round_no != popped.round_no]
+        update["constraint_spec"] = spec.model_copy(update={"incremental_constraints": kept})
+    return Command(goto="human_gate", update=update)
+
+
+def _undo_round(
+    state: FTSState,
+    *,
+    stack: RevisionStack,
+    spec: ConstraintSpec | None,
+    utterance: str,
+    times: int,
+) -> Command[str]:
+    """撤销 N 轮修订并重解（v6 §7.3.4 第 2 条）。
+
+    两件事必须同步做，缺一就是静默失效：
+
+    1. `revision_stack` 弹出 N 条（人话形状，进审计与回显）；
+    2. `constraint_spec.incremental_constraints` 按 `round_no` 同步剔除
+       （线格式，进求解器）。
+
+    只弹前者的话，栈上看不见那条修订了，**求解器里它还在** —— 用户会看到
+    「已撤销」然后拿到一版没变的方案，而日志上什么异常都没有。
+    """
+    popped = stack.undo_many(times)
+    dropped_rounds = {c.round_no for c in popped}
+    update: dict[str, Any] = {
+        "revision_stack": list(stack.items),
+        # 撤销同样要回显确认再重解 —— 「撤销两次」听错成「撤销一次」的后果
+        # 与翻译错一条约束一样大
+        "revision_echo": undo_echo(popped, stack),
+        "pending_revision": bool(popped),
+        "needs_human": True,
+        "trace_events": emit(
+            state,
+            "planner",
+            "negotiation",
+            {
+                "utterance": utterance,
+                "action": "undo",
+                "requested": times,
+                "undone": len(popped),
+                "dropped_rounds": sorted(dropped_rounds),
+                "remaining": len(stack.items),
+                "version_no": stack.version_no(),
+            },
+        ),
+    }
+    if spec is not None:
+        kept = [c for c in spec.incremental_constraints if c.round_no not in dropped_rounds]
+        update["constraint_spec"] = spec.model_copy(update={"incremental_constraints": kept})
+    # 没得撤销时 `pending_revision` 为 False —— 方案一个字都不会变，
+    # 用户在门禁上确认了也不该触发一次求解。
+    return Command(goto="human_gate", update=update)
 
 
 def _request_of(state: FTSState) -> SchedulingRequest | QueryRequest | None:

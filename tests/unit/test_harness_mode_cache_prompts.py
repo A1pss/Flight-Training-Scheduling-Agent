@@ -221,10 +221,23 @@ def test_parse_prompt_rejects_bad_files(text: str) -> None:
 
 
 def test_repo_prompts_cover_all_six_components() -> None:
-    """六个 LLM 组件各自都得有 system 提示词，否则该组件根本跑不起来。"""
+    """六个 LLM 组件各自都得有 system 提示词，否则该组件根本跑不起来。
+
+    ⚠️ **断言的是「六个 system 都在」，不是「一共只有六份」**（M5 改）：
+    一个组件可以有多个 prompt_key —— `knowledge` 就有三份
+    （`system` 走 ReAct 循环、`rewrite` 做查询改写、`answer` 做带引用生成，
+    v6 §6.5.2 的第 ① 与第 ④ 阶段）。锁文件的完整性由
+    `test_repo_lockfile_is_in_sync` 管，不该由这条兼管。
+    """
     registry = PromptRegistry.load()
     assert registry.missing_components() == ()
-    assert set(registry.versions()) == {f"{c}/system" for c in ALL_COMPONENTS}
+    assert {f"{c}/system" for c in ALL_COMPONENTS} <= set(registry.versions())
+
+
+def test_knowledge_has_the_three_keys_the_retrieval_pipeline_needs() -> None:
+    """M5：改写与生成各有各的提示词，与 ReAct 的 system 分开治理。"""
+    refs = set(PromptRegistry.load().versions())
+    assert {"knowledge/system", "knowledge/rewrite", "knowledge/answer"} <= refs
 
 
 def test_repo_lockfile_is_in_sync() -> None:

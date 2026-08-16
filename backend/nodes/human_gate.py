@@ -34,6 +34,22 @@ def human_gate(state: FTSState):
 
 `authorized_tiers` 在这里第一次成为**真的授权**：Planner 那一步只做了「你这个
 角色够不够格预授权」的过滤，人工门禁这一步是训练主任本人按下的确认。
+
+## 同一个门禁，两种问法（M5 新增）
+
+`state["pending_revision"]` 为真时，门禁问的**不是**「这版方案要不要归档」，
+而是「我把你那句话理解成这样，对不对」（v6 §7.3.4 第 4 条：**用户确认后才重解**）。
+三种决策的含义随之整体平移：
+
+| 决策 | 常规（`pending_revision=False`） | 回显确认（`pending_revision=True`） |
+|---|---|---|
+| `APPROVE` | 归档 → `commit_plan` | **理解对了 → `solve` 重解** |
+| `REVISE` | 进入下一轮修订 → `planner` | 换个说法重新翻译 → `planner` |
+| `REJECT` | 驳回，结束 | **撤回这条修订 → `planner` 弹栈** |
+
+**这不是给门禁加了第四种决策**（那要改 v6 §7.2.4 的规格表）。三种决策一个没变，
+变的是「此刻在确认什么」—— 而那件事本来就写在载荷里。`revision_echo` 非空即
+表示这一屏在问翻译对不对，UI 据此换文案。
 """
 
 from __future__ import annotations
@@ -50,11 +66,20 @@ from backend.schemas.intent import SolveIntent
 from backend.schemas.plan import BlockedItem, SchedulePlan
 from backend.schemas.validation import ValidationReport
 
-#: 决策 → 下一跳。
+#: 决策 → 下一跳（常规问法：这版方案要不要归档）。
 DECISION_ROUTES: dict[str, str] = {
     "APPROVE": "commit_plan",
     "REVISE": "planner",
     "REJECT": "END",
+}
+
+#: 决策 → 下一跳（回显确认问法：我把你那句话理解对了吗）。
+#: **`APPROVE` 在这里是「去重解」而不是「去归档」** —— 用户还没看过新方案，
+#: 此刻归档等于跳过 `solve → validate`，那是这套系统里最不该发生的事。
+REVISION_ECHO_ROUTES: dict[str, str] = {
+    "APPROVE": "solve",
+    "REVISE": "planner",
+    "REJECT": "planner",
 }
 
 
@@ -64,6 +89,10 @@ def gate_payload(state: FTSState) -> dict[str, Any]:
     plan = model_get(state, "solution", SchedulePlan)
     return {
         "trace_id": state_get(state, "trace_id", ""),
+        # ★ 回显确认（§7.3.4 第 4 条）。非空即表示这一屏问的是「我理解对了吗」，
+        #   UI 据此换文案与按钮语义（见模块开头那张表）
+        "revision_echo": state_get(state, "revision_echo", ""),
+        "pending_revision": bool(state_get(state, "pending_revision", False)),
         "workbook": state_get(state, "workbook_path", ""),
         "validation": validation.model_dump(mode="json") if validation is not None else None,
         "explanation": state_get(state, "explanation", ""),
@@ -114,19 +143,25 @@ def parse_decision(raw: Any, *, fallback_user: str = "unknown") -> HumanDecision
 
 def human_gate(state: FTSState) -> Command[str]:
     """确定性节点 ⑤。**这是本图唯一会挂起的地方。**"""
+    pending = bool(state_get(state, "pending_revision", False))
     raw = interrupt(gate_payload(state))
     decision = parse_decision(raw, fallback_user=state_get(state, "user_id", "unknown"))
-    goto = DECISION_ROUTES[decision.decision]
+    routes = REVISION_ECHO_ROUTES if pending else DECISION_ROUTES
+    goto = routes[decision.decision]
 
     update: dict[str, Any] = {
         "human_decision": decision,
         "needs_human": False,
+        # 这一屏问完就翻篇：下一次进门禁问的是别的事
+        "pending_revision": False,
+        "revision_cancelled": pending and decision.decision == "REJECT",
         "trace_events": emit(
             state,
             "human_gate",
             "human_gate",
             {
                 "decision": decision.decision,
+                "asking": "revision_echo" if pending else "plan_approval",
                 "user_id": decision.user_id,
                 "role": decision.role,
                 "authorized_tiers": list(decision.authorized_tiers),
@@ -138,7 +173,16 @@ def human_gate(state: FTSState) -> Command[str]:
         # 修订轮次由用户决定，不由模型决定（v6 §7.1.2）。轮次在这里 +1，
         # planner 侧的 translate_revision 直接用它当 round_no。
         update["revision_round"] = int(state_get(state, "revision_round", 0)) + 1
+    if pending and decision.decision == "APPROVE":
+        # 确认过的回显没必要留到下一屏 —— 留着会让用户以为还在问同一件事
+        update["revision_echo"] = None
     return Command(goto=goto, update=update)
 
 
-__all__ = ["DECISION_ROUTES", "gate_payload", "human_gate", "parse_decision"]
+__all__ = [
+    "DECISION_ROUTES",
+    "REVISION_ECHO_ROUTES",
+    "gate_payload",
+    "human_gate",
+    "parse_decision",
+]

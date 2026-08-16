@@ -114,7 +114,7 @@ def test_rule_table_does_not_cover_every_natural_phrasing() -> None:
     [
         ("schedule", "planner"),
         ("reschedule", "planner"),
-        ("query", "END"),
+        ("query", "knowledge"),
         ("ingest", "END"),
         ("export", "END"),
         ("unknown", "human_gate"),

@@ -217,9 +217,31 @@ class RevisionStack:
         """弹出最后一条。空栈返回 None —— 没得撤销不是错误。"""
         return self.items.pop() if self.items else None
 
+    def undo_many(self, times: int) -> list[IncrementalConstraint]:
+        """连撤 `times` 次，返回被弹出的约束（**按弹出顺序**，即从新到旧）。
+
+        栈里不够撤时**撤到空为止**，不抛 —— 用户说「都撤了吧」而栈里只有两条，
+        正确的行为是撤两条，不是报错。
+        """
+        popped: list[IncrementalConstraint] = []
+        for _ in range(max(0, times)):
+            item = self.undo()
+            if item is None:
+                break
+            popped.append(item)
+        return popped
+
     def utterances(self) -> list[str]:
         """按轮次列出原话，供 UI 展示「您先后说了什么」。"""
         return [c.origin_utterance for c in self.items]
+
+    def version_no(self) -> int:
+        """当前方案的版本号。首轮方案是 v1，每条修订 +1。
+
+        栈里 2 条 → 当前是 v3。`undo` 两次后栈里 0 条 → 回到 v1。
+        **这是 UI 上「方案 vN」那个 N 的唯一定义点**，不要在别处再算一次。
+        """
+        return len(self.items) + 1
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -614,6 +636,72 @@ def _parse_revision_payload(text: str) -> tuple[RevisionKind, list[str], dict[st
     return kind, targets, dict(params)
 
 
+# ─────────────────────────────────────────────────────────────────────
+# 用户发起的 undo（v6 §7.3.4 第 2 条硬性设计的入口）
+# ─────────────────────────────────────────────────────────────────────
+#
+# 「`undo` 弹出最后一条重解」这句话在 v6 里定义了**机制**，没定义**入口**。
+# 本窗口把入口做成「修订轮里的一种表述」而不是人工门禁上的第四种决策：
+#
+# - 人工门禁的三种决策（APPROVE / REVISE / REJECT）是 v6 §7.2.4 的规格表，
+#   加第四种要改设计方案（CLAUDE.md §7 第 8 条：改 docs 要先问）；
+# - 而「撤销刚才那条」本来就是用户在修订轮里说的一句话，与「换成 AC49」
+#   在交互上是同一个位置。**能不改规格就不改。**
+#
+# 撤销**同样要走完整的 `solve → validate`**（第 1 条硬性设计）：弹掉一条约束
+# 之后的方案是重解出来的，不是缓存回放的。这一点与「加一条约束」完全对称。
+
+#: 撤销表述。**只认明确的撤销词** —— 「算了」「不要了」太含糊，
+#: 含糊的话按翻译不出来处理（抛「这句没能翻译成增量约束」），不猜。
+_UNDO_PATTERNS: Final[tuple[re.Pattern[str], ...]] = (
+    re.compile(r"撤销|撤回|连撤|回退|退回|恢复到上一?版|还原"),
+    re.compile(r"^\s*undo\b", re.IGNORECASE),
+    re.compile(r"上一?版|前一?版"),
+)
+
+#: 「撤销两次」「连撤 3 条」里的次数
+_UNDO_TIMES: Final[re.Pattern[str]] = re.compile(
+    r"(\d+|[一两二三四五六七八九十])\s*(?:次|条|步|版)"
+)
+
+
+def undo_times(utterance: str) -> int:
+    """这句话要求撤销几次？**不是撤销请求返回 0。**
+
+    「撤销」→ 1；「撤销两次」→ 2；「回到 v2」这类**按版本号**的说法不认 ——
+    版本号要减去当前版本才知道撤几次，而那是调用方（拿得到栈）才知道的事，
+    在这里算等于把状态偷偷带进一个纯函数。
+    """
+    text = utterance.strip()
+    if not text or not any(p.search(text) for p in _UNDO_PATTERNS):
+        return 0
+    match = _UNDO_TIMES.search(text)
+    if match is None:
+        return 1
+    return _cn_int(match.group(1)) or 1
+
+
+def undo_echo(popped: Sequence[IncrementalConstraint], stack: RevisionStack) -> str:
+    """撤销的回显文案（v6 §7.3.4 第 4 条：翻译结果必须回显确认）。
+
+    **把撤掉的原话逐条列出来**，用户才能确认撤对了 —— 「撤销了 2 条」
+    这种回执看不出撤的是不是他想撤的那两条。
+    """
+    if not popped:
+        return "当前没有可撤销的修订，方案保持不变。"
+    lines = [f"我理解为：撤销最近 {len(popped)} 条修订，重新求解。"]
+    for item in popped:
+        lines.append(f"  - 撤销第 {item.round_no} 轮：「{item.origin_utterance}」（{item.kind}）")
+    remaining = stack.utterances()
+    if remaining:
+        kept = "；".join(f"第 {i} 轮「{u}」" for i, u in enumerate(remaining, start=1))
+        lines.append(f"保留的修订：{kept}")
+    else:
+        lines.append("撤销后回到首轮方案（v1），不带任何增量约束。")
+    lines.append(f"撤销后的方案版本：v{stack.version_no()}")
+    return "\n".join(lines)
+
+
 def translate_revision(
     utterance: str,
     *,
@@ -774,4 +862,6 @@ __all__ = [
     "sorties_for_targets",
     "to_solver_params",
     "translate_revision",
+    "undo_echo",
+    "undo_times",
 ]

@@ -167,11 +167,30 @@ class Settings(BaseSettings):
     CHROMA_PATH: Path = PROJECT_ROOT / ".data" / "chroma"
     RRF_K: int = 60
     RERANK_TOP_K: int = 5
+    #: 融合后送进精排的候选条数（v6 §6.5.2：「对融合后 Top-20 精排 → Top-5」）
+    FUSION_TOP_K: int = 20
+    #: 三路召回各自的取数上限。精排只看融合后的前 `FUSION_TOP_K` 条
+    ROUTE_TOP_K: int = 10
     #: 嵌入实现。`bge` = 真模型（.data/models/bge-m3）；`hash` = 确定性哈希嵌入，
     #: 给 CI 用（那里没有 2.2GB 权重）。检索质量指标一律用 `bge` 跑。
     EMBED_PROVIDER: Literal["bge", "hash"] = "bge"
     #: **摄取期固定 CPU**：GPU 3 上常驻 Ollama，语料极小没必要抢显存（M1 隔离方案）
     EMBED_DEVICE: str = "cpu"
+    #: 精排实现。`bge` = bge-reranker-v2-m3（2.2GB 权重）；`lexical` = 确定性
+    #: 词元重合度，给 CI 用。**替身会在 `RerankResult.provider` 里如实标注**。
+    RERANK_PROVIDER: Literal["bge", "lexical"] = "bge"
+    #: 精排设备。与嵌入同一条理由（GPU 3 上常驻 Ollama），默认 CPU
+    RERANK_DEVICE: str = "cpu"
+    #: 向量后端。`chroma` = v6 §6.1 指定的向量库；`memory` = 精确余弦（单测）
+    VECTOR_BACKEND: Literal["chroma", "memory"] = "chroma"
+
+    # ── 长期记忆（§6.2 / §6.4）──────────────────────────────────────
+    #: KnowledgeAgent 的 ReAct 步数上限（v6 §7.2.2「步数上限 6」）
+    KNOWLEDGE_MAX_STEPS: int = Field(default=6, ge=1, le=6)
+    #: 情景记忆归档阈值：超过 N 个训练周期归档到冷表（v6 §6.4 遗忘策略）。
+    #: 周期长度不在这里配 —— 它按快照里最长的 `cycle_weeks` 算，见
+    #: `backend/memory/episodic.py::retention_cycle_weeks`。
+    EPISODIC_RETENTION_CYCLES: int = Field(default=3, ge=1)
 
     # ── 摄取（§5 / §11.5）──────────────────────────────────────────
     PADDLEOCR_HOME: Path = PROJECT_ROOT / ".data" / "paddleocr"
