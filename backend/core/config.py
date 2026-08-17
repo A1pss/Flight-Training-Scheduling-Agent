@@ -40,6 +40,20 @@ class Settings(BaseSettings):
     FRONTEND_PORT: int = 8501
     TENANT_ID: str = "default"
 
+    # ── API 认证（v6 §9.1「认证鉴权」，业务方 2026-08-18 选定静态 Token）──
+    #: `token:user_id:role` 三段式，多条用逗号分隔。role ∈ viewer/scheduler/director/admin。
+    #:
+    #: **默认空 = 全部拒绝，不是全部放行。** 全离线内网也不给「没配就不校验」
+    #: 这个后门：那样一旦有人忘了配，鉴权这件事就在无人察觉的情况下没有了。
+    #: 空表时 API 返回 401 并直说「服务端未配置 API_TOKENS」。
+    API_TOKENS: str = ""
+    #: 前端调用后端的地址。前端与后端同机部署，默认走本机回环
+    API_BASE_URL: str = "http://127.0.0.1:8000"
+    #: 前端自己用的 token（Streamlit 进程从环境读，不落浏览器存储）
+    FRONTEND_API_TOKEN: str = ""
+    #: 轮询间隔（v6 §8.1：低频轮询，无实时流式）
+    FRONTEND_POLL_INTERVAL_S: float = Field(default=1.5, gt=0)
+
     # ── 日志与脱敏（v6 §11.5）────────────────────────────────────────
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     LOG_FORMAT: Literal["json", "console"] = "json"
@@ -61,6 +75,12 @@ class Settings(BaseSettings):
     REDIS_DB: int = 0
     REDIS_DATA_DIR: Path = PROJECT_ROOT / ".data" / "redis"
     RQ_QUEUE: str = "fts"
+    #: 长任务的执行方式。`rq` = 入队给 worker（生产，v6 §9.2）；
+    #: `inline` = 在请求线程里同步跑完（集成测试与单机排障用）。
+    #: **默认是 rq** —— inline 会让一次排班把 HTTP 请求卡住几十秒
+    JOB_RUNNER: Literal["rq", "inline"] = "rq"
+    #: RQ 任务的执行超时。一次排班 = 求解 60 s + 校验 + 报表，900 s 是宽余量
+    RQ_JOB_TIMEOUT_S: int = Field(default=900, gt=0)
 
     # ── Ollama（§11.1 / §11.2）───────────────────────────────────────
     OLLAMA_HOST: str = "127.0.0.1:11434"

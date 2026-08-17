@@ -3,6 +3,8 @@
 .tools/
 traces/
 data/plans/
+# 摄取暂存区（M6 §9.1 第 7 条：清理策略留给 M8）
+data/uploads/
 *.sqlite
 *.db
 

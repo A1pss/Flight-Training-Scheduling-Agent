@@ -30,6 +30,10 @@
 > 负例边界与 undo 语义、§12.4 消融失效形态、§3.11 插桩预算 300s。
 > **其中 `Z-19` 改变了修订轮的交互形状**（两次门禁往返），M6 前端按它做。
 >
+> **M6 实测后追加**（`Z-24`）：**§9.3 错误码由 15 个增至 16 个**（新增 `FTS-4005`
+> 状态冲突）、§9.2 补 worker 侧的 `snapshot_id` 级锁、§8.1 回填轮询响应体实测
+> 190 字节。**看到「15 个错误码」的旧表述一律按 16 个理解。**
+>
 > **看到任何 `§x.y` 一律按 v6 编号理解。** 旧收工报告、早期笔记里若出现 v5.2 编号，先用上面这张表换算，**不要直接照旧号去 v6 里翻**——`§3.5` 在 v5.2 是目标函数、在 v6 是频率滑窗，翻错会写出完全不同的代码。
 
 ---
@@ -99,6 +103,7 @@
 | **撤销的语义 (Z-21)** | `undo` = 去掉那条约束**再解一次**，**不是把旧方案取回来**。重解结果不必与当初那版逐字节相同（最小扰动锚定**当前**方案），要断言的是**约束集回到了那一版** | §7.3.4 `Z-21` |
 | **记忆时效 (Z-18)** | `superseded_by` 是**链接不是墓碑**：有效性只由 `[valid_from, valid_to)` 决定。当作废标记会让历史时点查询一律返回空。情景记忆归档线 = 快照里**最长**的 `cycle_weeks` × 3 | §6.4 `Z-18` |
 | **可复现性 (Z-3)** | CP-SAT **不保证**同 seed + 同 worker 数返回同一个等价最优解。靠「多线程求最优值 + **单线程规范化**」两段式解决；保证边界是 `OPTIMAL` 时逐字节可复现、`FEASIBLE` 时不保证 | §3.11.1 |
+| **并发与锁 (Z-24)** | **两把锁**：`(tenant, week)` 排班锁（API 提交期取，拿不到即 `FTS-4005` / HTTP 409，**不排队**）+ **`snapshot_id` 级锁**（worker 执行期取，堵住「不同周、同快照」在 `training_progress` 上的死锁）。**16 个错误码**，第 16 个是 `FTS-4005` | §9.2、§9.3 |
 
 **实体规模（按 `data/origin/*.pdf` 逐字核对，v6 §1.3）**：**8 人**（3 教员 + 1 成熟飞行员 + 4 学员）· **8 机**（JL-8 六架 AC10/27/34/49/61/73；**JL-9 只有两架 AC84/AC95**）· 12 课目 · 6 空域 · 2 跑道。
 ⚠️ **AC73 是 JL-8，不是 JL-9**；学员只持 JL-8 机型资质与 A/B/C/F 四类资质，故 D/E/G/H 类课目不生成任何学员候选。
@@ -267,10 +272,16 @@ python -m backend.ingestion.cli --baseline --dry-run     # 只看 Diff 不落库
 python -m backend.ingestion.cli <文件...> --approver <人> \
     --cycle-start YYYY-MM-DD --resolve "<冲突id>=<取值>"  # 上传路径
 
-# 应用
+# 应用（三个进程都要起，缺 worker 时任务永远停在 QUEUED）
+export API_TOKENS='<token>:<user_id>:<role>,...'   # 空表 = 全部拒绝，不是全部放行
+export FRONTEND_API_TOKEN='<前端用的那个 token>'
 uvicorn backend.api.main:app --host 0.0.0.0 --port 8000
-rq worker --url redis://127.0.0.1:6380 fts
+rq worker --url redis://127.0.0.1:6380 --worker-class rq.SimpleWorker fts
 streamlit run frontend/app.py --server.port 8501
+
+# E2E（需要 chromium；CI 上没有会自动跳过）
+python -m playwright install chromium
+pytest tests/e2e
 
 # 三态 Provider
 LLM_PROVIDER=ollama LLM_MODEL=qwen2.5:14b-instruct-q4_K_M   # 真机
@@ -361,4 +372,10 @@ LLM_PROVIDER=replay REPLAY_TRACE_DIR=./traces/accept_v1      # 回归，零 LLM 
       错的是 v6 §3.2 与 §12.3 互相矛盾
 - ❌ 用 `pypdf` 做 PDF 处理（用 pdfplumber）
 - ❌ 在 artifacts / 前端里用 localStorage
+- ❌ **把锁冲突复用成 `FTS-3004`**（Z-24）—— 3004 是「数据变了要重解」，
+      锁冲突是「数据没变、有人在排」，用户的下一步一个是重跑、一个是等
+- ❌ **只加 `(tenant, week)` 锁就以为并发安全了**（Z-24）—— 它盖不住「不同周、
+      同快照」，而 `materialize_progress` 正是在那里死锁的（M5 有实测证据）
+- ❌ **前端用 `st.dataframe` 显示需要被读到/复制的内容** —— 它是 canvas 网格，
+      内容不进 DOM：屏幕上看得见，选不中、复制不了、E2E 也读不到（M6 实测踩过）
 - ❌ 提交 `.env`、模型权重、`data/` 下的大文件到 Git（写好 `.gitignore`）

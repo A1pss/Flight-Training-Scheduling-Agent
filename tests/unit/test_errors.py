@@ -1,7 +1,12 @@
 """错误码与错误契约单测（v6 §9.3）。
 
-核心断言：**15 个码一个不少**，且 `UNKNOWN` 与 `INFEASIBLE` 在类型层就分开
+核心断言：**16 个码一个不少**，且 `UNKNOWN` 与 `INFEASIBLE` 在类型层就分开
 （铁律 8）。
+
+⚠️ **第 16 个码 `FTS-4005` 是 M6 新增的**（`Z-24`，业务方 2026-08-18 裁定）：
+v6 §9.2 要求 `(tenant, week)` 加分布式锁，而 §9.3 原表里没有「锁被别人持有」
+这一项。复用 `FTS-3004`（快照陈旧）会让前端提示成「数据变了，要重解」——
+真实情况是「数据没变，有人在排」，下一步动作完全不同。
 """
 
 from __future__ import annotations
@@ -17,11 +22,12 @@ from backend.core.errors import (
     FTSError,
     InfeasibleError,
     IngestionError,
+    ScheduleLockedError,
     SolveTimeoutError,
     ValidatorSolverDisagreementError,
 )
 
-#: v6 §9.3 表格逐字列出的 15 个码。
+#: v6 §9.3 表格逐字列出的 16 个码（15 条原表 + M6 新增的 FTS-4005）。
 EXPECTED_CODES = {
     "FTS-1001",
     "FTS-1002",
@@ -37,13 +43,14 @@ EXPECTED_CODES = {
     "FTS-4002",
     "FTS-4003",
     "FTS-4004",
+    "FTS-4005",
     "FTS-5001",
 }
 
 
-def test_all_fifteen_codes_present() -> None:
+def test_all_sixteen_codes_present() -> None:
     assert {c.value for c in ErrorCode} == EXPECTED_CODES
-    assert len(ErrorCode) == 15
+    assert len(ErrorCode) == 16
 
 
 def test_registry_covers_every_code() -> None:
@@ -60,6 +67,23 @@ def test_fts_2001_scope_extended_in_v6() -> None:
 def test_fts_3003_is_critical() -> None:
     """求解器与校验器分歧是 CRITICAL，必须停下来报告（CLAUDE.md §7 第 5 条）。"""
     assert ERROR_REGISTRY[ErrorCode.VALIDATOR_SOLVER_DISAGREE].severity == "CRITICAL"
+
+
+def test_fts_4005_is_a_retryable_warning_not_a_stale_snapshot() -> None:
+    """`Z-24`：锁冲突是「等一会儿再来」，不是「数据变了要重解」。
+
+    两件事的下一步动作不同，所以不许合成一个码 —— 这条断言钉住的正是
+    「别人图省事把它塞回 FTS-3004」。
+    """
+    spec = ERROR_REGISTRY[ErrorCode.SCHEDULE_LOCKED]
+    assert spec.severity == "WARN"
+    assert spec.retryable is True
+    assert spec.code != ErrorCode.SNAPSHOT_STALE_ON_RESUME
+    err = ScheduleLockedError(
+        "2026W02 正在被 P01 排班",
+        details={"lock_key": "default:2026W02", "holder": "P01", "ttl_s": 47},
+    )
+    assert err.to_response(trace_id="t").code == ErrorCode.SCHEDULE_LOCKED
 
 
 def test_unknown_is_not_infeasible() -> None:
