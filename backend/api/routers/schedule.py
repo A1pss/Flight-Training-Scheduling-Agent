@@ -61,7 +61,7 @@ from backend.api.service import (
     submit_run,
 )
 from backend.core.errors import RequiredInputMissingError, ScheduleLockedError
-from backend.graph.state import FTSState
+from backend.graph.state import FTSState, model_get
 from backend.graph.state import get as state_get
 from backend.schemas.api import (
     DecisionRequest,
@@ -70,6 +70,8 @@ from backend.schemas.api import (
     ScheduleRequest,
 )
 from backend.schemas.common import HumanDecision
+from backend.schemas.plan import SchedulePlan
+from backend.schemas.solver import SolverStats
 
 router = APIRouter(tags=["排班"])
 
@@ -222,6 +224,7 @@ def _decide(
         iso_week=record.iso_week,
         decision=human.model_dump(mode="json"),
     )
+    before = _run_fingerprint(state, record, awaiting=awaiting)
     # ★ 审计（v6 §11.5）：`before` 是**决策前那次运行的状态**，`after` 是决策
     # 本身。这样 diff 里能直接读出「本来停在 AWAITING_HUMAN 的 14 架次方案，
     # 被 P01 从 10.x.x.x 批了」。归档本身的数据变更由 `commit_plan` 那一路负责。
@@ -229,8 +232,12 @@ def _decide(
         action=f"api.schedule.{decision.lower()}",
         resource_type="run",
         resource_id=trace_id,
-        before=_run_fingerprint(state, record, awaiting=awaiting),
+        before=before,
+        # ⚠️ `after` 必须**沿用 `before` 的整套键**，只改真正变了的那几个。
+        # 只放决策字段的话，`value_diff` 会把 before 里其余的键全算成 `removed`
+        # —— 审计行读起来像是「批准把快照和方案都删了」。
         after={
+            **before,
             "status": "DECIDED",
             "awaiting_human": False,
             "decision": decision,
@@ -256,16 +263,23 @@ def _run_fingerprint(state: FTSState, record: JobRecord, *, awaiting: bool) -> d
     **只取能一眼看懂的几个量**（状态、方案 id、架次数、求解状态、快照），
     不把整个 `SchedulePlan` 塞进审计行 —— 完整方案在 `data/plans/` 的归档里，
     审计表的职责是「谁在什么状态下做了什么决定」，不是再存一份方案。
+
+    ⚠️ **黑板上方案的键是 `solution` 不是 `plan`，求解状态在 `solver_stats.status`
+    而不是顶层的 `solver_status`**。第一版按后者写，于是审计行里 `plan_id` 恒为空、
+    `sorties` 恒为 0 —— 而那看起来完全像「这次运行确实没有方案」，不像 bug。
+    键名以 `backend/graph/state.py` 的 `FTSState` 为准。
     """
-    plan = state_get(state, "plan", None)
+    plan = model_get(state, "solution", SchedulePlan)
+    stats = model_get(state, "solver_stats", SolverStats)
     return {
         "status": str(record.status),
         "awaiting_human": awaiting,
         "snapshot_id": str(record.extra.get("snapshot_id", "")),
         "iso_week": record.iso_week,
-        "plan_id": getattr(plan, "plan_id", "") if plan is not None else "",
-        "sorties": len(getattr(plan, "sorties", ()) or ()) if plan is not None else 0,
-        "solver_status": str(state_get(state, "solver_status", "") or ""),
+        "plan_id": plan.plan_id if plan is not None else "",
+        "sorties": len(plan.sorties) if plan is not None else 0,
+        "content_sha256": plan.content_sha256 if plan is not None else "",
+        "solver_status": stats.status if stats is not None else "",
     }
 
 

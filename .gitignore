@@ -62,3 +62,11 @@ tmp/
 
 # 本机临时产物（PR 正文草稿等），不入库
 .local/
+
+# ── 离线交付包的构建产物（v6 §11.4）─────────────────────────────────
+# 构建**脚本与模板**入库（deploy/offline-package/），**产物不入库**：
+# wheels 约 6 GB、模型权重约 14 GB，进 Git 就是把仓库变成一个下载站。
+# 产物默认落在 .release/，由 deploy/offline-package/build_package.sh 生成。
+.release/
+deploy/compose/env/*.env
+!deploy/compose/env/*.env.example
