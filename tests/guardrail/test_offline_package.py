@@ -240,9 +240,16 @@ def test_installer_fails_when_golden_cases_fail() -> None:
 
 
 def test_installer_installs_dependencies_without_network() -> None:
-    """★ v6 §11.5「依赖离线」：`--no-index` 与 `--offline` 都要在。"""
+    """★ v6 §11.5「依赖离线」：`--no-index` / `PIP_NO_INDEX` / `--offline` 都要在。
+
+    按**语义**断言而不是整行字面量：安装命令跨行写、加了 `PIP_NO_INDEX=1` 双保险，
+    整行匹配会因为换行而失效（M8 改 installer 时红过一次），而那时它红的原因
+    与「离线性」毫无关系。
+    """
     text = INSTALLER.read_text(encoding="utf-8")
-    assert "pip install --no-index --find-links=" in text
+    assert "-m pip install --no-index" in text, "pip 安装必须带 --no-index"
+    assert "PIP_NO_INDEX=1" in text, "再加一道环境变量，防 pip 从别处读到 index 配置"
+    assert "--find-links=" in text and "wheels" in text
     assert "conda env create" in text and "--offline" in text
 
 

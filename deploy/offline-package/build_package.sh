@@ -43,6 +43,13 @@ VERSION="${FTS_RELEASE_VERSION:-1.0.0}"
 OUT_ROOT="${FTS_RELEASE_DIR:-$ROOT/.release}"
 PKG="$OUT_ROOT/fts-release-v$VERSION"
 PY_ENV="${FTS_PY_ENV:-schedule}"
+# 项目自己的环境变量（尤其 `CONDA_PKGS_DIRS` 指向 /shares2 上的包缓存）。
+# 不 source 它的话，下面收集 conda 本地包时会漏掉那一份。
+# shellcheck disable=SC1091
+[ -f "$ROOT/deploy/native/env.sh" ] && . "$ROOT/deploy/native/env.sh" >/dev/null 2>&1 || true
+
+ENV_BIN="$(conda run -n "$PY_ENV" python -c 'import sys,pathlib;print(pathlib.Path(sys.executable).parent)' | tr -d "\r" | tail -1)"
+[ -x "$ENV_BIN/python" ] || { echo "❌ 解析不出 $PY_ENV 的 bin 目录" >&2; exit 1; }
 
 SKIP_MODELS=0; SKIP_WHEELS=0; SKIP_IMAGES=0; SKIP_CONDA_PKGS=0
 for arg in "$@"; do
@@ -93,15 +100,72 @@ conda env export -n "$PY_ENV" --no-builds > "$PKG/conda/environment.yml" 2>/dev/
 cp requirements.txt requirements.in "$PKG/conda/" 2>/dev/null || true
 note "environment.yml（$(grep -c '^\s*-' "$PKG/conda/environment.yml") 条依赖）"
 if [ "$SKIP_CONDA_PKGS" -eq 0 ]; then
-  CONDA_PKGS="$(conda info --json 2>/dev/null | sed -n 's/.*"pkgs_dirs": \[\s*"\([^"]*\)".*/\1/p' | head -1)"
-  if [ -n "${CONDA_PKGS:-}" ] && [ -d "$CONDA_PKGS" ]; then
-    mkdir -p "$PKG/conda/pkgs"
-    # 只带 .conda/.tar.bz2 包本身，不带解压后的目录（那是重复的一份）
-    find "$CONDA_PKGS" -maxdepth 1 \( -name '*.conda' -o -name '*.tar.bz2' \) \
-      -exec cp -n {} "$PKG/conda/pkgs/" \; 2>/dev/null || true
-    note "本地包缓存 $(find "$PKG/conda/pkgs" -type f | wc -l) 个（$(du -sh "$PKG/conda/pkgs" | cut -f1)）"
-  else
-    note "⚠️ 找不到 conda pkgs 目录，跳过本地包缓存"
+  # ⚠️ **用 python 解析 `conda info --json`，不要用 sed**：`pkgs_dirs` 是个数组，
+  # 而 conda 的 JSON 缩进形态会随版本变 —— 实测那条 sed 一个都没匹配到，
+  # 于是「跳过本地包缓存」被静默打印出来，包里少了 1.5 GB 而构建照样成功。
+  # **收集类的步骤失败必须像失败**，所以这里把「一个都没收到」也当异常报出来。
+  #
+  # 多个候选目录全都扫：`CONDA_PKGS_DIRS`（env.sh 设的）与 conda 自己报的那几个
+  # 可能不是同一个，两边都可能有包。
+  mkdir -p "$PKG/conda/pkgs"
+  # ⚠️ 用 `$ENV_BIN/python` 而不是 `conda run`：**`conda run` 不转发 stdin**，
+  # 于是这里的 heredoc 送不进去，脚本拿到一个空的候选目录列表
+  # （实测踩过，与 `start_all_app.sh` 用直接可执行文件是同一条理由）。
+  CANDIDATE_DIRS="$("$ENV_BIN/python" - <<'PY' 2>/dev/null
+import json
+import os
+import subprocess
+
+dirs = []
+for item in (os.environ.get("CONDA_PKGS_DIRS") or "").split(os.pathsep):
+    if item.strip():
+        dirs.append(item.strip())
+try:
+    info = json.loads(subprocess.run(["conda", "info", "--json"], capture_output=True, text=True, check=True).stdout)
+    dirs.extend(info.get("pkgs_dirs") or [])
+except Exception:
+    pass
+seen = set()
+for item in dirs:
+    if item and item not in seen and os.path.isdir(item):
+        seen.add(item)
+        print(item)
+PY
+)"
+  COPIED_PKGS=0
+  for dir in $CANDIDATE_DIRS; do
+    while IFS= read -r pkgfile; do
+      [ -n "$pkgfile" ] || continue
+      cp -n "$pkgfile" "$PKG/conda/pkgs/" 2>/dev/null && COPIED_PKGS=$((COPIED_PKGS + 1))
+    done <<EOF
+$(find "$dir" -maxdepth 1 \( -name '*.conda' -o -name '*.tar.bz2' \) 2>/dev/null)
+EOF
+  done
+  TOTAL_PKGS=$(find "$PKG/conda/pkgs" -type f | wc -l)
+  if [ "$TOTAL_PKGS" -eq 0 ]; then
+    echo "❌ conda 本地包缓存一个都没收到（扫过：${CANDIDATE_DIRS:-无})" >&2
+    echo "   离线机上 conda env create --offline 会失败。要么修好这一步，" >&2
+    echo "   要么显式 --skip-conda-pkgs 表示「这个包不含 conda 缓存」。" >&2
+    exit 1
+  fi
+  note "本地包缓存 $TOTAL_PKGS 个（$(du -sh "$PKG/conda/pkgs" | cut -f1)），来自：$(echo "$CANDIDATE_DIRS" | tr '\n' ' ')"
+
+  # ★ 记录 wheels 对应的 Python 版本。**这是离线安装能不能成的关键前提**：
+  # `wheels/` 里的编译包带 ABI tag（cp311），装到别的小版本上会以
+  # 「No matching distribution found」失败 —— 而那个报错完全看不出真实原因
+  # （M8 实测踩过：venv 回落用了 conda base 的 3.14，报的是 aiohttp 找不到）。
+  "$ENV_BIN/python" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' \
+    > "$PKG/conda/PYTHON_VERSION"
+  REQ_PY="$(cat "$PKG/conda/PYTHON_VERSION")"
+  note "wheels 对应 Python $REQ_PY（写入 conda/PYTHON_VERSION）"
+
+  # 目标机上如果还没有 conda 环境，install.sh 需要一个匹配的解释器。它有三个
+  # 来源：本包的 conda 缓存里带 python 包、目标机已有 conda 环境、系统 python。
+  # 第一个是唯一**我们能保证**的那个，所以缺了要说出来。
+  if ! find "$PKG/conda/pkgs" -maxdepth 1 -name "python-${REQ_PY}*" | grep -q .; then
+    note "⚠️ conda 缓存里**没有** python-$REQ_PY 包"
+    note "   → 目标机必须自带 Python $REQ_PY（Miniconda base、已有 conda 环境或系统 python）"
+    note "   → 想让包自带：在一台 conda 缓存里有 python-$REQ_PY 的机器上重新构建"
   fi
 else
   note "跳过 conda 本地包缓存（--skip-conda-pkgs）"
@@ -128,7 +192,9 @@ if [ "$SKIP_MODELS" -eq 0 ]; then
     src="${spec%%:*}"; name="${spec##*:}"
     if [ -d "$ROOT/$src" ]; then
       mkdir -p "$PKG/models/$name"
-      cp -a "$ROOT/$src/." "$PKG/models/$name/"
+      # `cp -a -u`：已经拷过的不再拷。13 GB 复制一次好几分钟，而重跑构建
+      # （改了脚本、重算 checksum）是常事。
+      cp -au "$ROOT/$src/." "$PKG/models/$name/"
       note "$name（$(du -sh "$PKG/models/$name" | cut -f1)）"
     else
       note "⚠️ $src 不存在，跳过 $name"
