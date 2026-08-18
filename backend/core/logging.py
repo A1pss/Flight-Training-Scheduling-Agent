@@ -44,8 +44,13 @@ _PERSON_KEYS: Final[frozenset[str]] = frozenset(
     }
 )
 
-#: `P01`~`P99` 形态的人员主键，出现在自由文本里时一并脱敏。
-_PERSON_ID_RE: Final[re.Pattern[str]] = re.compile(r"\bP\d{2}\b")
+#: `P\d+` 形态的人员主键，出现在自由文本里时一并脱敏。
+#:
+#: ⚠️ **不限位数**（M8 改正）。原先写的是 `\bP\d{2}\b`，只盖得住 `P01`~`P99`
+#: —— 那是把 v6 §1.3 的**基准数据集规模**当成了系统上限（`Z-4`：编号只固定
+#: 前缀、不限位数）。用户上传 120 人的花名册时，`P100` 往后的人在日志里就
+#: **不再脱敏**了，而这件事没有任何症状，是静默失效。
+_PERSON_ID_RE: Final[re.Pattern[str]] = re.compile(r"\bP\d+\b")
 
 
 def new_trace_id() -> str:

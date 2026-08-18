@@ -72,6 +72,21 @@ def get_trace_id(request: Request) -> str:
     return cast(str, getattr(request.state, "trace_id", "") or "unknown")
 
 
+def get_client_ip(request: Request) -> str:
+    """调用方 IP（进 `audit_log.actor_ip`，v6 §11.5）。
+
+    **只取 `request.client.host`，不认 `X-Forwarded-For`。** 那个头客户端能随便
+    写，采信它等于让审计日志可伪造 —— 而可伪造的审计日志不如没有。裸装部署
+    （v6 §11.1）里 uvicorn 直接面向内网，前面没有反向代理，`client.host` 就是
+    真实来源。将来真加了 nginx，那时按「只信任已知代理转发的那一跳」改。
+
+    拿不到时返回空串（TestClient 某些构造下 `request.client` 为 None），
+    **不填 `"unknown"` 之类的假值**。
+    """
+    client = request.client
+    return client.host if client is not None else ""
+
+
 def get_principal(request: Request) -> Principal:
     """认证：`Authorization: Bearer <token>` → `Principal`。"""
     table = get_token_table(request)
@@ -98,9 +113,11 @@ CurrentLocks = Annotated[LockManager, Depends(get_locks)]
 CurrentIdempotency = Annotated[IdempotencyStore, Depends(get_idempotency)]
 CurrentRunner = Annotated[JobRunner, Depends(get_runner)]
 CurrentTraceId = Annotated[str, Depends(get_trace_id)]
+CurrentClientIP = Annotated[str, Depends(get_client_ip)]
 CurrentToday = Annotated[date, Depends(get_today)]
 
 __all__ = [
+    "CurrentClientIP",
     "CurrentIdempotency",
     "CurrentJobs",
     "CurrentLocks",
@@ -110,6 +127,7 @@ __all__ = [
     "CurrentSettings",
     "CurrentToday",
     "CurrentTraceId",
+    "get_client_ip",
     "get_idempotency",
     "get_job_store",
     "get_locks",

@@ -32,6 +32,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from backend.core.audit import record_audit
 from backend.core.errors import IngestionError
 from backend.core.logging import get_logger
 from backend.ingestion.adapters import ExtractedDocument, extract_document
@@ -47,7 +48,6 @@ from backend.ingestion.loader import (
     load_snapshot_normalized,
     make_snapshot_id,
     persist_facts,
-    record_audit,
     source_files_digest,
 )
 from backend.ingestion.parsers import (
@@ -224,6 +224,8 @@ def commit(
     ruleset_version: str,
     embedder: Embedder | None = None,
     write_vectors: bool = True,
+    trace_id: str = "",
+    actor_ip: str = "",
 ) -> CommitResult:
     """人工确认通过后落库：PG → Chroma → 新 snapshot_id。
 
@@ -269,10 +271,13 @@ def commit(
         resource_id=snapshot_id,
         before={"base_snapshot_id": prepared.base_snapshot_id},
         after={
+            "base_snapshot_id": snapshot_id,
             "changeset": prepared.changeset.summary(),
             "resolutions": applied,
             "sources_digest": source_files_digest(facts.sources),
         },
+        trace_id=trace_id,
+        actor_ip=actor_ip,
     )
     activate_snapshot(
         session,

@@ -36,7 +36,7 @@
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from datetime import date, datetime
 from typing import Any
 
@@ -52,7 +52,6 @@ from backend.models import (
     AircraftMaintenance,
     AircraftMissionCapability,
     Airspace,
-    AuditLog,
     DataSnapshot,
     Mission,
     MissionAircraftType,
@@ -711,32 +710,6 @@ def load_normalized_from_db(
     return out
 
 
-def record_audit(
-    session: Session,
-    *,
-    actor: str,
-    action: str,
-    resource_type: str,
-    resource_id: str,
-    before: Mapping[str, Any] | None = None,
-    after: Mapping[str, Any] | None = None,
-    trace_id: str = "",
-) -> None:
-    """写审计流水。摄取的人工确认必须留痕。"""
-    session.add(
-        AuditLog(
-            actor=actor,
-            action=action,
-            resource_type=resource_type,
-            resource_id=resource_id,
-            before=dict(before) if before is not None else None,
-            after=dict(after) if after is not None else None,
-            trace_id=trace_id,
-        )
-    )
-    session.flush()
-
-
 def source_files_digest(sources: Sequence[SourceFile]) -> str:
     """全部源文件 sha256 的聚合指纹，进审计日志便于溯源。"""
     joined = "|".join(f"{s.filename}:{s.sha256}" for s in sorted(sources, key=lambda s: s.filename))
@@ -753,7 +726,6 @@ __all__ = [
     "materialize_training_progress",
     "persist_facts",
     "reachable_missions",
-    "record_audit",
     "resolve_cycle_start",
     "source_files_digest",
 ]

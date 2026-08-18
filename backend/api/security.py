@@ -16,6 +16,20 @@
    不同的字节短路，时序差可测。
 3. **角色不做默认**。`normalize_role` 认不出就抛（v6 §7.3.3 那条注释写得很清楚：
    默认高了凭空发权限，默认低了挡住合法操作还没人知道为什么）。
+4. **口令可以只存散列**（M8 补）。条目写成 `sha256$<64位十六进制>:user:role`
+   时，`.env` 里就没有任何可直接拿去调 API 的东西了。明文形态仍然兼容
+   （M6 交付的配置不能一升级就全废），但 app 启动时会打一条 WARN 把它点出来。
+   散列用**裸 sha256 而不是 Argon2/bcrypt**：这里的 token 是
+   `secrets.token_urlsafe(32)` 生成的 256 bit 随机串，不是人选的口令，
+   没有字典可穷举，慢哈希在这里只换来每个请求几十毫秒的开销。
+   ⚠️ 这个理由**只对随机 token 成立**——哪天改成用户自选口令，必须换成慢哈希。
+
+## Token 的生成与轮换
+
+```bash
+python -m backend.api.tokens_cli new    --user P01 --role director
+python -m backend.api.tokens_cli rotate --user P01 --tokens "$API_TOKENS"
+```
 
 ## 端点 → 最低角色
 
@@ -32,6 +46,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import secrets
 from dataclasses import dataclass
 from typing import Final
@@ -43,6 +58,22 @@ from backend.schemas.intent import UserRole
 #: 三段式配置的分隔符。`,` 分条、`:` 分段。
 ENTRY_SEP: Final[str] = ","
 FIELD_SEP: Final[str] = ":"
+
+#: 散列形态的前缀。用 `$` 而不是 `:` 分隔算法与摘要，才不会与 `FIELD_SEP` 打架。
+HASH_PREFIX: Final[str] = "sha256$"
+
+#: 生成 token 的熵。32 字节 → `token_urlsafe` 出 43 个字符。
+TOKEN_BYTES: Final[int] = 32
+
+
+def hash_token(token: str) -> str:
+    """token → `sha256$<hex>` 形态的条目首段。"""
+    return HASH_PREFIX + hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def new_token() -> str:
+    """生成一个新的随机 token（256 bit）。"""
+    return secrets.token_urlsafe(TOKEN_BYTES)
 
 
 @dataclass(frozen=True)
@@ -77,7 +108,12 @@ class AuthError(Exception):
 
 
 class TokenTable:
-    """`token → Principal` 的只读表。进程启动时解析一次。"""
+    """`token → Principal` 的只读表。进程启动时解析一次。
+
+    键存的是**条目的第一段原样**：明文条目存明文，散列条目存
+    `sha256$<hex>`。比对时把来访 token 也算一次散列，两种形态各比各的
+    （见 :meth:`resolve`）。
+    """
 
     def __init__(self, entries: dict[str, Principal]) -> None:
         self._entries = dict(entries)
@@ -88,6 +124,17 @@ class TokenTable:
     @property
     def empty(self) -> bool:
         return not self._entries
+
+    @property
+    def plaintext_users(self) -> tuple[str, ...]:
+        """口令仍以明文配置的用户。app 启动时据此打 WARN。"""
+        return tuple(
+            sorted(
+                principal.user_id
+                for key, principal in self._entries.items()
+                if not key.startswith(HASH_PREFIX)
+            )
+        )
 
     @classmethod
     def parse(cls, raw: str) -> TokenTable:
@@ -107,6 +154,12 @@ class TokenTable:
             token, user_id, role = (p.strip() for p in parts)
             if not token or not user_id:
                 raise ValueError(f"API_TOKENS 条目的 token 与 user_id 不得为空：{item!r}")
+            if token.startswith(HASH_PREFIX):
+                digest = token[len(HASH_PREFIX) :]
+                if len(digest) != 64 or not all(c in "0123456789abcdef" for c in digest):
+                    raise ValueError(
+                        f"API_TOKENS 的散列条目必须是 {HASH_PREFIX}<64位小写十六进制>，实际 {item!r}"
+                    )
             entries[token] = Principal(user_id=user_id, role=normalize_role(role))
         return cls(entries)
 
@@ -115,15 +168,21 @@ class TokenTable:
         return cls.parse((settings or get_settings()).API_TOKENS)
 
     def resolve(self, token: str) -> Principal:
-        """比对 token。**常数时间比对**，不匹配抛 401。"""
+        """比对 token。**常数时间比对**，不匹配抛 401。
+
+        散列条目比的是 `sha256(token)`，明文条目比的是 token 本身；两条分支
+        都走 `compare_digest`，不用 `==`。
+        """
         if self.empty:
             raise AuthError(
                 "服务端未配置 API_TOKENS，全部请求一律拒绝。"
                 "请在 .env 里配置 `token:user_id:role`（v6 §9.1）",
                 status_code=401,
             )
+        hashed = hash_token(token)
         for known, principal in self._entries.items():
-            if secrets.compare_digest(known, token):
+            candidate = hashed if known.startswith(HASH_PREFIX) else token
+            if secrets.compare_digest(known, candidate):
                 return principal
         raise AuthError("Token 无效", status_code=401)
 
@@ -148,9 +207,12 @@ def parse_bearer(header: str | None) -> str:
 
 
 __all__ = [
+    "HASH_PREFIX",
     "AuthError",
     "Principal",
     "TokenTable",
+    "hash_token",
+    "new_token",
     "parse_bearer",
     "require_role",
 ]

@@ -34,7 +34,9 @@ from typing import Annotated, Any
 from fastapi import APIRouter, File, UploadFile, status
 from sqlalchemy.orm import Session
 
+from backend.api.audit import CurrentAudit
 from backend.api.deps import (
+    CurrentClientIP,
     CurrentIdempotency,
     CurrentPrincipal,
     CurrentSession,
@@ -71,6 +73,24 @@ router = APIRouter(tags=["摄取"])
 #: 上传件的落盘位置。`data/uploads/{ingest_job_id}/原文件名`
 UPLOAD_SUBDIR = "uploads"
 INGEST_KEY_PREFIX = f"{KEY_PREFIX}:ingest"
+
+#: 上传目录权限：属主可进可写，**组与其他人一律没有任何位**（v6 §11.5）。
+DIR_MODE = 0o700
+#: 上传文件权限：属主可读写，**任何人都没有执行位**。
+FILE_MODE = 0o600
+
+
+def harden_upload_dir(directory: Path) -> None:
+    """把上传目录及其父目录收紧到不可执行（v6 §11.5「上传目录不可执行」）。
+
+    目录的执行位（`x`）语义是「可以进入」，不是「可以运行里面的程序」，所以
+    目录本身必须保留属主的 `x`；真正要掐掉的是**文件的执行位**与**其他用户的
+    一切权限**。两件事在这里一起做：目录 0o700、文件 0o600。
+    """
+    directory.chmod(DIR_MODE)
+    parent = directory.parent
+    if parent.name == UPLOAD_SUBDIR:
+        parent.chmod(DIR_MODE)
 
 
 def upload_root(settings: Settings) -> Path:
@@ -174,6 +194,7 @@ def post_ingest(
     idempotency: CurrentIdempotency,
     trace_id: CurrentTraceId,
     files: Annotated[list[UploadFile], File(description="人员/飞机/课目/规则等文件")],
+    audit: CurrentAudit,
 ) -> IngestSubmitView:
     """存盘 + 登记。**不在这里解析**——解析在 `/changeset`。
 
@@ -217,10 +238,15 @@ def post_ingest(
     if directory.exists():
         shutil.rmtree(directory)
     directory.mkdir(parents=True, exist_ok=True)
+    harden_upload_dir(directory)
     paths: list[str] = []
     for name, data in payloads:
         target = directory / name
         target.write_bytes(data)
+        # ★ 上传目录不可执行（v6 §11.5「文件上传」最后一句）。0o600 = 只有属主
+        # 可读写、**任何人都不可执行**。上传的东西是数据，不是程序 —— 万一有一天
+        # 这个目录被某个 Web 服务器映射出去，缺这一行就是「传个 .php 上去就能跑」。
+        target.chmod(FILE_MODE)
         paths.append(str(target))
     _manifest_path(settings, job_id).write_text(
         json.dumps(
@@ -244,6 +270,17 @@ def post_ingest(
         trace_id=trace_id,
     )
     idempotency.remember("ingest", settings.TENANT_ID, digest, view.model_dump(mode="json"))
+    audit.record(
+        action="api.ingest.submit",
+        resource_type="ingest_job",
+        resource_id=job_id,
+        after={
+            "content_sha256": digest,
+            "filenames": [name for name, _ in payloads],
+            "total_bytes": sum(len(data) for _, data in payloads),
+            "staging_dir": str(directory),
+        },
+    )
     return view
 
 
@@ -277,6 +314,9 @@ def post_confirm(
     session: CurrentSession,
     settings: CurrentSettings,
     idempotency: CurrentIdempotency,
+    audit: CurrentAudit,
+    trace_id: CurrentTraceId,
+    client_ip: CurrentClientIP,
 ) -> IngestConfirmView:
     require_role(principal, "scheduler", action="确认数据入库")
     cached = idempotency.lookup("ingest_confirm", settings.TENANT_ID, job_id)
@@ -329,13 +369,32 @@ def post_confirm(
             suggestions=["按 v6 §5.5 裁定表逐条裁决后重试"],
         )
 
+    base_snapshot_id = prepared.base_snapshot_id
     result = commit(
         prepared,
         decision,
         session,
         ruleset_version=load_ruleset(settings.RULESET_PATH).version,
+        trace_id=trace_id,
+        actor_ip=client_ip,
     )
     session.commit()
+    # 这一行与 `pipeline.commit()` 里那行 `ingest.commit` **不重复**：那一行记的是
+    # 快照 A → B 的数据变更（与建快照同一个事务成败与共），这一行记的是「谁从
+    # 哪台机器调了这个端点」。查审计时前者回答「数据怎么变的」，后者回答「谁动的手」。
+    audit.record(
+        action="api.ingest.confirm",
+        resource_type="data_snapshot",
+        resource_id=result.snapshot_id,
+        before={"snapshot_id": base_snapshot_id, "ingest_job_id": job_id},
+        after={
+            "snapshot_id": result.snapshot_id,
+            "ingest_job_id": job_id,
+            "approver": body.approver,
+            "resolutions": dict(body.resolutions),
+            "answers": dict(body.answers),
+        },
+    )
     view = IngestConfirmView(
         snapshot_id=result.snapshot_id,
         table_counts=result.table_counts,

@@ -159,15 +159,16 @@ if curl -sf "http://$OLLAMA_HOST/api/version" >/dev/null 2>&1; then
   ok "Ollama 可连，version=$(curl -s "http://$OLLAMA_HOST/api/version" | tr -d '{}\"')"
   MODELS=$(curl -s "http://$OLLAMA_HOST/api/tags" | tr ',' '\n' | grep -o '"name":"[^"]*"' | cut -d'"' -f4)
   if echo "$MODELS" | grep -qx "$FTS_LLM_MODEL"; then
-    # Ollama v0.6.8 的 /api/show 不返回 digest，改用 manifest 文件的 sha256
-    # （与 `ollama list` 的 ID 列同源）。
-    MF="$OLLAMA_MODELS/manifests/registry.ollama.ai/library/${FTS_LLM_MODEL%%:*}/${FTS_LLM_MODEL##*:}"
-    DIGEST=""
-    [ -f "$MF" ] && DIGEST="sha256:$(sha256sum "$MF" | awk '{print $1}')"
-    ok "模型 $FTS_LLM_MODEL 已就位，digest=${DIGEST:0:16}…"
-    EXPECT=$(grep -E '^LLM_MODEL_DIGEST=' "$FTS_ROOT/.env.example" 2>/dev/null | cut -d= -f2)
-    if [ -n "$EXPECT" ] && [ -n "$DIGEST" ] && [ "$EXPECT" != "$DIGEST" ]; then
-      bad "模型 digest 与 .env.example 不符（期望 $EXPECT）—— 模型可能已被替换"
+    # 模型完整性（v6 §11.5）。**判据不写在这里** —— 体检与应用启动共用
+    # `backend/core/integrity.py` 的同一份实现，两边各写一套的结果是算法一旦
+    # 分叉、其中一边就变成橡皮图章。`--require` 让它在 LLM_PROVIDER=mock 时
+    # 也照样校验（体检的职责就是看真机状态）。
+    if DIGEST_OUT=$(conda run -n "$FTS_PY_ENV" python -m backend.core.integrity --require 2>&1); then
+      ok "$(echo "$DIGEST_OUT" | head -1)"
+      echo "$DIGEST_OUT" | tail -n +2 | sed 's/^/   /'
+    else
+      bad "$(echo "$DIGEST_OUT" | head -1)"
+      echo "$DIGEST_OUT" | tail -n +2 | sed 's/^/   /'
     fi
   else
     bad "模型 $FTS_LLM_MODEL 未拉取（跑 pull_models.sh）"

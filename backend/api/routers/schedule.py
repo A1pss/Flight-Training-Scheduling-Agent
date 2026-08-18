@@ -38,6 +38,7 @@ from typing import Literal
 from fastapi import APIRouter, status
 from fastapi.responses import FileResponse
 
+from backend.api.audit import AuditRecorder, CurrentAudit
 from backend.api.deps import (
     CurrentIdempotency,
     CurrentJobs,
@@ -60,6 +61,7 @@ from backend.api.service import (
     submit_run,
 )
 from backend.core.errors import RequiredInputMissingError, ScheduleLockedError
+from backend.graph.state import FTSState
 from backend.graph.state import get as state_get
 from backend.schemas.api import (
     DecisionRequest,
@@ -88,6 +90,7 @@ def post_schedule(
     runner: CurrentRunner,
     settings: CurrentSettings,
     today: CurrentToday,
+    audit: CurrentAudit,
 ) -> JobSubmitView:
     require_role(principal, "scheduler", action="提交排班")
     if body.relaxation_tier and not principal.can_authorize_tier(body.relaxation_tier):
@@ -112,7 +115,7 @@ def post_schedule(
         settings=settings,
         today=today,
     )
-    return submit_run(
+    submitted = submit_run(
         ctx,
         scope="schedule",
         idem_token=token,
@@ -127,6 +130,20 @@ def post_schedule(
         # ★ FTS-4001 降级路径：这条路上一次 LLM 都不调
         use_llm=False,
     )
+    audit.record(
+        action="api.schedule.submit",
+        resource_type="run",
+        resource_id=submitted.trace_id,
+        after={
+            "job_id": submitted.job_id,
+            "snapshot_id": snapshot,
+            "week_start": week_start.isoformat(),
+            "iso_week": iso_week_of(week_start),
+            "relaxation_tier": body.relaxation_tier,
+            "idempotent_hit": submitted.idempotent_hit,
+        },
+    )
+    return submitted
 
 
 def _structured_message(body: ScheduleRequest) -> str:
@@ -164,6 +181,7 @@ def _decide(
     body: DecisionRequest,
     principal: Principal,
     ctx: SubmitContext,
+    audit: AuditRecorder,
 ) -> DecisionView:
     """决策一次运行。
 
@@ -174,7 +192,7 @@ def _decide(
     """
     record = _record_or_404(ctx.jobs, trace_id)
     snapshot_id = str(record.extra.get("snapshot_id", ""))
-    _, awaiting = read_run_state(trace_id, today=ctx.today, snapshot_id=snapshot_id)
+    state, awaiting = read_run_state(trace_id, today=ctx.today, snapshot_id=snapshot_id)
     if not awaiting:
         raise ScheduleLockedError(
             f"运行 {trace_id} 当前不在人工门禁上（状态 {record.status}），无法{decision}",
@@ -204,6 +222,24 @@ def _decide(
         iso_week=record.iso_week,
         decision=human.model_dump(mode="json"),
     )
+    # ★ 审计（v6 §11.5）：`before` 是**决策前那次运行的状态**，`after` 是决策
+    # 本身。这样 diff 里能直接读出「本来停在 AWAITING_HUMAN 的 14 架次方案，
+    # 被 P01 从 10.x.x.x 批了」。归档本身的数据变更由 `commit_plan` 那一路负责。
+    audit.record(
+        action=f"api.schedule.{decision.lower()}",
+        resource_type="run",
+        resource_id=trace_id,
+        before=_run_fingerprint(state, record, awaiting=awaiting),
+        after={
+            "status": "DECIDED",
+            "awaiting_human": False,
+            "decision": decision,
+            "comment": body.comment,
+            "authorized_tiers": list(body.authorized_tiers),
+            "decided_by": principal.user_id,
+            "job_id": submitted.job_id,
+        },
+    )
     return DecisionView(
         job_id=submitted.job_id,
         trace_id=trace_id,
@@ -212,6 +248,25 @@ def _decide(
         idempotent_hit=submitted.idempotent_hit,
         poll_url=poll_url(submitted.job_id),
     )
+
+
+def _run_fingerprint(state: FTSState, record: JobRecord, *, awaiting: bool) -> dict[str, object]:
+    """决策前那次运行的可审计指纹。
+
+    **只取能一眼看懂的几个量**（状态、方案 id、架次数、求解状态、快照），
+    不把整个 `SchedulePlan` 塞进审计行 —— 完整方案在 `data/plans/` 的归档里，
+    审计表的职责是「谁在什么状态下做了什么决定」，不是再存一份方案。
+    """
+    plan = state_get(state, "plan", None)
+    return {
+        "status": str(record.status),
+        "awaiting_human": awaiting,
+        "snapshot_id": str(record.extra.get("snapshot_id", "")),
+        "iso_week": record.iso_week,
+        "plan_id": getattr(plan, "plan_id", "") if plan is not None else "",
+        "sorties": len(getattr(plan, "sorties", ()) or ()) if plan is not None else 0,
+        "solver_status": str(state_get(state, "solver_status", "") or ""),
+    }
 
 
 @router.post(
@@ -230,6 +285,7 @@ def post_approve(
     runner: CurrentRunner,
     settings: CurrentSettings,
     today: CurrentToday,
+    audit: CurrentAudit,
 ) -> DecisionView:
     require_role(principal, "director", action="确认并归档排班方案")
     for tier in body.authorized_tiers:
@@ -246,7 +302,14 @@ def post_approve(
         settings=settings,
         today=today,
     )
-    return _decide(decision="APPROVE", trace_id=trace_id, body=body, principal=principal, ctx=ctx)
+    return _decide(
+        decision="APPROVE",
+        trace_id=trace_id,
+        body=body,
+        principal=principal,
+        ctx=ctx,
+        audit=audit,
+    )
 
 
 @router.post(
@@ -265,6 +328,7 @@ def post_reject(
     runner: CurrentRunner,
     settings: CurrentSettings,
     today: CurrentToday,
+    audit: CurrentAudit,
 ) -> DecisionView:
     """驳回。**不自动重排**——驳回的理由要人来定（v6 §7.2.4 那张表）。"""
     require_role(principal, "scheduler", action="驳回排班方案")
@@ -276,7 +340,14 @@ def post_reject(
         settings=settings,
         today=today,
     )
-    return _decide(decision="REJECT", trace_id=trace_id, body=body, principal=principal, ctx=ctx)
+    return _decide(
+        decision="REJECT",
+        trace_id=trace_id,
+        body=body,
+        principal=principal,
+        ctx=ctx,
+        audit=audit,
+    )
 
 
 @router.get(
