@@ -1,8 +1,8 @@
 """FTS 错误码与错误契约（v6 §9.3）。
 
-v6 §9.3 定义了 15 个错误码，本模块一个不少地登记，并为每个码固化
-「默认严重度 / 所属阶段 / 是否可重试」三个属性——这三者在 v6 的表格里是
-散落在「行为」列的散文，落到代码里必须是可判定的字段。
+v6 §9.3 定义了 16 个错误码（15 条原表 + M6 新增的 `FTS-4005`，`Z-24`），本模块
+一个不少地登记，并为每个码固化「默认严重度 / 所属阶段 / 是否可重试」三个属性
+——这三者在 v6 的表格里是散落在「行为」列的散文，落到代码里必须是可判定的字段。
 
 注意 **FTS-2001 的口径在 v6 中已扩展**：由 v5.2 的「数据引用完整性失败」
 扩展为「数据引用完整性失败，**或同一数据源内部的值冲突**」，以承载
@@ -39,11 +39,12 @@ class ErrorCode(StrEnum):
     SNAPSHOT_STALE_ON_RESUME = "FTS-3004"
     REVISION_INFEASIBLE = "FTS-3005"
 
-    # ── 4xxx LLM 侧 ──────────────────────────────────────────────────
+    # ── 4xxx 运行时服务侧（4001~4004 为 LLM 侧，4005 为并发）────────
     LLM_UNAVAILABLE = "FTS-4001"
     LLM_SCHEMA_VIOLATION = "FTS-4002"
     HARNESS_BUDGET_EXCEEDED = "FTS-4003"
     TOOL_PERMISSION_DENIED = "FTS-4004"
+    SCHEDULE_LOCKED = "FTS-4005"
 
     # ── 5xxx 产物 ────────────────────────────────────────────────────
     EXPORT_VERIFY_FAILED = "FTS-5001"
@@ -202,6 +203,21 @@ ERROR_REGISTRY: Final[dict[ErrorCode, ErrorSpec]] = {
             severity="ERROR",
             stage="intent",
             retryable=False,
+        ),
+        ErrorSpec(
+            code=ErrorCode.SCHEDULE_LOCKED,
+            scenario=(
+                "状态冲突：同一 (tenant, week) 已有排班在跑（v6 §9.2 分布式锁），"
+                "或该运行当前不在可决策状态（HITL 时序）"
+            ),
+            behavior=(
+                "立即拒绝并告诉用户是谁在排、还剩多久；"
+                "不排队、不静默覆盖 —— 两个人同时排同一周产出的是两份都『合规』"
+                "但互相矛盾的计划。等对方跑完（或等运行走到人工门禁）再提交即可"
+            ),
+            severity="WARN",
+            stage="solve",
+            retryable=True,
         ),
         ErrorSpec(
             code=ErrorCode.EXPORT_VERIFY_FAILED,
@@ -385,6 +401,26 @@ class ArchitecturalBanError(ToolPermissionDeniedError):
         self.details["violation"] = "architectural_ban"
 
 
+class ScheduleLockedError(FTSError):
+    """同一 `(tenant, week)` 的排班锁被别人持有（v6 §9.2 / `Z-24`）。
+
+    **为什么值得单独一个码**：v6 §9.3 原有的 15 个码里没有「有人正在排这一周」
+    这件事。硬塞进 `FTS-3004`（快照陈旧）会让前端提示成「数据变了，要重解」——
+    而真实情况是「数据没变，只是有人在排」，两者的下一步动作完全不同：前者要
+    重跑，后者要等。业务方 2026-08-18 裁定新增 `FTS-4005`（`Z-24`）。
+
+    `details` 固定带 `lock_key` / `holder` / `ttl_s` 三项，前端据此把话说全：
+    「张三正在排 2026W02，预计还有 47 秒」。
+
+    **同一个码也承载「运行不在可决策状态」**（对一个还在求解的运行按确认）：
+    两者是同一族——都是「现在不能做，等状态变了再来」，都是 `WARN` /
+    `retryable=True` / HTTP 409，用户的下一步都是等。分成两个码只会让前端写
+    两遍同样的提示逻辑。
+    """
+
+    code = ErrorCode.SCHEDULE_LOCKED
+
+
 class EgressDeniedError(FTSError):
     """出网被 `core/http.py` 的 allowlist 拒绝（v6 §11.5 / §12.5.4 E1）。
 
@@ -414,6 +450,7 @@ __all__ = [
     "RequiredInputMissingError",
     "RevisionInfeasibleError",
     "RuleParseError",
+    "ScheduleLockedError",
     "SemanticsUnconfirmedError",
     "Severity",
     "SnapshotStaleError",

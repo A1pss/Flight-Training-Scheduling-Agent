@@ -56,6 +56,13 @@ def _force_mock_provider(
 ) -> Iterator[None]:
     """全局默认 mock provider；**只给集成用例**抬高插桩期求解墙钟。
 
+    ⚠️ **它是函数作用域的，盖不住「在模块/会话 fixture 里跑的求解」。**
+    pytest 先建高作用域的 fixture，那时候这里还没 setenv，`compile_spec` 会把
+    产品默认的 60 s 烤进 `ConstraintSpec.solver_time_limit_s` —— 不带 `--cov`
+    时够用、全量带 `--cov` 时落到 `FEASIBLE`，看起来像求解器回归。
+    在模块 fixture 里跑求解的测试要**自己**把预算设上，
+    照抄 `tests/integration/test_api_live.py::instrumented_solver_budget`（M6 实测踩过）。
+
     ⚠️ **墙钟只对 `@pytest.mark.integration` 生效，不是全局 setenv。**
     全局设了会连 `test_core_config_logging.py::test_solver_budget_defaults`
     一起改掉——那条守的正是「产品默认 60s」，而 `Settings(_env_file=None)`

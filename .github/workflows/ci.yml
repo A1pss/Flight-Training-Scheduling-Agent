@@ -122,6 +122,11 @@ jobs:
       - name: 5/6 lint-imports（三条依赖禁令）
         run: lint-imports
 
+      # ⚠️ `tests/e2e/` 需要 chromium + 真起 uvicorn/streamlit，**CI 上一律跳过**
+      # （业务方 2026-08-18 选定，与 `@pytest.mark.ollama` 同一口径）：这里不装
+      # 浏览器，`tests/e2e/conftest.py::chromium` 会因 launch 失败而 skip，
+      # 并把原因打印出来 —— 不是「绿着但什么都没跑」。
+      # 本机跑法：`python -m playwright install chromium && pytest tests/e2e`。
       - name: 6/6 pytest + 覆盖率门禁
         run: pytest -q --cov=backend --cov-report=term-missing --cov-fail-under=80
 
