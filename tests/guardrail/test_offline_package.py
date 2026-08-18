@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -331,3 +332,92 @@ def test_golden_fingerprint_tool_refuses_unreproducible_states() -> None:
     )
     assert 'REPRODUCIBLE_STATUSES = ("OPTIMAL", "INFEASIBLE")' in text
     assert "return 1" in text
+
+
+def test_builder_works_without_a_conda_env(tmp_path: Path) -> None:
+    """★ 构建包**不能硬依赖名为 `schedule` 的 conda 环境**。
+
+    CI 上根本没有那个环境（用的是 setup-python 装的解释器），而「打个交付包」
+    这件事只需要「一个装了本项目依赖的 Python」。写死 conda 的第一版在 CI 上以
+    `EnvironmentLocationNotFound: Not a conda environment` 全线红 ——
+    **而本机全绿**，因为本机有那个环境。这正是 `CLAUDE.md §6` 那条
+    「验证时的视角必须与 CI 的视角一致」。
+
+    这里用一个不存在的环境名把 CI 的视角复现出来。
+    """
+    env = {
+        **os.environ,
+        "FTS_PY_ENV": "no-such-env-for-this-test",
+        "FTS_RELEASE_DIR": str(tmp_path),
+    }
+    env.pop("CONDA_PREFIX", None)
+    env.pop("CONDA_DEFAULT_ENV", None)
+    argv = [
+        "bash",
+        str(BUILDER),
+        "--skip-wheels",
+        "--skip-models",
+        "--skip-images",
+        "--skip-conda-pkgs",
+    ]
+    result = subprocess.run(  # noqa: S603
+        argv,
+        cwd=str(PROJECT_ROOT),
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, (
+        "没有 conda 环境时构建就挂了：\n" + result.stdout[-3000:] + result.stderr[-2000:]
+    )
+    pkg = tmp_path / "fts-release-v1.0.0"
+    assert (pkg / "conda" / "environment.yml").is_file()
+    assert "合成版" in result.stdout, (
+        "回落到合成 environment.yml 时要说出来，不许伪装成 conda 导出的"
+    )
+
+
+def test_package_always_records_the_python_version(built_package: Path) -> None:
+    """★ `conda/PYTHON_VERSION` **任何构建形态下都要有**。
+
+    `wheels/` 里的编译包带 ABI tag，install.sh 必须据此挑解释器。
+    第一版把这个文件写在 `--skip-conda-pkgs` 的分支里 —— 跳过大件时包里就没有它，
+    而那正是「快速打个包试试」最常用的姿势。
+    """
+    recorded = (built_package / "conda" / "PYTHON_VERSION").read_text(encoding="utf-8").strip()
+    assert re.fullmatch(r"3\.\d+", recorded), f"版本串形态不对：{recorded!r}"
+
+    # 与 wheels 的 ABI tag 对得上（跳过大件的包里没有 wheels，那就只查形态）
+    wheels = sorted((built_package / "wheels").glob("*.whl"))
+    if wheels:
+        expected_tag = "cp" + recorded.replace(".", "")
+        tagged = [w.name for w in wheels if "cp3" in w.name]
+        assert any(expected_tag in name for name in tagged), (
+            f"PYTHON_VERSION={recorded} 与 wheels 的 ABI tag 对不上"
+        )
+
+
+def test_installer_refuses_a_mismatched_interpreter() -> None:
+    """★ 挑不到匹配版本的解释器时**明确失败**，不拿别的版本凑合往下装。
+
+    凑合的后果是报「No matching distribution found for aiohttp」——
+    与真实原因（ABI 不匹配）毫无关系，运维会往依赖上查一整天。
+    """
+    text = INSTALLER.read_text(encoding="utf-8")
+    assert "PYTHON_VERSION" in text
+    assert "本机找不到 Python" in text
+    assert "不要用别的小版本硬装" in text
+
+
+def test_installer_never_writes_into_the_delivery_package() -> None:
+    """★ 交付包是**只读的既成事实**。
+
+    第一版把 `CONDA_PKGS_DIRS` 直接指向包内的 `conda/pkgs`，conda 把包解压了进去
+    —— 交付包里凭空多出 5611 个文件，`CHECKSUMS.sha256` 当场失效。
+    判据：`CONDA_PKGS_DIRS` 的第一项必须是安装目标下的可写目录。
+    """
+    text = INSTALLER.read_text(encoding="utf-8")
+    assert 'CONDA_PKGS_DIRS="$APP_DIR/.data/conda-pkgs:$PKG_ROOT/conda/pkgs"' in text, (
+        "conda 的解压目录必须在安装目标下，包内那份只能作为只读来源"
+    )

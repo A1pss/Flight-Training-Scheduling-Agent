@@ -48,8 +48,22 @@ PY_ENV="${FTS_PY_ENV:-schedule}"
 # shellcheck disable=SC1091
 [ -f "$ROOT/deploy/native/env.sh" ] && . "$ROOT/deploy/native/env.sh" >/dev/null 2>&1 || true
 
-ENV_BIN="$(conda run -n "$PY_ENV" python -c 'import sys,pathlib;print(pathlib.Path(sys.executable).parent)' | tr -d "\r" | tail -1)"
-[ -x "$ENV_BIN/python" ] || { echo "❌ 解析不出 $PY_ENV 的 bin 目录" >&2; exit 1; }
+# 构建用的解释器。**conda 环境不是硬前提** —— CI 上根本没有 `schedule` 这个
+# 环境（用的是 setup-python 装的解释器），而构建包这件事只需要「一个装了本项目
+# 依赖的 Python」。写死 conda 的第一版在 CI 上以
+# `EnvironmentLocationNotFound: Not a conda environment` 全线红。
+# ⚠️ 末尾的 `|| true` 不能省：`set -euo pipefail` 下，`conda run` 失败会让整条
+# 管道失败，而命令替换的失败会直接**在这一行就把脚本杀掉** —— 下面那段回落
+# 逻辑一行都跑不到（实测：CI 上 exit 127、日志全空，看不出任何原因）。
+ENV_BIN="$(conda run -n "$PY_ENV" python -c 'import sys,pathlib;print(pathlib.Path(sys.executable).parent)' 2>/dev/null | tr -d "\r" | tail -1 || true)"
+if [ -z "${ENV_BIN:-}" ] || [ ! -x "$ENV_BIN/python" ]; then
+  FALLBACK_PY="$(command -v python3 || command -v python || true)"
+  [ -x "$FALLBACK_PY" ] || { echo "❌ 找不到可用的 Python 解释器" >&2; exit 1; }
+  ENV_BIN="$(dirname "$FALLBACK_PY")"
+  HAVE_CONDA_ENV=0
+else
+  HAVE_CONDA_ENV=1
+fi
 
 SKIP_MODELS=0; SKIP_WHEELS=0; SKIP_IMAGES=0; SKIP_CONDA_PKGS=0
 for arg in "$@"; do
@@ -95,10 +109,32 @@ git rev-parse HEAD > "$PKG/src/COMMIT"
 
 # ── ③ conda 环境导出 ────────────────────────────────────────────────
 hdr "③ conda 环境"
-conda env export -n "$PY_ENV" --no-builds > "$PKG/conda/environment.yml" 2>/dev/null \
-  || conda env export -n "$PY_ENV" > "$PKG/conda/environment.yml"
 cp requirements.txt requirements.in "$PKG/conda/" 2>/dev/null || true
-note "environment.yml（$(grep -c '^\s*-' "$PKG/conda/environment.yml") 条依赖）"
+
+# ★ Python 版本先写：`wheels/` 里的编译包带 ABI tag（cp311），install.sh 必须
+# 据此挑解释器。**它与「有没有 conda 环境」无关，所以写在最外层**
+# （第一版写在 `--skip-conda-pkgs` 的分支里，跳过大件时包里就没有这个文件了）。
+"$ENV_BIN/python" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' \
+  > "$PKG/conda/PYTHON_VERSION"
+REQ_PY="$(cat "$PKG/conda/PYTHON_VERSION")"
+note "wheels 对应 Python $REQ_PY（写入 conda/PYTHON_VERSION）"
+
+if [ "$HAVE_CONDA_ENV" -eq 1 ] && conda env export -n "$PY_ENV" --no-builds \
+     > "$PKG/conda/environment.yml" 2>/dev/null; then
+  note "environment.yml（$(grep -c '^\s*-' "$PKG/conda/environment.yml") 条依赖，conda env export）"
+else
+  # 没有 conda 环境时合成一份**最小但合法**的 environment.yml：只钉 Python 版本，
+  # 依赖交给 `wheels/`（install.sh 无论走哪条路，依赖都从那里装）。
+  # 合成的事实写在文件头一行，**不伪装成 conda 导出的**。
+  {
+    printf '# 本文件由 build_package.sh 合成（构建机上没有名为 %s 的 conda 环境）。\n' "$PY_ENV"
+    printf '# 只钉 Python 版本；全部依赖来自同包的 wheels/（install.sh 用 --no-index 装）。\n'
+    printf 'name: %s\n' "$PY_ENV"
+    printf 'channels:\n  - defaults\n'
+    printf 'dependencies:\n  - python=%s\n  - pip\n' "$REQ_PY"
+  } > "$PKG/conda/environment.yml"
+  note "environment.yml（合成版，只钉 python=$REQ_PY —— 构建机上没有 conda 环境 $PY_ENV）"
+fi
 if [ "$SKIP_CONDA_PKGS" -eq 0 ]; then
   # ⚠️ **用 python 解析 `conda info --json`，不要用 sed**：`pkgs_dirs` 是个数组，
   # 而 conda 的 JSON 缩进形态会随版本变 —— 实测那条 sed 一个都没匹配到，
@@ -149,15 +185,6 @@ EOF
     exit 1
   fi
   note "本地包缓存 $TOTAL_PKGS 个（$(du -sh "$PKG/conda/pkgs" | cut -f1)），来自：$(echo "$CANDIDATE_DIRS" | tr '\n' ' ')"
-
-  # ★ 记录 wheels 对应的 Python 版本。**这是离线安装能不能成的关键前提**：
-  # `wheels/` 里的编译包带 ABI tag（cp311），装到别的小版本上会以
-  # 「No matching distribution found」失败 —— 而那个报错完全看不出真实原因
-  # （M8 实测踩过：venv 回落用了 conda base 的 3.14，报的是 aiohttp 找不到）。
-  "$ENV_BIN/python" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' \
-    > "$PKG/conda/PYTHON_VERSION"
-  REQ_PY="$(cat "$PKG/conda/PYTHON_VERSION")"
-  note "wheels 对应 Python $REQ_PY（写入 conda/PYTHON_VERSION）"
 
   # 目标机上如果还没有 conda 环境，install.sh 需要一个匹配的解释器。它有三个
   # 来源：本包的 conda 缓存里带 python 包、目标机已有 conda 环境、系统 python。
