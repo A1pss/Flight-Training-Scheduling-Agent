@@ -34,6 +34,7 @@ from backend.datasets.schemas import (
     GoldenCaseItem,
     MemoryItem,
     NLItem,
+    OodItem,
     PlanScenarioItem,
     ToolCallItem,
     TrajectoryItem,
@@ -52,6 +53,7 @@ REGISTRY: Final[dict[str, type[DatasetItem]]] = {
     "tool_calls_200": ToolCallItem,
     "plan_scenarios": PlanScenarioItem,
     "golden_40": GoldenCaseItem,
+    "ood_200": OodItem,
 }
 
 

@@ -29,6 +29,7 @@ from tests.datasets import (
     memory_catalog,
     memory_probes,
     nl_catalog,
+    ood_catalog,
     tool_call_catalog,
     trajectory_catalog,
 )
@@ -425,6 +426,65 @@ def write_golden_40() -> None:
     print(f"✅ golden_40 {len(items)} 条 · {loaded.sha256[:16]}… · {loaded.strata}")
 
 
+def write_ood_200() -> None:
+    """领域外通用能力回归集。判定口径见 backend/datasets/ood_judge.py。"""
+    rows = ood_catalog.build()
+    directory = dataset_dir("ood_200")
+    sha = write_jsonl(directory / "items.jsonl", rows)
+    strata: dict[str, int] = {}
+    for row in rows:
+        key = str(row["layer"])
+        strata[key] = strata.get(key, 0) + 1
+
+    previous = _previous(directory)
+    keep = previous is not None and previous.sha256 == sha
+    manifest = DatasetManifest(
+        name="ood_200",
+        version="v1",
+        stage=previous.stage if (keep and previous is not None) else "draft",
+        item_count=len(rows),
+        strata=dict(sorted(strata.items())),
+        sha256=sha,
+        generated_at=(
+            previous.generated_at
+            if keep and previous
+            else datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+        ),
+        method=(
+            "全部自建（§15.5：不使用任何外部数据集）。常识/语言/拒绝/多轮为手写，"
+            "指令跟随与算术为程序生成（答案由构造过程直接给出）。"
+            "**全部可程序判定**，五种判据无一依赖 LLM。"
+            "选择题的正确项位置经程序均衡到 A/B/C/D 各四分之一。"
+        ),
+        spec_refs=["v6 §15.4", "v6 §15.5", "v6 §12.4.1（判定口径的分界）"],
+        known_limitations=[
+            "拒绝层用的是**规则匹配**（命中拒绝标记 ∧ 未命中 forbidden），不如人判得准。"
+            "它的用途是配对回归 —— 同题、同判定器、基线 vs 微调，判定器的系统性偏差在 "
+            "McNemar 的配对差分里会抵消。**报告里必须写清这一点**，不能让它看起来像"
+            "一个绝对水平的分数。",
+            "「领域外」由 DOMAIN_TERMS 红线保证（18 个领域词一个都不许出现，加载期强制）。"
+            "但这只挡得住**字面**重合；如果微调让模型整体更倾向结构化短输出，"
+            "指令跟随层可能反而变好 —— 那不是遗忘，报数时要照实说。",
+            "200 条的量级决定了单个子层只有 20~40 条，子层的置信区间很宽。"
+            "所以门槛设在整体指标上，子层下降 >8 个点只作**警示**不作否决。",
+            "本集**不复用 §12.4.1 的 32B judge** —— 那个口径至今未经业务方裁定，"
+            "按铁律 5 不得自行套用（v6 §12.4.1 末尾原文）。",
+        ],
+        context={
+            "ruling": "业务方 2026-08-19 裁定 O-A：确定性判据 + McNemar 配对精确检验",
+            "threshold": "整体准确率绝对下降 ≤3 个百分点 且 p ≥ 0.05（两个条件是「且」）",
+            "layer_warning": "任一子层下降 >8 个百分点单列警示，不否决",
+            "judge_impl": "backend/datasets/ood_judge.py（grade / mcnemar_exact / regression_verdict）",
+        },
+        approved_by=previous.approved_by if keep and previous else None,
+        approved_at=previous.approved_at if keep and previous else None,
+    )
+    write_manifest(directory, manifest)
+    (directory / "card.md").write_text(render_card(manifest), encoding="utf-8", newline="\n")
+    loaded, items = load_eval_dataset("ood_200")
+    print(f"✅ ood_200 {len(items)} 条 · {loaded.sha256[:16]}… · {loaded.strata}")
+
+
 WRITERS = {
     "nl_360": write_nl_360,
     "memory_320": write_memory_320,
@@ -432,6 +492,7 @@ WRITERS = {
     "tool_calls_200": write_tool_calls_200,
     "plan_scenarios": write_plan_scenarios,
     "golden_40": write_golden_40,
+    "ood_200": write_ood_200,
 }
 
 

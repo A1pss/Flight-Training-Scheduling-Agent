@@ -568,6 +568,119 @@ class GoldenCaseItem(DatasetItem):
         return self
 
 
+# ══════════════════════════════════════════════════════════════════════
+# ood_200（v6 §15.4 通用能力回归 / §15.5 治理）
+# ══════════════════════════════════════════════════════════════════════
+
+#: 六层。**全部自建**（§15.5：不使用任何外部数据集），且**全部可程序判定**
+#: —— 业务方 2026-08-19 裁定 O-A：判定用确定性判据 + McNemar 配对检验，
+#: 不复用 §12.4.1 的 32B judge（那个口径未经裁定，铁律 5）。
+OodLayer = Literal[
+    "commonsense",
+    "language",
+    "instruction",
+    "reasoning",
+    "refusal",
+    "multiturn",
+]
+
+#: 五种判据，**没有一种依赖 LLM**。
+#:
+#: - `multiple_choice`：抽回答里的选项字母，与 `answer` 比
+#: - `exact_string`：归一化后与 `answer` 或 `accepted` 之一精确相等
+#: - `numeric`：抽数值，与 `answer` 比（`tolerance` 内算对）
+#: - `regex`：整段回答必须匹配 `pattern`（格式指令用这一种）
+#: - `refusal`：必须命中拒绝标记，且不得命中 `forbidden`
+OodJudge = Literal["multiple_choice", "exact_string", "numeric", "regex", "refusal"]
+
+#: 领域内词表。**ood 条目里一个都不许出现** —— 出现了它就不是领域外样本，
+#: 而微调正是在这些词上做的，用它们测「有没有灾难性遗忘」等于自证。
+DOMAIN_TERMS: Final[tuple[str, ...]] = (
+    "排班",
+    "架次",
+    "课目",
+    "带飞",
+    "单飞",
+    "教员",
+    "学员",
+    "跑道",
+    "空域",
+    "机型",
+    "训练窗",
+    "先修",
+    "松弛",
+    "复训",
+    "mission",
+    "JL-8",
+    "JL-9",
+    "RWY",
+)
+
+
+class OodItem(DatasetItem):
+    """`ood_200` 的一条领域外样本（§15.4 的「通用能力回归」）。"""
+
+    item_id: str = Field(pattern=r"^OOD-[A-Z]{3}-\d{3}$")
+    layer: OodLayer
+    judge: OodJudge
+    #: 单轮提问；多轮时这里是第一轮，其余在 `follow_ups`
+    prompt: str = Field(min_length=1)
+    follow_ups: list[str] = Field(default_factory=list)
+    options: list[str] = Field(default_factory=list)
+    #: 正确答案。选择题填选项字母；数值题填数字的字符串形态
+    answer: str = ""
+    #: 同样算对的等价表述（`exact_string` 用）
+    accepted: list[str] = Field(default_factory=list)
+    #: `regex` 判据的完整匹配模式
+    pattern: str | None = None
+    #: `numeric` 判据的容差
+    tolerance: float | None = None
+    #: `refusal` 判据：出现了就算没拒绝（比如真把配方写出来了）
+    forbidden: list[str] = Field(default_factory=list)
+    rationale: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _judge_requirements(self) -> OodItem:
+        """每种判据各自的必填项，以及一条贯穿全集的红线。"""
+        if self.judge == "multiple_choice":
+            if len(self.options) != 4:
+                raise ValueError(f"{self.item_id}：选择题要 4 个选项，实际 {len(self.options)}")
+            if self.answer not in {"A", "B", "C", "D"}:
+                raise ValueError(f"{self.item_id}：选择题答案必须是 A/B/C/D，实际 {self.answer!r}")
+        if self.judge == "numeric":
+            try:
+                float(self.answer)
+            except ValueError as exc:
+                raise ValueError(
+                    f"{self.item_id}：数值题的答案必须能转成数，实际 {self.answer!r}"
+                ) from exc
+        if self.judge == "regex":
+            if not self.pattern:
+                raise ValueError(f"{self.item_id}：regex 判据必须给 pattern")
+            try:
+                re.compile(self.pattern)
+            except re.error as exc:
+                raise ValueError(f"{self.item_id}：pattern 不是合法正则（{exc}）") from exc
+        if self.judge == "exact_string" and not self.answer:
+            raise ValueError(f"{self.item_id}：exact_string 判据必须给 answer")
+        if self.judge == "refusal" and not self.forbidden:
+            raise ValueError(
+                f"{self.item_id}：refusal 判据必须给 forbidden —— "
+                "只查「有没有说抱歉」是查不出「嘴上拒绝、正文照给」的"
+            )
+        if (self.layer == "multiturn") != bool(self.follow_ups):
+            raise ValueError(f"{self.item_id}：多轮层与 follow_ups 互为充要")
+
+        # ★ 贯穿全集的红线：领域词一个都不许出现
+        haystack = " ".join([self.prompt, *self.follow_ups, *self.options, self.answer])
+        for term in DOMAIN_TERMS:
+            if term in haystack:
+                raise ValueError(
+                    f"{self.item_id}：出现了领域内词「{term}」—— 那它就不是领域外样本了"
+                )
+        return self
+
+
 __all__ = [
     "GRAPH_NODES",
     "PIPELINE_STAGES",
@@ -582,6 +695,9 @@ __all__ = [
     "NLItem",
     "NLLayer",
     "NLSlots",
+    "OodItem",
+    "OodJudge",
+    "OodLayer",
     "PlanScenarioItem",
     "ProbeKind",
     "ScenarioCategory",
