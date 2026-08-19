@@ -1038,6 +1038,7 @@ def layer_query() -> list[Draft]:
                 "answer",
                 f"资质/到期查询。{why}。",
                 persons=(pid,),
+                week=W02 if "这周" in surface else None,
             )
         )
 
@@ -1115,8 +1116,12 @@ def layer_query() -> list[Draft]:
                 "query",
                 "answer",
                 f"维护计划查询（{plane}，{AIRCRAFT[plane]}）。基准周内只有 AC73 在 2026-01-09 "
-                f"全天定检；其余七架应答「无」，**不能编一个出来**。",
+                f"全天定检；其余七架应答「无」，**不能编一个出来**。"
+                f"★ 句中的「这周」是可解析的周表述，**槽位必须标出来** —— "
+                f"W11 抽查时正是在这一族上发现了漏标（查询类也会有周次，"
+                f"不是只有排班类才有）。",
                 aircraft=(plane,),
+                week=W02,
             )
         )
 

@@ -1,6 +1,6 @@
 {
-  "approved_at": "2026-08-19",
-  "approved_by": "Alps",
+  "approved_at": null,
+  "approved_by": null,
   "context": {
     "baseline_week": "2026W02",
     "eval_today": "2026-01-05",
@@ -9,7 +9,7 @@
     "ruling_typo": "唯一候选就执行；候选不唯一则反问（业务方 2026-08-19）",
     "week_format": "YYYYWww（与 backend.schemas.intent 的 iso_week 正则一致）"
   },
-  "generated_at": "2026-08-19T15:30:43Z",
+  "generated_at": "2026-08-19T19:35:30Z",
   "item_count": 360,
   "items_file": "items.jsonl",
   "known_limitations": [
@@ -20,7 +20,7 @@
   ],
   "method": "Claude Code 逐条构造（重复度高的层用程序化组合保证覆盖齐全）→ Alps 逐批人工复核。实体一律取自 v6 §1.3 基准实体表；构造代码见 tests/datasets/nl_catalog.py。",
   "name": "nl_360",
-  "sha256": "327a799c2d7ff166e98e255509aa101c00d44a099c0c3342bfd3fb4fd53e2f16",
+  "sha256": "20b105c23a78ec348424d7b6b350e8cb55f4f9c8038286373e0a48a8a5345ae1",
   "spec_refs": [
     "v6 §12.2",
     "v6 §1.3",
@@ -29,7 +29,7 @@
     "v6 §5.4",
     "v6 §12.5.3"
   ],
-  "stage": "approved",
+  "stage": "draft",
   "strata": {
     "adversarial": 60,
     "ambiguous": 60,

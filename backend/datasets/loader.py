@@ -32,6 +32,7 @@ from backend.datasets.manifest import (
 from backend.datasets.schemas import (
     DatasetItem,
     GoldenCaseItem,
+    JudgeCalibItem,
     MemoryItem,
     NLItem,
     OodItem,
@@ -56,6 +57,7 @@ REGISTRY: Final[dict[str, type[DatasetItem]]] = {
     "golden_40": GoldenCaseItem,
     "ood_200": OodItem,
     "sft_seed": SftSeedItem,
+    "judge_calib_50": JudgeCalibItem,
 }
 
 

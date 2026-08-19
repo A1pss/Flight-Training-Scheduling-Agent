@@ -25,6 +25,7 @@ from backend.datasets.manifest import (
     write_manifest,
 )
 from tests.datasets import (
+    calib_catalog,
     legacy_catalog,
     memory_catalog,
     memory_probes,
@@ -542,6 +543,80 @@ def write_sft_seed() -> None:
     print(f"✅ sft_seed {len(items)} 条 · {loaded.sha256[:16]}… · {loaded.strata}")
 
 
+def write_judge_calib_50() -> None:
+    """judge 一致性标注集。**标签留空，由业务方人工标注。**
+
+    依赖 `answers_v1.jsonl`（320 条探针的冻结回答）—— 那份文件由
+    `tests/datasets/run_probes.py` 用真 14B 跑出来，不在这里生成。
+    """
+    directory = dataset_dir("judge_calib_50")
+    answers_path = directory / "answers_v1.jsonl"
+    if not answers_path.exists():
+        raise SystemExit(
+            f"缺少 {answers_path} —— 先跑：\n"
+            "  PYTHONPATH=. VECTOR_BACKEND=chroma EMBED_PROVIDER=bge LLM_PROVIDER=ollama \\\n"
+            "    python tests/datasets/run_probes.py --out " + str(answers_path)
+        )
+    answers = calib_catalog.load_answers(answers_path)
+    rows = calib_catalog.build(answers)
+    sha = write_jsonl(directory / "items.jsonl", rows)
+    strata: dict[str, int] = {}
+    for row in rows:
+        key = str(row["stratum"])
+        strata[key] = strata.get(key, 0) + 1
+
+    synthetic = sum(1 for row in rows if row["is_synthetic_negative"])
+    previous = _previous(directory)
+    keep = previous is not None and previous.sha256 == sha
+    manifest = DatasetManifest(
+        name="judge_calib_50",
+        version="v1",
+        stage=previous.stage if (keep and previous is not None) else "draft",
+        item_count=len(rows),
+        strata=dict(sorted(strata.items())),
+        sha256=sha,
+        generated_at=(
+            previous.generated_at
+            if keep and previous
+            else datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+        ),
+        method=(
+            "从 320 条探针的**冻结回答**（answers_v1.jsonl，真 14B / 温度 0 / seed 42 / "
+            "chroma + bge-m3 + bge-reranker）分层抽 50："
+            "高风险 25（三条确定性代理信号挑出，不是 judge 挑的）+ 常规 25（按 10/9/6 分层随机，"
+            "seed 42）。断言分解优先用 M5 逐句核验器已切好的断言。"
+            "**Claude Code 只做抽样与分解，标签栏交付时全空。**"
+        ),
+        spec_refs=["v6 §12.4.1", "v6 §12.7 必述项 4", "v6 §6.5.2", "SPEC_DECISIONS §D"],
+        known_limitations=[
+            f"含 {synthetic} 条**受控故障注入**造的合成负例（真实高风险样本不足 25 条时补足）。"
+            "报一致率时**真实样本与含注入样本必须分开报** —— 业务方 2026-08-19 确认。",
+            "分层用的三条代理信号（召回未命中 / 回答提到未召回的实体 / 逐句核验通过率 <0.8）"
+            "与「断言有没有被召回支撑」相关但**不等价**；它们的用途是让负例足量，"
+            "不是给断言打标签。",
+            "`verifier_supported` 是 M5 逐句核验器的判定，**只作参考不是标签** —— "
+            "它判的是「有没有出处」，与 Faithfulness 的「有没有被召回内容支撑」口径不同。",
+            "本集**必须由业务方全程人工标注**（§12.4.1 的「一处例外」），"
+            "不走「Claude Code 初稿 + 复核」。标签非空的条目会被 schema 直接拒绝。",
+            "回答是**这一版语料 + 这一版提示词**下跑出来的。提示词版本变了要重跑并重标"
+            "（§12.4.1 第 4 条：judge 的提示词纳入 prompt_version 治理，改动触发重跑）。",
+        ],
+        context={
+            "answers_file": "answers_v1.jsonl（320 条，与本集同目录）",
+            "sampling_seed": "42",
+            "high_risk_target": "25",
+            "regular_quota": "语义 10 / 情景 9 / 程序 6",
+            "acceptance_gate": "一致率 ≥85% 且 Cohen's Kappa ≥0.70（§12.4.1）",
+        },
+        approved_by=previous.approved_by if keep and previous else None,
+        approved_at=previous.approved_at if keep and previous else None,
+    )
+    write_manifest(directory, manifest)
+    (directory / "card.md").write_text(render_card(manifest), encoding="utf-8", newline="\n")
+    loaded, items = load_eval_dataset("judge_calib_50")
+    print(f"✅ judge_calib_50 {len(items)} 条 · {loaded.sha256[:16]}… · {loaded.strata}")
+
+
 WRITERS = {
     "nl_360": write_nl_360,
     "memory_320": write_memory_320,
@@ -551,6 +626,7 @@ WRITERS = {
     "golden_40": write_golden_40,
     "ood_200": write_ood_200,
     "sft_seed": write_sft_seed,
+    "judge_calib_50": write_judge_calib_50,
 }
 
 

@@ -58,6 +58,7 @@ source_modules =
     backend.ingestion
     backend.memory
     backend.retrieval
+    backend.datasets
     backend.report
     backend.harness
     backend.planner

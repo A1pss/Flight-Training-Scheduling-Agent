@@ -199,6 +199,40 @@ _DOC_ID_RE = re.compile(
 )
 
 
+#: 结构化召回（路 A）与向量/BM25 召回对**同一个实体**发的 doc id 形态不同：
+#: 路 A 发 `pg:<表>:<主键>`（`backend/memory/semantic.py`），语料发 `ent:<类>:<编号>`
+#: （`backend/retrieval/corpus.py`）。
+#:
+#: ⚠️ **W11 实测发现的一处口径缺口**：`memory_320` 的 gold 只写了 `ent:` 形态，
+#: 而语义类探针最强的那一路命中恰恰是 `pg:` —— 直接按字符串比会把路 A 的命中
+#: 全判成未召回，Recall@5 会被系统性低估。评测时两种形态要**归一到同一个键**。
+_PG_TABLE_TO_KIND: Final[dict[str, str]] = {
+    "persons": "person",
+    "aircraft": "aircraft",
+    "missions": "mission",
+    "airspaces": "airspace",
+}
+
+
+def canonical_doc_id(doc_id: str) -> str:
+    """把召回 id 归一化，让 `pg:` 与 `ent:` 两种形态可比。
+
+    - `pg:persons:P04` → `ent:person:P04`
+    - `pg:person_qualifications:P04:A` → `ent:person:P04`（资质行归到人身上）
+    - 其余原样返回（`rule:` / `epi:` / `proc:` 三类两侧同形）
+    """
+    if not doc_id.startswith("pg:"):
+        return doc_id
+    parts = doc_id.split(":")
+    if len(parts) < 3:
+        return doc_id
+    table, key = parts[1], parts[2]
+    if table == "person_qualifications":
+        return f"ent:person:{key}"
+    kind = _PG_TABLE_TO_KIND.get(table)
+    return f"ent:{kind}:{key}" if kind else doc_id
+
+
 class MemoryItem(DatasetItem):
     """`memory_320` 的一条探针（§12.4）。"""
 
@@ -715,14 +749,94 @@ class SftSeedItem(DatasetItem):
         return self
 
 
+# ══════════════════════════════════════════════════════════════════════
+# judge_calib_50（v6 §12.4.1 —— judge 一致性标注集）
+# ══════════════════════════════════════════════════════════════════════
+
+#: 抽样分层。`high_risk` 由**确定性代理信号**挑出（不是 judge 挑的 —— 那是循环）。
+CalibStratum = Literal["high_risk", "regular"]
+
+#: 三条确定性代理信号。它们与「断言有没有被召回支撑」相关，但**都不是 judge**。
+RiskSignal = Literal["recall_miss", "entity_not_retrieved", "low_supported_ratio", "degraded"]
+
+#: 人工标注的三分类（v6 §12.4.1）。**本集交付时一律为空**，由业务方填。
+ClaimVerdict = Literal["SUPPORTED", "PARTIAL", "NOT_SUPPORTED"]
+
+
+class CalibClaim(BaseModel):
+    """一条待标注的断言。
+
+    `verdict` 与 `context_used` **交付时必须为空** —— 本集的用途是给 judge 当
+    基准真值，用 LLM 生成初稿会把要验证的偏差直接引进基准里（§12.4.1 原文的
+    「一处例外」）。Claude Code 只做**断言分解**，不碰标签。
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    claim_id: str = Field(min_length=1)
+    text: str = Field(min_length=1)
+    #: ★ 待业务方填：SUPPORTED / PARTIAL / NOT_SUPPORTED
+    verdict: ClaimVerdict | None = None
+    #: ★ 待业务方填：该召回条目是否被回答**实际使用**（上下文利用率的判定对象）
+    context_used: bool | None = None
+    #: M5 逐句核验器的判定。**只作参考，不是标签** —— 它判的是「有没有出处」，
+    #: 与 Faithfulness 的「有没有被召回内容支撑」口径不同（M5 §9.1 第 2 条）
+    verifier_supported: bool | None = None
+
+
+class JudgeCalibItem(DatasetItem):
+    """`judge_calib_50` 的一条（§12.4.1）。"""
+
+    item_id: str = Field(pattern=r"^JCAL-\d{3}$")
+    probe_id: str = Field(pattern=r"^MEM-(?:SEM|EPI|PRO)-\d{3}$")
+    stratum: CalibStratum
+    memory_type: MemoryType
+    query: str = Field(min_length=1)
+    #: 冻结的回答。**人工标注与 judge 判定必须面对同一批文本**，否则一致率没有意义
+    answer: str = Field(min_length=1)
+    retrieved_doc_ids: list[str] = Field(default_factory=list)
+    expected_doc_ids: list[str] = Field(default_factory=list)
+    risk_signals: list[RiskSignal] = Field(default_factory=list)
+    #: 受控扰动造出来的负例。真实样本与它**必须分开报一致率**
+    is_synthetic_negative: bool = False
+    #: 扰动方式（仅合成负例非空），供业务方判读时知道被动过哪里
+    perturbation: str | None = None
+    claims: list[CalibClaim] = Field(min_length=1)
+    rationale: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _labels_must_be_blank(self) -> JudgeCalibItem:
+        """★ 交付时标签必须全空。
+
+        §12.4.1 的「一处例外」：这一集**必须由业务方全程人工标注**，不走
+        「初稿 + 复核」——它是给 judge 当基准真值的，用 LLM 生成初稿等于
+        把要验证的偏差直接引进基准里。这条断言就是那句话的执行形态。
+        """
+        for claim in self.claims:
+            if claim.verdict is not None or claim.context_used is not None:
+                raise ValueError(
+                    f"{self.item_id}：{claim.claim_id} 的标签非空 —— "
+                    "本集交付时标签必须全空，由业务方人工标注（§12.4.1）"
+                )
+        if self.is_synthetic_negative and not self.perturbation:
+            raise ValueError(f"{self.item_id}：合成负例必须写明扰动方式")
+        if self.stratum == "high_risk" and not (self.risk_signals or self.is_synthetic_negative):
+            raise ValueError(f"{self.item_id}：高风险层必须至少命中一个信号或是合成负例")
+        return self
+
+
 __all__ = [
     "GRAPH_NODES",
     "PIPELINE_STAGES",
     "AdversarialKind",
+    "CalibClaim",
+    "CalibStratum",
+    "ClaimVerdict",
     "ConstraintModifier",
     "DatasetItem",
     "ExpectedAction",
     "GoldenCaseItem",
+    "JudgeCalibItem",
     "MemoryItem",
     "MemoryType",
     "ModifierKind",
@@ -734,6 +848,7 @@ __all__ = [
     "OodLayer",
     "PlanScenarioItem",
     "ProbeKind",
+    "RiskSignal",
     "ScenarioCategory",
     "ScenarioStatus",
     "SeedKind",
@@ -744,4 +859,5 @@ __all__ = [
     "ToolStep",
     "TrajectoryFlow",
     "TrajectoryItem",
+    "canonical_doc_id",
 ]

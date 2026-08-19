@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 
 import pytest
@@ -120,6 +121,32 @@ def test_every_mission_appears(items: list[NLItem]) -> None:
 def test_week_slots_use_iso_form(items: list[NLItem]) -> None:
     weeks = {i.expected_slots.week for i in items if i.expected_slots.week}
     assert weeks <= {"2026W01", "2026W02", "2026W03", "2026W04"}
+
+
+#: 能被 `resolve_week` 确定性解析出来的周表述
+_WEEK_SURFACE = re.compile(
+    r"本周|这周|当周|下周|上周|下下周|上上周|次周|下一周|上一周"
+    r"|\d{4}-?W\d{2}|\d+ 月 \d+ 日"
+)
+
+
+def test_resolvable_week_surfaces_are_always_annotated(items: list[NLItem]) -> None:
+    """★ 句子里出现可解析的周表述，`week` 槽位就必须标出来。
+
+    **W11 抽查抓到的一处真实漏标**：「AC10 这周有维护计划吗？」这一族（9 条）
+    都含「这周」却把 week 标成了 None —— 我在写查询层时下意识觉得「查询不需要周次」，
+    而周次是**五类槽位之一**，漏标会让槽位 F1 系统性低估。
+
+    歧义层除外：那一层的样本正是「说不清」的，有些句子带周次、有些不带，
+    带了的照常标（见 NL-AMB-003）—— 所以这条断言对它同样成立，只是不强制。
+    """
+    for item in items:
+        if item.layer == "ambiguous":
+            continue
+        if _WEEK_SURFACE.search(item.utterance):
+            assert item.expected_slots.week is not None, (
+                f"{item.item_id} 含周表述却没标 week：{item.utterance}"
+            )
 
 
 def test_card_matches_manifest() -> None:
