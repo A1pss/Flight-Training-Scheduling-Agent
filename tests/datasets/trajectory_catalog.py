@@ -48,6 +48,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from tests.datasets.tool_params import params_for
+
 W03 = "2026W03"
 W02 = "2026W02"
 
@@ -118,11 +120,7 @@ def knowledge_samples() -> list[dict[str, Any]]:
                 ["route", "knowledge", "tool:sql_query", "END"],
                 ["route", "knowledge", "END"],
             ),
-            steps=(
-                _step(
-                    1, "knowledge", "prereq_cte", {"person_id": "P08", "mission_id": "missionB-1"}
-                ),
-            ),
+            steps=(_step(1, "knowledge", "prereq_cte", params_for("prereq_cte")),),
         ),
         _item(
             "TRJ-KNW-002",
@@ -145,11 +143,11 @@ def knowledge_samples() -> list[dict[str, Any]]:
                     1,
                     "knowledge",
                     "sql_query",
-                    {
-                        "sql": "SELECT expiry_date FROM qualifications WHERE person_id = :pid",
-                        "params": {"pid": "P04"},
-                        "limit": 10,
-                    },
+                    params_for(
+                        "sql_query",
+                        sql="SELECT expiry_date FROM qualifications WHERE person_id = :pid",
+                        params={"pid": "P04"},
+                    ),
                 ),
             ),
         ),
@@ -176,13 +174,13 @@ def knowledge_samples() -> list[dict[str, Any]]:
                     1,
                     "knowledge",
                     "memory.search",
-                    {"query": "missionF-1 推迟", "kinds": ["episodic"], "top_k": 5},
+                    params_for("memory.search", query="missionF-1 推迟", kinds=["episodic"]),
                 ),
                 _step(
                     2,
                     "knowledge",
                     "bm25_search",
-                    {"query": "missionF-1 推迟 原因", "top_k": 5},
+                    params_for("bm25_search"),
                     optional=True,
                 ),
             ),
@@ -203,21 +201,22 @@ def knowledge_samples() -> list[dict[str, Any]]:
                     1,
                     "knowledge",
                     "sql_query",
-                    {
-                        "sql": "SELECT aircraft_type FROM aircraft WHERE aircraft_id = :aid",
-                        "params": {"aid": "AC73"},
-                        "limit": 1,
-                    },
+                    params_for(
+                        "sql_query",
+                        sql="SELECT aircraft_type FROM aircraft WHERE aircraft_id = :aid",
+                        params={"aid": "AC73"},
+                        limit=1,
+                    ),
                 ),
                 _step(
                     2,
                     "knowledge",
                     "sql_query",
-                    {
-                        "sql": "SELECT * FROM maintenance WHERE aircraft_id = :aid",
-                        "params": {"aid": "AC73"},
-                        "limit": 10,
-                    },
+                    params_for(
+                        "sql_query",
+                        sql="SELECT * FROM maintenance WHERE aircraft_id = :aid",
+                        params={"aid": "AC73"},
+                    ),
                     optional=True,
                 ),
             ),
@@ -267,27 +266,26 @@ def knowledge_samples() -> list[dict[str, Any]]:
                     1,
                     "knowledge",
                     "sql_query",
-                    {
-                        "sql": "SELECT * FROM persons WHERE person_id = :pid",
-                        "params": {"pid": "P08"},
-                        "limit": 1,
-                    },
+                    params_for(
+                        "sql_query",
+                        sql="SELECT * FROM persons WHERE person_id = :pid",
+                        params={"pid": "P08"},
+                        limit=1,
+                    ),
                 ),
-                _step(
-                    2, "knowledge", "prereq_cte", {"person_id": "P08", "mission_id": "missionB-1"}
-                ),
+                _step(2, "knowledge", "prereq_cte", params_for("prereq_cte")),
                 _step(
                     3,
                     "knowledge",
                     "vector_search",
-                    {"query": "何超 训练进度", "top_k": 5, "collection": "entity_summaries"},
+                    params_for("vector_search"),
                     optional=True,
                 ),
                 _step(
                     4,
                     "knowledge",
                     "rerank",
-                    {"query": "何超 训练进度", "candidates": [], "top_k": 5},
+                    params_for("rerank"),
                     optional=True,
                 ),
             ),
@@ -378,24 +376,22 @@ def diagnosis_samples() -> list[dict[str, Any]]:
             ),
             steps=(
                 _step(
-                    1, "diagnosis", "min_conflict_set", {"iso_week": W03, "scope_persons": ["ALL"]}
+                    1, "diagnosis", "min_conflict_set", params_for("min_conflict_set", iso_week=W03)
                 ),
                 _step(
                     2,
                     "diagnosis",
                     "blame_chain",
-                    {"person_id": "P08", "mission_id": "missionB-1"},
+                    params_for("prereq_cte"),
                     optional=True,
                 ),
                 _step(
                     3,
                     "diagnosis",
                     "probe_solve",
-                    {"iso_week": W03, "relaxations": ["TIER_1"], "time_limit_s": 30},
+                    params_for("probe_solve", iso_week=W03),
                 ),
-                _step(
-                    4, "diagnosis", "rank_relaxations", {"proposals": [], "prefer": "least_arrears"}
-                ),
+                _step(4, "diagnosis", "rank_relaxations", params_for("rank_relaxations")),
             ),
         ),
         _item(
@@ -451,19 +447,19 @@ def diagnosis_samples() -> list[dict[str, Any]]:
             ),
             steps=(
                 _step(
-                    1, "diagnosis", "min_conflict_set", {"iso_week": W02, "scope_persons": ["ALL"]}
+                    1, "diagnosis", "min_conflict_set", params_for("min_conflict_set", iso_week=W02)
                 ),
                 _step(
                     2,
                     "diagnosis",
                     "probe_solve",
-                    {"iso_week": W02, "relaxations": ["TIER_1"], "time_limit_s": 30},
+                    params_for("probe_solve", iso_week=W02),
                 ),
                 _step(
                     3,
                     "diagnosis",
                     "probe_solve",
-                    {"iso_week": W02, "relaxations": ["TIER_2"], "time_limit_s": 30},
+                    params_for("probe_solve", iso_week=W02, relaxations=["TIER_2"]),
                 ),
             ),
         ),
@@ -516,13 +512,13 @@ def diagnosis_samples() -> list[dict[str, Any]]:
             ),
             steps=(
                 _step(
-                    1, "diagnosis", "min_conflict_set", {"iso_week": W03, "scope_persons": ["ALL"]}
+                    1, "diagnosis", "min_conflict_set", params_for("min_conflict_set", iso_week=W03)
                 ),
                 _step(
                     2,
                     "diagnosis",
                     "probe_solve",
-                    {"iso_week": W03, "relaxations": ["TIER_1"], "time_limit_s": 30},
+                    params_for("probe_solve", iso_week=W03),
                 ),
             ),
         ),
@@ -587,13 +583,13 @@ def diagnosis_samples() -> list[dict[str, Any]]:
             ),
             steps=(
                 _step(
-                    1, "diagnosis", "min_conflict_set", {"iso_week": W02, "scope_persons": ["ALL"]}
+                    1, "diagnosis", "min_conflict_set", params_for("min_conflict_set", iso_week=W02)
                 ),
                 _step(
                     2,
                     "diagnosis",
                     "probe_solve",
-                    {"iso_week": W02, "relaxations": ["TIER_1"], "time_limit_s": 30},
+                    params_for("probe_solve", iso_week=W02),
                 ),
             ),
         ),
@@ -673,24 +669,24 @@ def workflow_samples() -> list[dict[str, Any]]:
                     1,
                     "planner",
                     "resolve_week",
-                    {"surface": "下周", "reference_date": "2026-01-05"},
+                    params_for("resolve_week"),
                 ),
                 _step(
                     2,
                     "planner",
                     "estimate_scope",
-                    {"iso_week": W03, "scope_persons": ["ALL"], "scope_missions": ["ALL"]},
+                    params_for("estimate_scope", iso_week=W03),
                     optional=True,
                 ),
                 _step(
                     3,
                     "planner",
                     "propose_solve_intent",
-                    {
-                        "iso_week": W03,
-                        "intent": {"scope_persons": "ALL"},
-                        "rationale": "全员排班，无既有计划，取中性冻结档",
-                    },
+                    params_for(
+                        "propose_solve_intent",
+                        iso_week=W03,
+                        rationale="全员排班，无既有计划，取中性冻结档",
+                    ),
                 ),
             ),
         ),
@@ -741,17 +737,13 @@ def workflow_samples() -> list[dict[str, Any]]:
                 ],
             ),
             steps=(
-                _step(1, "planner", "resolve_person", {"surface": "何超"}),
-                _step(2, "planner", "resolve_person", {"surface": "罗磊"}),
+                _step(1, "planner", "resolve_person", params_for("resolve_person")),
+                _step(2, "planner", "resolve_person", params_for("resolve_person", surface="罗磊")),
                 _step(
                     3,
                     "planner",
                     "propose_solve_intent",
-                    {
-                        "iso_week": W02,
-                        "intent": {"scope_persons": ["P08", "P05"]},
-                        "rationale": "用户点名两位学员",
-                    },
+                    params_for("propose_solve_intent", iso_week=W02, rationale="用户点名两位学员"),
                 ),
             ),
         ),
@@ -804,28 +796,25 @@ def workflow_samples() -> list[dict[str, Any]]:
                 ],
             ),
             steps=(
-                _step(1, "planner", "resolve_person", {"surface": "高超"}),
-                _step(2, "planner", "resolve_aircraft", {"surface": "AC84"}),
+                _step(1, "planner", "resolve_person", params_for("resolve_person", surface="高超")),
+                _step(
+                    2, "planner", "resolve_aircraft", params_for("resolve_aircraft", surface="AC84")
+                ),
                 _step(
                     3,
                     "planner",
                     "assess_disruption",
-                    {
-                        "iso_week": W02,
-                        "baseline_plan_id": "plan_current",
-                        "changed_persons": ["P02"],
-                        "changed_aircraft": ["AC84"],
-                    },
+                    params_for("assess_disruption"),
                 ),
                 _step(
                     4,
                     "planner",
                     "propose_solve_intent",
-                    {
-                        "iso_week": W02,
-                        "intent": {"scope_persons": "ALL"},
-                        "rationale": "两处扰动，影响面中等，取 BALANCED",
-                    },
+                    params_for(
+                        "propose_solve_intent",
+                        iso_week=W02,
+                        rationale="两处扰动，影响面中等，取 BALANCED",
+                    ),
                 ),
             ),
         ),
@@ -868,14 +857,14 @@ def workflow_samples() -> list[dict[str, Any]]:
                     1,
                     "planner",
                     "translate_revision",
-                    {
-                        "utterance": "把张勇的 missionC-2 挪到周四以后",
-                        "round_no": 1,
-                        "iso_week": W02,
-                    },
+                    params_for("translate_revision"),
                 ),
                 _step(
-                    2, "planner", "check_authority", {"tier": 0, "role": "scheduler"}, optional=True
+                    2,
+                    "planner",
+                    "check_authority",
+                    params_for("check_authority", requested_tier=0),
+                    optional=True,
                 ),
             ),
         ),
@@ -918,7 +907,7 @@ def workflow_samples() -> list[dict[str, Any]]:
                     1,
                     "planner",
                     "translate_revision",
-                    {"utterance": "刚才那条不算了，撤销", "round_no": 2, "iso_week": W02},
+                    params_for("translate_revision", utterance="刚才那条不算了，撤销", round_no=2),
                 ),
             ),
         ),
@@ -974,34 +963,32 @@ def workflow_samples() -> list[dict[str, Any]]:
                     1,
                     "extract",
                     "classify_doc",
-                    {"filename": "personnel.pdf", "text_head": "人员信息表…"},
+                    params_for("classify_doc"),
                 ),
                 _step(
                     2,
                     "extract",
                     "parse_personnel",
-                    {"document_id": "doc_personnel", "page_range": "1-3"},
+                    params_for("parse_personnel"),
                 ),
                 _step(
                     3,
                     "extract",
                     "parse_aircraft",
-                    {"document_id": "doc_aircraft", "page_range": "1-2"},
+                    params_for("parse_aircraft"),
                 ),
                 _step(
                     4,
                     "extract",
                     "parse_missions",
-                    {"document_id": "doc_missions", "page_range": "1-2"},
+                    params_for("parse_missions"),
                 ),
-                _step(
-                    5, "extract", "parse_rules", {"document_id": "doc_rules", "page_range": "1-4"}
-                ),
+                _step(5, "extract", "parse_rules", params_for("parse_rules")),
                 _step(
                     6,
                     "extract",
                     "diff_snapshot",
-                    {"base_snapshot_id": "snap_9724982865ee", "new_snapshot_id": "snap_pending"},
+                    params_for("diff_snapshot"),
                 ),
             ),
         ),
@@ -1089,7 +1076,12 @@ def knowledge_full() -> list[dict[str, Any]]:
                 acceptable=([*KNW, "tool:prereq_cte", "tool:sql_query", "END"],),
                 forbidden=([*KNW, "tool:sql_query", "END"], NO_TOOL),
                 steps=(
-                    _step(1, "knowledge", "prereq_cte", {"person_id": pid, "mission_id": mission}),
+                    _step(
+                        1,
+                        "knowledge",
+                        "prereq_cte",
+                        params_for("prereq_cte", person_id=pid, mission_id=mission),
+                    ),
                 ),
             )
         )
@@ -1111,7 +1103,9 @@ def knowledge_full() -> list[dict[str, Any]]:
                         1,
                         "knowledge",
                         "sql_query",
-                        {"sql": f"SELECT * FROM {table} WHERE …", "params": params, "limit": 10},
+                        params_for(
+                            "sql_query", sql=f"SELECT * FROM {table} WHERE …", params=params
+                        ),
                     ),
                 ),
             )
@@ -1137,10 +1131,14 @@ def knowledge_full() -> list[dict[str, Any]]:
                         1,
                         "knowledge",
                         "memory.search",
-                        {"query": query, "kinds": ["episodic"], "top_k": 5},
+                        params_for("memory.search", query=query, kinds=["episodic"]),
                     ),
                     _step(
-                        2, "knowledge", "bm25_search", {"query": query, "top_k": 5}, optional=True
+                        2,
+                        "knowledge",
+                        "bm25_search",
+                        params_for("bm25_search", query=query),
+                        optional=True,
                     ),
                 ),
             )
@@ -1182,27 +1180,31 @@ def knowledge_full() -> list[dict[str, Any]]:
                         1,
                         "knowledge",
                         "sql_query",
-                        {
-                            "sql": "SELECT * FROM persons WHERE person_id = :pid",
-                            "params": {"pid": pid},
-                            "limit": 1,
-                        },
+                        params_for(
+                            "sql_query",
+                            sql="SELECT * FROM persons WHERE person_id = :pid",
+                            params={"pid": pid},
+                            limit=1,
+                        ),
                     ),
                     _step(
-                        2, "knowledge", "prereq_cte", {"person_id": pid, "mission_id": "missionB-1"}
+                        2,
+                        "knowledge",
+                        "prereq_cte",
+                        params_for("prereq_cte", person_id=pid, mission_id="missionB-1"),
                     ),
                     _step(
                         3,
                         "knowledge",
                         "vector_search",
-                        {"query": query, "top_k": 5, "collection": "entity_summaries"},
+                        params_for("vector_search", query=query),
                         optional=True,
                     ),
                     _step(
                         4,
                         "knowledge",
                         "rerank",
-                        {"query": query, "candidates": [], "top_k": 5},
+                        params_for("rerank", query=query),
                         optional=True,
                     ),
                 ),
@@ -1225,13 +1227,23 @@ def knowledge_full() -> list[dict[str, Any]]:
                         1,
                         "knowledge",
                         "sql_query",
-                        {"sql": "SELECT … WHERE id = :id", "params": {"id": entity}, "limit": 5},
+                        params_for(
+                            "sql_query",
+                            sql="SELECT … WHERE id = :id",
+                            params={"id": entity},
+                            limit=5,
+                        ),
                     ),
                     _step(
                         2,
                         "knowledge",
                         "sql_query",
-                        {"sql": "SELECT … WHERE id = :id", "params": {"id": entity}, "limit": 5},
+                        params_for(
+                            "sql_query",
+                            sql="SELECT … WHERE id = :id",
+                            params={"id": entity},
+                            limit=5,
+                        ),
                         optional=True,
                     ),
                 ),
@@ -1429,7 +1441,10 @@ def diagnosis_full() -> list[dict[str, Any]]:
         steps = (
             [
                 _step(
-                    1, "diagnosis", "min_conflict_set", {"iso_week": week, "scope_persons": ["ALL"]}
+                    1,
+                    "diagnosis",
+                    "min_conflict_set",
+                    params_for("min_conflict_set", iso_week=week),
                 )
             ]
             if steps_head
@@ -1441,15 +1456,11 @@ def diagnosis_full() -> list[dict[str, Any]]:
                     2,
                     "diagnosis",
                     "probe_solve",
-                    {"iso_week": week, "relaxations": ["TIER_1"], "time_limit_s": 30},
+                    params_for("probe_solve", iso_week=week),
                 )
             )
         if rank and probes > 0:
-            steps.append(
-                _step(
-                    3, "diagnosis", "rank_relaxations", {"proposals": [], "prefer": "least_arrears"}
-                )
-            )
+            steps.append(_step(3, "diagnosis", "rank_relaxations", params_for("rank_relaxations")))
 
         outcome = "有可呈现的提案" if rank else "**无 R2 方案 → 升级人工**"
         rows.append(
@@ -1486,6 +1497,16 @@ def diagnosis_full() -> list[dict[str, Any]]:
 
 
 SCH_HEAD = ["route", "planner"]
+
+
+def _planner_params(tool: str, week: str) -> dict[str, Any]:
+    """planner 侧工具的合法参数：带周次的传周次，消解类传原话。"""
+    if tool in {"resolve_person", "resolve_aircraft", "resolve_week"}:
+        return params_for(tool)
+    if tool == "translate_revision":
+        return params_for(tool, iso_week=week)
+    return params_for(tool, iso_week=week)
+
 
 #: 13 条排班：范围与槽位形态不同，路径尾巴恒定。
 #: `tools` 是 planner 期望调用的工具序列，`loop` 表示是否有 validate → solve 回环。
@@ -1672,9 +1693,7 @@ def schedule_full() -> list[dict[str, Any]]:
                 order,
                 "planner",
                 tool,
-                {"iso_week": week}
-                if tool != "resolve_person"
-                else {"surface": "（用户原话里的人名）"},
+                _planner_params(tool, week),
             )
             for order, tool in enumerate(tools, start=1)
         )
@@ -1802,7 +1821,7 @@ def reschedule_full() -> list[dict[str, Any]]:
                 order,
                 "planner",
                 tool,
-                {"surface": "（用户原话）"} if tool.startswith("resolve_") else {"iso_week": week},
+                _planner_params(tool, week),
             )
             for order, tool in enumerate(tools, start=1)
         )
@@ -1903,14 +1922,20 @@ def revision_full() -> list[dict[str, Any]]:
                     1,
                     "planner",
                     "translate_revision",
-                    {"utterance": utterance, "round_no": 1, "iso_week": W02},
+                    params_for("translate_revision", utterance=utterance),
                 ),
-                _step(2, "planner", "check_authority", {"tier": 1, "role": "scheduler"}),
+                _step(
+                    2, "planner", "check_authority", params_for("check_authority", requested_tier=1)
+                ),
                 _step(
                     3,
                     "planner",
                     "ask_user",
-                    {"question": "放宽 R1 档需要 director 授权，是否请主任确认？"},
+                    params_for(
+                        "ask_user",
+                        question="放宽 R1 档需要训练主任授权，是否请主任确认？",
+                        options=["请主任确认", "改用 R0 档"],
+                    ),
                 ),
             )
         elif mode == "reject":
@@ -1959,10 +1984,14 @@ def revision_full() -> list[dict[str, Any]]:
                     1,
                     "planner",
                     "translate_revision",
-                    {"utterance": utterance, "round_no": 1, "iso_week": W02},
+                    params_for("translate_revision", utterance=utterance),
                 ),
                 _step(
-                    2, "planner", "check_authority", {"tier": 0, "role": "scheduler"}, optional=True
+                    2,
+                    "planner",
+                    "check_authority",
+                    params_for("check_authority", requested_tier=0),
+                    optional=True,
                 ),
             )
         rows.append(
@@ -2113,11 +2142,9 @@ def ingest_full() -> list[dict[str, Any]]:
                 order,
                 "extract",
                 tool,
-                {"filename": "uploaded.pdf", "text_head": "…"}
-                if tool == "classify_doc"
-                else {"base_snapshot_id": "snap_9724982865ee", "new_snapshot_id": "snap_pending"}
-                if tool == "diff_snapshot"
-                else {"document_id": "doc_uploaded", "page_range": "1-3"},
+                params_for(tool)
+                if tool in {"classify_doc", "diff_snapshot", "propose_rule_dsl"}
+                else params_for(tool, document_id="doc_uploaded"),
             )
             for order, tool in enumerate(tools, start=1)
         )

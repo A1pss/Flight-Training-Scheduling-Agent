@@ -330,6 +330,12 @@ class ToolStep(BaseModel):
                 raise ValueError(f"{name!r} 不在工具目录里")
             if name not in ACL_MATRIX[self.component]:
                 raise ValueError(f"{self.component} 无权调用 {name!r}（v6 §7.7.2 的权限矩阵）")
+        # ★ 参数必须过该工具**真实的** Pydantic 契约。
+        # 一份参数写错的标注会把「参数准确率」测成模型的问题，而实际错的是标注 ——
+        # W11 造数据时这条校验就抓出了三处：`check_authority` 的字段名、
+        # `rank_relaxations.prefer` 的枚举值、`propose_solve_intent.intent`
+        # （它要的是完整的 SolveIntent，不是一个字典片段）。
+        TOOL_CATALOG[self.tool].params_model.model_validate(self.params)
         return self
 
 
@@ -394,6 +400,74 @@ class TrajectoryItem(DatasetItem):
         return self
 
 
+# ══════════════════════════════════════════════════════════════════════
+# tool_calls_200（v6 §12.5.1）
+# ══════════════════════════════════════════════════════════════════════
+
+#: 三层。`valid` 是主体 200 条（按工具使用频率加权）；另两层各 30 条**用故障注入构造**。
+ToolCallStratum = Literal["valid", "acl_violation", "budget_exhaustion"]
+
+#: 期望结局。`accept` = 契约校验通过并执行；两个 `reject_*` 是护栏该拦下来的。
+ToolCallExpectation = Literal["accept", "reject_acl", "reject_budget"]
+
+
+class ToolCallItem(DatasetItem):
+    """`tool_calls_200` 的一条场景（§12.5.1）。
+
+    **标签天然正确**：场景由实体表 + 工具 schema 反向构造 —— 参数是从工具自己的
+    `params_model` 生成并校验过的，越权对是拿 ACL 矩阵取补集算出来的，
+    预算耗尽是把预算池设成 0 之后的必然结果。没有一处依赖人的判断。
+    """
+
+    item_id: str = Field(pattern=r"^TOOL-(?:VAL|ACL|BGT)-\d{3}$")
+    stratum: ToolCallStratum
+    component: str
+    tool: str
+    #: 该工具在目录里存不存在。**越权层里有一部分是模型凭空编出来的工具名** ——
+    #: 14B 上这不是罕见事，而它与「有这个工具但没权限」是两种不同的失败模式
+    #: （前者在没有第三层拦截时会以 `KeyError` 出现，统计与日志全错位，§7.7.2）。
+    tool_exists: bool = True
+    #: 触发这次调用的情形（自然语言）
+    prompt_context: str = Field(min_length=1)
+    #: 期望参数。`valid` 层里它必然过工具契约；另两层是「本来会发出的那次调用」
+    expected_params: dict[str, Any] = Field(default_factory=dict)
+    expectation: ToolCallExpectation
+    #: 期望的错误码。越权 = FTS-4004；Harness 预算 = FTS-4003；
+    #: **探针预算耗尽没有错误码** —— 它优雅返回 `BUDGET_EXHAUSTED` 载荷而不抛错
+    expected_error_code: str | None = None
+    rationale: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _consistency(self) -> ToolCallItem:
+        """四条跨字段规则，把「标签天然正确」这句话变成可执行的断言。"""
+        prefix = {"valid": "VAL", "acl_violation": "ACL", "budget_exhaustion": "BGT"}[self.stratum]
+        if not self.item_id.startswith(f"TOOL-{prefix}-"):
+            raise ValueError(f"{self.item_id}：编号前缀与 stratum={self.stratum} 不符")
+        if self.component not in ALL_COMPONENTS:
+            raise ValueError(f"{self.component!r} 不是 ACL 矩阵里的组件")
+        if self.tool_exists and self.tool not in TOOL_CATALOG:
+            raise ValueError(f"{self.tool!r} 不在工具目录里（tool_exists=True）")
+        if self.stratum == "valid":
+            if self.tool not in ACL_MATRIX[self.component]:
+                raise ValueError(
+                    f"{self.item_id}：valid 层却越权（{self.component} 无权调 {self.tool}）"
+                )
+            if self.expectation != "accept":
+                raise ValueError(f"{self.item_id}：valid 层的期望结局只能是 accept")
+            # ★ 参数必须真的过工具契约 —— 这一层的全部意义就是「标签天然正确」
+            TOOL_CATALOG[self.tool].params_model.model_validate(self.expected_params)
+        if self.stratum == "acl_violation":
+            if self.expectation != "reject_acl" or self.expected_error_code != "FTS-4004":
+                raise ValueError(f"{self.item_id}：越权层必须期望 reject_acl / FTS-4004")
+            if self.tool_exists and self.tool in ACL_MATRIX[self.component]:
+                raise ValueError(
+                    f"{self.item_id}：标成越权，但 {self.component} 其实有权调 {self.tool}"
+                )
+        if self.stratum == "budget_exhaustion" and self.expectation != "reject_budget":
+            raise ValueError(f"{self.item_id}：超预算层的期望结局只能是 reject_budget")
+        return self
+
+
 __all__ = [
     "GRAPH_NODES",
     "PIPELINE_STAGES",
@@ -408,6 +482,9 @@ __all__ = [
     "NLLayer",
     "NLSlots",
     "ProbeKind",
+    "ToolCallExpectation",
+    "ToolCallItem",
+    "ToolCallStratum",
     "ToolStep",
     "TrajectoryFlow",
     "TrajectoryItem",

@@ -1,6 +1,6 @@
 {
-  "approved_at": null,
-  "approved_by": null,
+  "approved_at": "2026-08-20",
+  "approved_by": "Alps",
   "context": {
     "acceptable_rules": "A 同层并列顺序 / B 信息足够时省略 / C 自治循环迭代次数",
     "forbidden_rules": "D 跳过确定性节点 / E 弱工具替代强工具 / F 不调工具直接答",
@@ -8,7 +8,7 @@
     "knowledge_max_steps": "6（KNOWLEDGE_MAX_STEPS）",
     "probe_budget": "5 次 / 单次 30s / 累计 120s（与 LLM 预算互不挤占）"
   },
-  "generated_at": "2026-08-19T16:50:09Z",
+  "generated_at": "2026-08-19T18:24:53Z",
   "item_count": 100,
   "items_file": "items.jsonl",
   "known_limitations": [
@@ -19,7 +19,7 @@
   ],
   "method": "Claude Code 逐条构造 → Alps 逐批人工复核。路径元素取自真实的图节点（backend/graph/graph.py 的 add_node）与工具目录；每个步骤的工具都经 ACL 矩阵校验，越权的组合根本写不进数据集。",
   "name": "trajectory_100",
-  "sha256": "da8e6f8dcf1a2a489345aabbc0e538a76ca1ffd9c486914385726ad43a37eedb",
+  "sha256": "8d9f29c9378201f004c0c4130eb5defc0ee065d3db8b16db2e3b920c156da3af",
   "spec_refs": [
     "v6 §12.6",
     "v6 §7.5",
@@ -28,7 +28,7 @@
     "v6 §5.1",
     "SPEC_DECISIONS §D"
   ],
-  "stage": "draft",
+  "stage": "approved",
   "strata": {
     "diagnosis": 25,
     "ingest": 10,

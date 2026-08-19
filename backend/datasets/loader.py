@@ -29,7 +29,13 @@ from backend.datasets.manifest import (
     load_manifest,
     verify_manifest,
 )
-from backend.datasets.schemas import DatasetItem, MemoryItem, NLItem, TrajectoryItem
+from backend.datasets.schemas import (
+    DatasetItem,
+    MemoryItem,
+    NLItem,
+    ToolCallItem,
+    TrajectoryItem,
+)
 
 #: 仓库根。本文件位于 `<root>/backend/datasets/loader.py`。
 REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[2]
@@ -41,6 +47,7 @@ REGISTRY: Final[dict[str, type[DatasetItem]]] = {
     "nl_360": NLItem,
     "memory_320": MemoryItem,
     "trajectory_100": TrajectoryItem,
+    "tool_calls_200": ToolCallItem,
 }
 
 

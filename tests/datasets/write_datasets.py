@@ -18,7 +18,13 @@ from pathlib import Path
 from backend.datasets.card import render_card
 from backend.datasets.loader import dataset_dir, load_eval_dataset
 from backend.datasets.manifest import DatasetManifest, load_manifest, write_jsonl, write_manifest
-from tests.datasets import memory_catalog, memory_probes, nl_catalog, trajectory_catalog
+from tests.datasets import (
+    memory_catalog,
+    memory_probes,
+    nl_catalog,
+    tool_call_catalog,
+    trajectory_catalog,
+)
 
 
 def _previous(directory: Path) -> DatasetManifest | None:
@@ -235,10 +241,69 @@ def write_trajectory_100() -> None:
     print(f"✅ trajectory_100 {len(items)} 条 · {loaded.sha256[:16]}… · {loaded.strata}")
 
 
+def write_tool_calls_200() -> None:
+    """工具调用场景。**程序化生成，标签天然正确** —— 需要复核的是分布不是逐条。"""
+    rows = tool_call_catalog.build()
+    directory = dataset_dir("tool_calls_200")
+    sha = write_jsonl(directory / "items.jsonl", rows)
+    strata: dict[str, int] = {}
+    for row in rows:
+        key = str(row["stratum"])
+        strata[key] = strata.get(key, 0) + 1
+
+    previous = _previous(directory)
+    keep = previous is not None and previous.sha256 == sha
+    manifest = DatasetManifest(
+        name="tool_calls_200",
+        version="v1",
+        stage=previous.stage if (keep and previous is not None) else "draft",
+        item_count=len(rows),
+        strata=dict(sorted(strata.items())),
+        sha256=sha,
+        generated_at=(
+            previous.generated_at
+            if keep and previous
+            else datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+        ),
+        method=(
+            "由实体表 + 工具 schema **反向构造**，标签天然正确："
+            "valid 层的参数由工具自己的 params_model 生成并校验；"
+            "越权层的 (组件, 工具) 取自 ACL 矩阵的补集；"
+            "超预算层是预算池设成 0 之后的必然结果。无一处依赖人的判断。"
+        ),
+        spec_refs=["v6 §12.5.1", "v6 §7.7.2", "v6 §3.9.2", "v6 §9.3"],
+        known_limitations=[
+            "200 条 valid 的权重取自 trajectory_100 的 242 个工具步骤 —— 那是目前唯一一份"
+            "「工具在真实流程里各出现多少次」的数据。**它是一个可替换的假设**："
+            "W13 真实跑过之后应该用线上日志的频次重算，而不是继续用轨迹集的。",
+            "每个工具设了 2 条地板，否则频率为 0 的工具（escalate / memory.write / "
+            "render_workbook 等）一条都分不到，而 §12.5.1 的契约通过率要覆盖全部工具。",
+            "越权层里 6 条是**凭空编出来的工具名**（六个确定性节点），它们不在目录里，"
+            "`tool_exists=False`。这与「有工具但没权限」是两种不同的失败模式。",
+            "超预算层的 6 条探针场景 `expected_error_code` 为 None —— "
+            "探针池耗尽时不抛错，优雅返回 BUDGET_EXHAUSTED 载荷（§3.9.2）。",
+            "本集**不需要逐条人工复核**（标签是算出来的），需要复核的是分布。",
+        ],
+        context={
+            "weight_source": "trajectory_100 v1 的 242 个工具步骤频次",
+            "floor_per_tool": "2",
+            "acl_source": "backend.harness.acl.ACL_MATRIX 的补集（字典序，可复现）",
+            "error_codes": "越权 FTS-4004 / Harness 预算 FTS-4003 / 探针池无错误码",
+        },
+        approved_by=previous.approved_by if keep and previous else None,
+        approved_at=previous.approved_at if keep and previous else None,
+    )
+    write_manifest(directory, manifest)
+    (directory / "card.md").write_text(render_card(manifest), encoding="utf-8", newline="\n")
+    loaded, items = load_eval_dataset("tool_calls_200")
+    print(f"✅ tool_calls_200 {len(items)} 条 · {loaded.sha256[:16]}… · {loaded.strata}")
+
+
 WRITERS = {
     "nl_360": write_nl_360,
     "memory_320": write_memory_320,
     "trajectory_100": write_trajectory_100,
+    "tool_calls_200": write_tool_calls_200,
 }
 
 
