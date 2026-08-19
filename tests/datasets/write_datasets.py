@@ -179,7 +179,7 @@ def write_memory_320() -> None:
 
 def write_trajectory_100() -> None:
     """轨迹标注。分层字段是 `flow`，两处受控自治必须过半（§12.6.2）。"""
-    rows = trajectory_catalog.build_sample()
+    rows = trajectory_catalog.build_full()
     directory = dataset_dir("trajectory_100")
     sha = write_jsonl(directory / "items.jsonl", rows)
     strata: dict[str, int] = {}
@@ -192,7 +192,7 @@ def write_trajectory_100() -> None:
     manifest = DatasetManifest(
         name="trajectory_100",
         version="v1",
-        stage=previous.stage if (keep and previous is not None) else "sample",
+        stage=previous.stage if (keep and previous is not None) else "draft",
         item_count=len(rows),
         strata=dict(sorted(strata.items())),
         sha256=sha,
@@ -208,7 +208,8 @@ def write_trajectory_100() -> None:
         ),
         spec_refs=["v6 §12.6", "v6 §7.5", "v6 §7.7.2", "v6 §3.9.1", "v6 §5.1", "SPEC_DECISIONS §D"],
         known_limitations=[
-            "当前为 15 条送审样例，全量 100 条待业务方确认「可接受的替代路径」口径后生成。",
+            "自治两类（query 30 + diagnosis 25 = 55 条）按 §12.6.2 占了一半以上；"
+            "排班/重排/修订三类的期望路径是**固定序列**，轨迹评估在那里只验「没跑偏」。",
             "路径判定用最长公共子序列相似度（§12.6.2），所以 acceptable_paths 给的是"
             "**完整序列**而不是规则描述；三条准入规则（A 顺序 / B 可省 / C 迭代次数）"
             "写在构造代码的模块文档里，供人复核，判定器不读它。",
