@@ -109,10 +109,21 @@ def test_require_approved_blocks_unapproved(sandbox: Path) -> None:
 
 
 def test_approved_dataset_passes_the_gate(sandbox: Path) -> None:
-    """反面：已确认的数据集能过 `require_approved` 这道闸。"""
-    manifest, items = load_eval_dataset("nl_360", root=sandbox, require_approved=True)
-    assert manifest.stage == "approved"
-    assert manifest.approved_by
+    """反面：已确认的数据集能过 `require_approved` 这道闸。
+
+    ★ 在沙箱副本里**显式**置为 approved，不依赖仓库里那份此刻是什么状态 ——
+    数据一改，批准就按设计自动失效，拿真实状态当前提的测试会跟着红。
+    """
+    directory = sandbox / "nl_360" / "v1"
+    manifest = load_manifest(directory)
+    manifest.stage = "approved"
+    manifest.approved_by = "Alps"
+    manifest.approved_at = "2026-08-20"
+    write_manifest(directory, manifest)
+
+    loaded, items = load_eval_dataset("nl_360", root=sandbox, require_approved=True)
+    assert loaded.stage == "approved"
+    assert loaded.approved_by == "Alps"
     assert len(items) == 360
 
 
