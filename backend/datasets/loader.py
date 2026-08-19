@@ -29,7 +29,7 @@ from backend.datasets.manifest import (
     load_manifest,
     verify_manifest,
 )
-from backend.datasets.schemas import DatasetItem, NLItem
+from backend.datasets.schemas import DatasetItem, MemoryItem, NLItem
 
 #: 仓库根。本文件位于 `<root>/backend/datasets/loader.py`。
 REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[2]
@@ -39,6 +39,7 @@ DATASETS_DIR: Final[Path] = REPO_ROOT / "datasets"
 #: `load_eval_dataset(name)` 才认它 —— 目录里凭空多出一份没登记的数据不会被静默使用。
 REGISTRY: Final[dict[str, type[DatasetItem]]] = {
     "nl_360": NLItem,
+    "memory_320": MemoryItem,
 }
 
 

@@ -13,11 +13,20 @@ from __future__ import annotations
 
 import sys
 from datetime import UTC, datetime
+from pathlib import Path
 
 from backend.datasets.card import render_card
 from backend.datasets.loader import dataset_dir, load_eval_dataset
 from backend.datasets.manifest import DatasetManifest, load_manifest, write_jsonl, write_manifest
-from tests.datasets import nl_catalog
+from tests.datasets import memory_catalog, memory_probes, nl_catalog
+
+
+def _previous(directory: Path) -> DatasetManifest | None:
+    """上一版清单（用于判断批准状态能不能延续）。"""
+    try:
+        return load_manifest(directory)
+    except FileNotFoundError:
+        return None
 
 
 def write_nl_360() -> None:
@@ -29,12 +38,7 @@ def write_nl_360() -> None:
         layer = str(row["layer"])
         strata[layer] = strata.get(layer, 0) + 1
 
-    previous: DatasetManifest | None = None
-    try:
-        previous = load_manifest(directory)
-    except FileNotFoundError:
-        previous = None
-
+    previous = _previous(directory)
     keep = previous is not None and previous.sha256 == sha
     manifest = DatasetManifest(
         name="nl_360",
@@ -89,7 +93,91 @@ def write_nl_360() -> None:
     print(f"✅ nl_360 {len(items)} 条 · {loaded_manifest.sha256[:16]}… · {loaded_manifest.strata}")
 
 
-WRITERS = {"nl_360": write_nl_360}
+def write_memory_320() -> None:
+    """探针集 + 20 周时间线。
+
+    时间线与探针一起版本化：`episodic_timeline.jsonl` 是 122 条情景记忆的
+    **规格**（不是导出的库内容），`memory_seed.seed_timeline()` 照着它写库。
+    两者由 `epi:` 的内容寻址 id 绑在一起 —— 时间线改一个字，gold id 全变，
+    `test_memory_timeline_live.py` 当场红。
+    """
+    rows = memory_probes.build_full()
+    directory = dataset_dir("memory_320")
+    sha = write_jsonl(directory / "items.jsonl", rows)
+    write_jsonl(
+        directory / "episodic_timeline.jsonl",
+        [
+            {
+                "memory_id": record.memory_id(),
+                "doc_id": memory_catalog.epi_doc_id(record),
+                "session_id": record.session_id,
+                "kind": record.kind,
+                "summary": record.summary,
+                "content": dict(record.content),
+                "occurred_at": record.occurred_at.isoformat(),
+            }
+            for record in memory_catalog.timeline_records()
+        ],
+    )
+    strata: dict[str, int] = {}
+    for row in rows:
+        key = str(row["memory_type"])
+        strata[key] = strata.get(key, 0) + 1
+
+    previous = _previous(directory)
+    keep = previous is not None and previous.sha256 == sha
+    manifest = DatasetManifest(
+        name="memory_320",
+        version="v1",
+        stage=previous.stage if (keep and previous is not None) else "draft",
+        item_count=len(rows),
+        strata=dict(sorted(strata.items())),
+        sha256=sha,
+        generated_at=(
+            previous.generated_at
+            if keep and previous
+            else datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+        ),
+        method=(
+            "20 周合成会话历史（122 条情景记忆）落库 → 跑现有的 procedural.distill() "
+            "蒸馏出偏好 → 探针照着真实写入的记录标 gold id。情景与程序两类的 gold "
+            "**不是编的**，由内容寻址 id 与蒸馏结果倒推，"
+            "tests/datasets/test_memory_timeline_live.py 在真库上逐条验证。"
+        ),
+        spec_refs=["v6 §12.4", "v6 §6.1", "v6 §6.2", "v6 §6.4", "v6 §1.3", "SPEC_DECISIONS §D"],
+        known_limitations=[
+            "**没有跑道事实探针**：`entity_docs()` 只为 person / aircraft / mission / "
+            "airspace 四类发实体摘要文档，跑道在语料里没有召回单位。硬给它安一个 gold "
+            "会让那条题变成在测规则召回 —— 宁可缺这一类，也不做一条测错东西的题。",
+            "程序记忆当前**没有 doc id**：`preference_docs()` 只返回句子。本集约定 "
+            "`proc:<namespace>/<key>` 作为召回单位，W13 侧要补一个发 id 的适配"
+            "（约 3 行），否则程序类的 Recall@5 无从计算。",
+            "汇总类探针（如「一共几架 JL-8」）的 gold 有 6 条，Top-5 装不下 —— "
+            "这类题的正确判据是答案对不对，不是 gold 是否全进 Top-5，报数时要单列。",
+            "`absent` 负例的 gold 为空，不进 Recall@5 的分母，单独统计误召回率。",
+            "程序记忆只覆盖 relaxation 与 phrasing 两个命名空间；`NAMESPACE_INSTRUCTOR`"
+            "（教员排班习惯）至今没有可测定义，按铁律 5 不自造，故无探针。",
+            "标注口径按 SPEC_DECISIONS §D：Claude Code 初稿 + Alps 人工复核，"
+            "**不计算也不报告双人标注的 Cohen's Kappa**。",
+        ],
+        context={
+            "timeline_start": "2026-01-05（第 1 周 = 基准周）",
+            "timeline_weeks": "20（第 20 周 = 2026-05-18）",
+            "timeline_events": "122 = 20 周 × 6 条 + 2 条成对时效事件",
+            "archive_horizon": "60 周（最长 cycle_weeks 20 × 3，Z-18）—— 20 周内不会有记忆被归档",
+            "preference_versions": "relaxation/preferred_tier 有两版：第 4 周对话推断 Tier 0 → 第 20 周排班确认记录 Tier 1",
+            "ruleset_version": "1.3.0（rule: 前缀的 doc id 含它）",
+        },
+        approved_by=previous.approved_by if keep and previous else None,
+        approved_at=previous.approved_at if keep and previous else None,
+    )
+    write_manifest(directory, manifest)
+    (directory / "card.md").write_text(render_card(manifest), encoding="utf-8", newline="\n")
+    loaded, items = load_eval_dataset("memory_320")
+    print(f"✅ memory_320 {len(items)} 条 · {loaded.sha256[:16]}… · {loaded.strata}")
+
+
+WRITERS = {"nl_360": write_nl_360, "memory_320": write_memory_320}
 
 
 def main(argv: list[str]) -> int:
