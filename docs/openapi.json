@@ -1,0 +1,2748 @@
+{
+  "components": {
+    "schemas": {
+      "BlockedItem": {
+        "additionalProperties": false,
+        "description": "先修未满足而被排除的 (学员, 课目) 组合。\n\n**披露率 100% 是 v6 §0.3 的四条可测断言之一**——被排除的组合必须\n出现在 Sheet 4 区块 4，不能悄悄消失。",
+        "properties": {
+          "missing_prereqs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Prereqs",
+            "type": "array"
+          },
+          "mission_id": {
+            "pattern": "^mission[A-Z]-\\d+$",
+            "title": "Mission Id",
+            "type": "string"
+          },
+          "person_id": {
+            "pattern": "^P\\d+$",
+            "title": "Person Id",
+            "type": "string"
+          },
+          "reason": {
+            "description": "如「missionA-2 未完成」",
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "person_id",
+          "mission_id",
+          "reason"
+        ],
+        "title": "BlockedItem",
+        "type": "object"
+      },
+      "Body_post_ingest_api_v1_ingest_post": {
+        "properties": {
+          "files": {
+            "description": "人员/飞机/课目/规则等文件",
+            "items": {
+              "contentMediaType": "application/octet-stream",
+              "type": "string"
+            },
+            "title": "Files",
+            "type": "array"
+          }
+        },
+        "required": [
+          "files"
+        ],
+        "title": "Body_post_ingest_api_v1_ingest_post",
+        "type": "object"
+      },
+      "ChangeItemView": {
+        "additionalProperties": false,
+        "description": "Diff 里的一条变更。",
+        "properties": {
+          "fields": {
+            "additionalProperties": true,
+            "title": "Fields",
+            "type": "object"
+          },
+          "key": {
+            "minLength": 1,
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "added",
+              "modified",
+              "removed"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "table": {
+            "minLength": 1,
+            "title": "Table",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "table",
+          "key"
+        ],
+        "title": "ChangeItemView",
+        "type": "object"
+      },
+      "ChangeSetView": {
+        "additionalProperties": false,
+        "description": "`GET /api/v1/ingest/{id}/changeset` 的响应（含 §5.5 冲突项）。",
+        "properties": {
+          "base_snapshot_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Snapshot Id"
+          },
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/ChangeItemView"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "conflicts": {
+            "items": {
+              "$ref": "#/components/schemas/ConflictView"
+            },
+            "title": "Conflicts",
+            "type": "array"
+          },
+          "extraction_ok": {
+            "default": true,
+            "title": "Extraction Ok",
+            "type": "boolean"
+          },
+          "ingest_job_id": {
+            "minLength": 1,
+            "title": "Ingest Job Id",
+            "type": "string"
+          },
+          "open_questions": {
+            "items": {
+              "$ref": "#/components/schemas/OpenQuestionView"
+            },
+            "title": "Open Questions",
+            "type": "array"
+          },
+          "summary": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Summary",
+            "type": "object"
+          }
+        },
+        "required": [
+          "ingest_job_id"
+        ],
+        "title": "ChangeSetView",
+        "type": "object"
+      },
+      "ChatRequest": {
+        "additionalProperties": false,
+        "description": "`POST /api/v1/chat` —— 统一自然语言入口。幂等键 = 客户端 UUID。",
+        "properties": {
+          "client_request_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Client Request Id",
+            "type": "string"
+          },
+          "message": {
+            "minLength": 1,
+            "title": "Message",
+            "type": "string"
+          },
+          "snapshot_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot Id"
+          },
+          "thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thread Id"
+          },
+          "week_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week Start"
+          }
+        },
+        "required": [
+          "message",
+          "client_request_id"
+        ],
+        "title": "ChatRequest",
+        "type": "object"
+      },
+      "CheckResult": {
+        "additionalProperties": false,
+        "description": "单条规则的校验结果（v6 §4.2）。",
+        "properties": {
+          "checked_items": {
+            "description": "检查了多少个对象；0 项需警惕假通过",
+            "minimum": 0.0,
+            "title": "Checked Items",
+            "type": "integer"
+          },
+          "duration_ms": {
+            "minimum": 0.0,
+            "title": "Duration Ms",
+            "type": "number"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "rule_id": {
+            "pattern": "^C(0[1-9]|1[0-4])$",
+            "title": "Rule Id",
+            "type": "string"
+          },
+          "rule_title": {
+            "minLength": 1,
+            "title": "Rule Title",
+            "type": "string"
+          },
+          "violations": {
+            "items": {
+              "$ref": "#/components/schemas/Violation"
+            },
+            "title": "Violations",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rule_id",
+          "rule_title",
+          "passed",
+          "checked_items",
+          "duration_ms"
+        ],
+        "title": "CheckResult",
+        "type": "object"
+      },
+      "Citation": {
+        "additionalProperties": false,
+        "description": "一条引用来源。结构化来源（路 A）优先级最高（v6 §6.5.4）。",
+        "properties": {
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "snippet": {
+            "default": "",
+            "description": "用于人工核对的原文片段",
+            "title": "Snippet",
+            "type": "string"
+          },
+          "source_id": {
+            "minLength": 1,
+            "title": "Source Id",
+            "type": "string"
+          },
+          "source_kind": {
+            "description": "structured / bm25 / vector / ruleset",
+            "minLength": 1,
+            "title": "Source Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_kind",
+          "source_id"
+        ],
+        "title": "Citation",
+        "type": "object"
+      },
+      "ConflictItem": {
+        "additionalProperties": false,
+        "description": "最小冲突集中的一项（v6 §3.9，来自 assumption literals）。",
+        "properties": {
+          "description": {
+            "description": "人类可读的冲突陈述",
+            "minLength": 1,
+            "title": "Description",
+            "type": "string"
+          },
+          "group_id": {
+            "description": "可松弛约束组的 id",
+            "minLength": 1,
+            "title": "Group Id",
+            "type": "string"
+          },
+          "rule_ids": {
+            "description": "涉及的规则编号，如 ['C11','C13']",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Rule Ids",
+            "type": "array"
+          },
+          "subjects": {
+            "description": "归因到的具体实体",
+            "items": {
+              "type": "string"
+            },
+            "title": "Subjects",
+            "type": "array"
+          },
+          "tier": {
+            "enum": [
+              "R0",
+              "R1",
+              "R2",
+              "R3"
+            ],
+            "title": "Tier",
+            "type": "string"
+          }
+        },
+        "required": [
+          "group_id",
+          "rule_ids",
+          "tier",
+          "description"
+        ],
+        "title": "ConflictItem",
+        "type": "object"
+      },
+      "ConflictView": {
+        "additionalProperties": false,
+        "description": "§5.5 的源内数据冲突条目（X1/X3），交人工裁定。",
+        "properties": {
+          "adjudication": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "§5.5 裁定表给出的取值",
+            "title": "Adjudication"
+          },
+          "blocking": {
+            "default": true,
+            "title": "Blocking",
+            "type": "boolean"
+          },
+          "conflict_id": {
+            "minLength": 1,
+            "title": "Conflict Id",
+            "type": "string"
+          },
+          "kind": {
+            "minLength": 1,
+            "title": "Kind",
+            "type": "string"
+          },
+          "options": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "取值 → 出处",
+            "title": "Options",
+            "type": "object"
+          },
+          "subject": {
+            "minLength": 1,
+            "title": "Subject",
+            "type": "string"
+          }
+        },
+        "required": [
+          "conflict_id",
+          "kind",
+          "subject"
+        ],
+        "title": "ConflictView",
+        "type": "object"
+      },
+      "CrewMember": {
+        "additionalProperties": false,
+        "description": "机组成员（v6 附录 B）。",
+        "properties": {
+          "name": {
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "person_id": {
+            "pattern": "^P\\d+$",
+            "title": "Person Id",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "教员",
+              "学员",
+              "单飞",
+              "复训"
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "person_id",
+          "name",
+          "role"
+        ],
+        "title": "CrewMember",
+        "type": "object"
+      },
+      "DecisionRequest": {
+        "additionalProperties": false,
+        "description": "`approve` / `reject` 的请求体。\n\n`authorized_tiers` 在这里是**真的授权**（v6 §7.2.4）：Planner 那一步只做了\n角色够不够格的预筛，这一步是训练主任本人按下的确认。",
+        "properties": {
+          "authorized_tiers": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Authorized Tiers",
+            "type": "array"
+          },
+          "client_request_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Request Id"
+          },
+          "comment": {
+            "default": "",
+            "title": "Comment",
+            "type": "string"
+          }
+        },
+        "title": "DecisionRequest",
+        "type": "object"
+      },
+      "DecisionView": {
+        "additionalProperties": false,
+        "description": "决策提交后的响应：图从断点继续，仍然是异步的。",
+        "properties": {
+          "decision": {
+            "enum": [
+              "APPROVE",
+              "REJECT",
+              "REVISE"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "idempotent_hit": {
+            "default": false,
+            "title": "Idempotent Hit",
+            "type": "boolean"
+          },
+          "job_id": {
+            "minLength": 1,
+            "title": "Job Id",
+            "type": "string"
+          },
+          "poll_url": {
+            "minLength": 1,
+            "title": "Poll Url",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus"
+          },
+          "trace_id": {
+            "minLength": 1,
+            "title": "Trace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "trace_id",
+          "decision",
+          "status",
+          "poll_url"
+        ],
+        "title": "DecisionView",
+        "type": "object"
+      },
+      "ErrorCode": {
+        "description": "v6 §9.3 的 15 个错误码。枚举值即对外契约中的 `code` 字段字面量。",
+        "enum": [
+          "FTS-1001",
+          "FTS-1002",
+          "FTS-1003",
+          "FTS-1004",
+          "FTS-2001",
+          "FTS-3001",
+          "FTS-3002",
+          "FTS-3003",
+          "FTS-3004",
+          "FTS-3005",
+          "FTS-4001",
+          "FTS-4002",
+          "FTS-4003",
+          "FTS-4004",
+          "FTS-4005",
+          "FTS-5001"
+        ],
+        "title": "ErrorCode",
+        "type": "string"
+      },
+      "ErrorView": {
+        "additionalProperties": false,
+        "description": "v6 §9.3 `ErrorResponse` 的对外形态。\n\n与 `backend.core.errors.ErrorResponse` 同形，但**独立定义**：那个是异常层\n的产物（`FTSError.to_response`），这个是 HTTP 层的契约。两者由\n`tests/unit/test_api_contracts.py::test_error_view_matches_error_response`\n钉住字段一致，谁改了另一边就红。",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ErrorCode"
+          },
+          "details": {
+            "additionalProperties": true,
+            "title": "Details",
+            "type": "object"
+          },
+          "message": {
+            "minLength": 1,
+            "title": "Message",
+            "type": "string"
+          },
+          "retryable": {
+            "title": "Retryable",
+            "type": "boolean"
+          },
+          "severity": {
+            "enum": [
+              "INFO",
+              "WARN",
+              "ERROR",
+              "CRITICAL"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "stage": {
+            "enum": [
+              "ingest",
+              "intent",
+              "constraint",
+              "solve",
+              "validate",
+              "export"
+            ],
+            "title": "Stage",
+            "type": "string"
+          },
+          "suggestions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Suggestions",
+            "type": "array"
+          },
+          "trace_id": {
+            "minLength": 1,
+            "title": "Trace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "severity",
+          "stage",
+          "trace_id",
+          "retryable"
+        ],
+        "title": "ErrorView",
+        "type": "object"
+      },
+      "GatePayloadView": {
+        "additionalProperties": false,
+        "description": "人工门禁这一屏在问什么（v6 §7.2.4 两种问法，`Z-19`）。\n\n`pending_revision=True` 时问的是「我把你那句话理解成这样，对不对」，\n`APPROVE` 的含义是**去重解**而不是去归档。前端据这两个字段换文案与按钮语义。",
+        "properties": {
+          "ambiguities": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Ambiguities",
+            "type": "array"
+          },
+          "awaiting": {
+            "default": false,
+            "title": "Awaiting",
+            "type": "boolean"
+          },
+          "open_questions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Open Questions",
+            "type": "array"
+          },
+          "pending_revision": {
+            "default": false,
+            "title": "Pending Revision",
+            "type": "boolean"
+          },
+          "relaxation_tier": {
+            "default": 0,
+            "maximum": 3.0,
+            "minimum": 0.0,
+            "title": "Relaxation Tier",
+            "type": "integer"
+          },
+          "revision_echo": {
+            "default": "",
+            "title": "Revision Echo",
+            "type": "string"
+          }
+        },
+        "title": "GatePayloadView",
+        "type": "object"
+      },
+      "GroundedClaim": {
+        "additionalProperties": false,
+        "description": "生成文本中的一条断言及其引用。",
+        "properties": {
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "claim": {
+            "minLength": 1,
+            "title": "Claim",
+            "type": "string"
+          },
+          "supported": {
+            "default": false,
+            "title": "Supported",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "claim"
+        ],
+        "title": "GroundedClaim",
+        "type": "object"
+      },
+      "GroundingReport": {
+        "additionalProperties": false,
+        "description": "解释生成的事实核验报告（v6 §7.4 `grounding_report`）。\n\n`unsupported_claims` 非空即意味着解释里有无出处的说法——这类文本\n不得直接呈现，需触发重写（v6 §7.6「explain 生成 + 核验」含 1 轮重写）。",
+        "properties": {
+          "claims": {
+            "items": {
+              "$ref": "#/components/schemas/GroundedClaim"
+            },
+            "title": "Claims",
+            "type": "array"
+          },
+          "supported_ratio": {
+            "readOnly": true,
+            "title": "Supported Ratio",
+            "type": "number"
+          },
+          "unsupported_claims": {
+            "items": {
+              "type": "string"
+            },
+            "readOnly": true,
+            "title": "Unsupported Claims",
+            "type": "array"
+          }
+        },
+        "required": [
+          "supported_ratio",
+          "unsupported_claims"
+        ],
+        "title": "GroundingReport",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HealthView": {
+        "additionalProperties": false,
+        "description": "存活探针。**不做外部依赖检查**——健康检查连库会让一次库抖动放大成服务不可用。",
+        "properties": {
+          "app_env": {
+            "minLength": 1,
+            "title": "App Env",
+            "type": "string"
+          },
+          "offline": {
+            "default": true,
+            "title": "Offline",
+            "type": "boolean"
+          },
+          "ruleset_version": {
+            "minLength": 1,
+            "title": "Ruleset Version",
+            "type": "string"
+          },
+          "semantics_version": {
+            "minLength": 1,
+            "title": "Semantics Version",
+            "type": "string"
+          },
+          "status": {
+            "const": "ok",
+            "default": "ok",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "app_env",
+          "ruleset_version",
+          "semantics_version"
+        ],
+        "title": "HealthView",
+        "type": "object"
+      },
+      "IngestConfirmRequest": {
+        "additionalProperties": false,
+        "description": "`POST /api/v1/ingest/{id}/confirm`。\n\n`resolutions` / `answers` **不给默认值**：§5.1.1 明令「缺什么问什么，不设\n静默默认值」。冲突没裁完、问题没答完就确认，服务端按 FTS-1004 / FTS-2001 挡回。",
+        "properties": {
+          "answers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "问题 id → 回答",
+            "title": "Answers",
+            "type": "object"
+          },
+          "approver": {
+            "minLength": 1,
+            "title": "Approver",
+            "type": "string"
+          },
+          "comment": {
+            "default": "",
+            "title": "Comment",
+            "type": "string"
+          },
+          "resolutions": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "冲突 id → 选定取值",
+            "title": "Resolutions",
+            "type": "object"
+          }
+        },
+        "required": [
+          "approver"
+        ],
+        "title": "IngestConfirmRequest",
+        "type": "object"
+      },
+      "IngestConfirmView": {
+        "additionalProperties": false,
+        "description": "确认后的落库结果。",
+        "properties": {
+          "applied_resolutions": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Applied Resolutions",
+            "type": "object"
+          },
+          "idempotent_hit": {
+            "default": false,
+            "title": "Idempotent Hit",
+            "type": "boolean"
+          },
+          "snapshot_id": {
+            "minLength": 1,
+            "title": "Snapshot Id",
+            "type": "string"
+          },
+          "table_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Table Counts",
+            "type": "object"
+          },
+          "vector_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Vector Counts",
+            "type": "object"
+          }
+        },
+        "required": [
+          "snapshot_id"
+        ],
+        "title": "IngestConfirmView",
+        "type": "object"
+      },
+      "IngestSubmitView": {
+        "additionalProperties": false,
+        "description": "`POST /api/v1/ingest` 的响应。幂等键 = 文件 SHA256。",
+        "properties": {
+          "content_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Content Sha256",
+            "type": "string"
+          },
+          "filenames": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Filenames",
+            "type": "array"
+          },
+          "idempotent_hit": {
+            "default": false,
+            "title": "Idempotent Hit",
+            "type": "boolean"
+          },
+          "ingest_job_id": {
+            "minLength": 1,
+            "title": "Ingest Job Id",
+            "type": "string"
+          },
+          "trace_id": {
+            "minLength": 1,
+            "title": "Trace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ingest_job_id",
+          "content_sha256",
+          "trace_id"
+        ],
+        "title": "IngestSubmitView",
+        "type": "object"
+      },
+      "JobStage": {
+        "description": "v6 §8.1 的六个粗粒度阶段。**只有六个，不许加第七个。**\n\n加一个阶段就意味着前端的进度条要跟着改，而 v6 §8.1 把「轮询只返回粗粒度\n阶段」当成设计约束（它换来的是几百字节的响应体与可忽略的 rerun 开销）。\n要看细节的地方是 `GET /runs/{trace_id}` 的 `trace_events`。",
+        "enum": [
+          "解析意图",
+          "加载数据",
+          "建模",
+          "求解",
+          "校验",
+          "生成报表"
+        ],
+        "title": "JobStage",
+        "type": "string"
+      },
+      "JobStatus": {
+        "description": "运行状态。与阶段正交：`AWAITING_HUMAN` 是「停在某个阶段等人」。",
+        "enum": [
+          "QUEUED",
+          "RUNNING",
+          "AWAITING_HUMAN",
+          "DONE",
+          "FAILED"
+        ],
+        "title": "JobStatus",
+        "type": "string"
+      },
+      "JobStatusView": {
+        "additionalProperties": false,
+        "description": "`GET /api/v1/jobs/{job_id}` —— **轮询专用，必须小**（v6 §8.1）。\n\n没有方案、没有校验报告、没有事件明细。要那些就去 `GET /runs/{trace_id}`。",
+        "properties": {
+          "error_code": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ErrorCode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "job_id": {
+            "minLength": 1,
+            "title": "Job Id",
+            "type": "string"
+          },
+          "percent": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Percent",
+            "type": "integer"
+          },
+          "stage": {
+            "$ref": "#/components/schemas/JobStage"
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus"
+          },
+          "trace_id": {
+            "minLength": 1,
+            "title": "Trace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "trace_id",
+          "status",
+          "stage",
+          "percent"
+        ],
+        "title": "JobStatusView",
+        "type": "object"
+      },
+      "JobSubmitView": {
+        "additionalProperties": false,
+        "description": "提交类端点的统一响应：立即返回 `job_id`（v6 §9.2）。",
+        "properties": {
+          "idempotent_hit": {
+            "default": false,
+            "title": "Idempotent Hit",
+            "type": "boolean"
+          },
+          "job_id": {
+            "minLength": 1,
+            "title": "Job Id",
+            "type": "string"
+          },
+          "poll_url": {
+            "minLength": 1,
+            "title": "Poll Url",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus"
+          },
+          "trace_id": {
+            "minLength": 1,
+            "title": "Trace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "trace_id",
+          "status",
+          "poll_url"
+        ],
+        "title": "JobSubmitView",
+        "type": "object"
+      },
+      "OpenQuestionView": {
+        "additionalProperties": false,
+        "description": "§5.1.1「缺输入即提问」的待澄清问题（FTS-1004）。",
+        "properties": {
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          },
+          "prompt": {
+            "minLength": 1,
+            "title": "Prompt",
+            "type": "string"
+          },
+          "question_id": {
+            "minLength": 1,
+            "title": "Question Id",
+            "type": "string"
+          },
+          "resolution": {
+            "enum": [
+              "answer",
+              "upload"
+            ],
+            "title": "Resolution",
+            "type": "string"
+          }
+        },
+        "required": [
+          "question_id",
+          "prompt",
+          "resolution"
+        ],
+        "title": "OpenQuestionView",
+        "type": "object"
+      },
+      "PlanListView": {
+        "additionalProperties": false,
+        "description": "历史计划查询结果。",
+        "properties": {
+          "plans": {
+            "items": {
+              "$ref": "#/components/schemas/PlanSummaryView"
+            },
+            "title": "Plans",
+            "type": "array"
+          },
+          "week": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week"
+          }
+        },
+        "title": "PlanListView",
+        "type": "object"
+      },
+      "PlanSummaryView": {
+        "additionalProperties": false,
+        "description": "`GET /api/v1/plans?week=...` 的一行。",
+        "properties": {
+          "approved_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved By"
+          },
+          "content_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Content Sha256",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "iso_week": {
+            "pattern": "^\\d{4}W\\d{2}$",
+            "title": "Iso Week",
+            "type": "string"
+          },
+          "plan_id": {
+            "minLength": 1,
+            "title": "Plan Id",
+            "type": "string"
+          },
+          "plan_version": {
+            "minimum": 1.0,
+            "title": "Plan Version",
+            "type": "integer"
+          },
+          "relax_tier": {
+            "maximum": 3.0,
+            "minimum": 0.0,
+            "title": "Relax Tier",
+            "type": "integer"
+          },
+          "ruleset_version": {
+            "minLength": 1,
+            "title": "Ruleset Version",
+            "type": "string"
+          },
+          "semantics_version": {
+            "minLength": 1,
+            "title": "Semantics Version",
+            "type": "string"
+          },
+          "snapshot_id": {
+            "minLength": 1,
+            "title": "Snapshot Id",
+            "type": "string"
+          },
+          "sorties": {
+            "minimum": 0.0,
+            "title": "Sorties",
+            "type": "integer"
+          },
+          "status": {
+            "minLength": 1,
+            "title": "Status",
+            "type": "string"
+          },
+          "week_end": {
+            "format": "date",
+            "title": "Week End",
+            "type": "string"
+          },
+          "week_start": {
+            "format": "date",
+            "title": "Week Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plan_id",
+          "iso_week",
+          "plan_version",
+          "week_start",
+          "week_end",
+          "status",
+          "relax_tier",
+          "sorties",
+          "snapshot_id",
+          "ruleset_version",
+          "semantics_version",
+          "content_sha256",
+          "created_at"
+        ],
+        "title": "PlanSummaryView",
+        "type": "object"
+      },
+      "ProbeResult": {
+        "additionalProperties": false,
+        "description": "`probe_solve` 只读探针的结果（v6 §3.9.1）。\n\n探针是 CLAUDE.md 铁律 4 确定性边界的**唯一例外**——它不产出交付方案，\n结果必须经 `validate_node` 才能进入输出。",
+        "properties": {
+          "debts": {
+            "items": {
+              "$ref": "#/components/schemas/TrainingDebt"
+            },
+            "title": "Debts",
+            "type": "array"
+          },
+          "sorties": {
+            "minimum": 0.0,
+            "title": "Sorties",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "OPTIMAL",
+              "FEASIBLE",
+              "INFEASIBLE",
+              "UNKNOWN",
+              "MODEL_INVALID"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "wall_time_ms": {
+            "default": 0.0,
+            "minimum": 0.0,
+            "title": "Wall Time Ms",
+            "type": "number"
+          }
+        },
+        "required": [
+          "status",
+          "sorties"
+        ],
+        "title": "ProbeResult",
+        "type": "object"
+      },
+      "RelaxationProposal": {
+        "additionalProperties": false,
+        "description": "分级松弛提案（v6 §3.9.3 表格 + §3.10 松弛阶梯）。",
+        "properties": {
+          "action": {
+            "description": "如「missionF-1 本周顺延，欠账记入下周」",
+            "minLength": 1,
+            "title": "Action",
+            "type": "string"
+          },
+          "affected_rules": {
+            "description": "如 ['C13']",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Affected Rules",
+            "type": "array"
+          },
+          "authority": {
+            "enum": [
+              "排班员",
+              "训练主任",
+              "不可自动执行"
+            ],
+            "title": "Authority",
+            "type": "string"
+          },
+          "cost": {
+            "description": "如「进度延迟 1 周」",
+            "minLength": 1,
+            "title": "Cost",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "未验证时的说明，如「探针超时，未能确认此方案可行」",
+            "title": "Note"
+          },
+          "proposal_id": {
+            "minLength": 1,
+            "title": "Proposal Id",
+            "type": "string"
+          },
+          "recommended": {
+            "default": false,
+            "title": "Recommended",
+            "type": "boolean"
+          },
+          "rule_tier": {
+            "enum": [
+              "R0",
+              "R1",
+              "R2",
+              "R3"
+            ],
+            "title": "Rule Tier",
+            "type": "string"
+          },
+          "tier": {
+            "description": "松弛阶梯档位",
+            "maximum": 3.0,
+            "minimum": 0.0,
+            "title": "Tier",
+            "type": "integer"
+          },
+          "verified": {
+            "default": false,
+            "title": "Verified",
+            "type": "boolean"
+          },
+          "verified_result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProbeResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "proposal_id",
+          "tier",
+          "action",
+          "cost",
+          "affected_rules",
+          "rule_tier",
+          "authority"
+        ],
+        "title": "RelaxationProposal",
+        "type": "object"
+      },
+      "RunResultView": {
+        "additionalProperties": false,
+        "description": "`GET /api/v1/runs/{trace_id}` —— 方案 + 校验报告 + TraceEvent 全量。\n\n**`trace_events` 是全量且 `seq` 连续**，这是「回放完整性 = 100%」的定义。",
+        "properties": {
+          "committed_plan_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Committed Plan Id"
+          },
+          "conflicts": {
+            "items": {
+              "$ref": "#/components/schemas/ConflictItem"
+            },
+            "title": "Conflicts",
+            "type": "array"
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/ErrorView"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "explanation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Explanation"
+          },
+          "gate": {
+            "$ref": "#/components/schemas/GatePayloadView"
+          },
+          "grounding": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GroundingReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "intent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intent"
+          },
+          "job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Id"
+          },
+          "plan": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchedulePlan"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "relaxation_proposals": {
+            "items": {
+              "$ref": "#/components/schemas/RelaxationProposal"
+            },
+            "title": "Relaxation Proposals",
+            "type": "array"
+          },
+          "ruleset_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ruleset Version"
+          },
+          "schema_check": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchemaCheckReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "semantics_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Semantics Version"
+          },
+          "snapshot_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot Id"
+          },
+          "solver": {
+            "$ref": "#/components/schemas/SolverPanelView"
+          },
+          "stage": {
+            "$ref": "#/components/schemas/JobStage"
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus"
+          },
+          "trace_events": {
+            "items": {
+              "$ref": "#/components/schemas/TraceEvent"
+            },
+            "title": "Trace Events",
+            "type": "array"
+          },
+          "trace_id": {
+            "minLength": 1,
+            "title": "Trace Id",
+            "type": "string"
+          },
+          "validation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ValidationReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "workbook_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workbook Path"
+          }
+        },
+        "required": [
+          "trace_id",
+          "status",
+          "stage"
+        ],
+        "title": "RunResultView",
+        "type": "object"
+      },
+      "SchedulePlan": {
+        "additionalProperties": false,
+        "description": "一周排班方案（v6 附录 B）。",
+        "properties": {
+          "blocked_items": {
+            "items": {
+              "$ref": "#/components/schemas/BlockedItem"
+            },
+            "title": "Blocked Items",
+            "type": "array"
+          },
+          "content_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Content Sha256",
+            "type": "string"
+          },
+          "debts": {
+            "items": {
+              "$ref": "#/components/schemas/TrainingDebt"
+            },
+            "title": "Debts",
+            "type": "array"
+          },
+          "iso_week": {
+            "pattern": "^\\d{4}W\\d{2}$",
+            "title": "Iso Week",
+            "type": "string"
+          },
+          "plan_id": {
+            "minLength": 1,
+            "title": "Plan Id",
+            "type": "string"
+          },
+          "relaxation_tier": {
+            "maximum": 3.0,
+            "minimum": 0.0,
+            "title": "Relaxation Tier",
+            "type": "integer"
+          },
+          "ruleset_version": {
+            "minLength": 1,
+            "title": "Ruleset Version",
+            "type": "string"
+          },
+          "runway_model": {
+            "enum": [
+              "dual_runway",
+              "single_runway"
+            ],
+            "title": "Runway Model",
+            "type": "string"
+          },
+          "semantics_switches": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Semantics Switches",
+            "type": "object"
+          },
+          "semantics_version": {
+            "minLength": 1,
+            "title": "Semantics Version",
+            "type": "string"
+          },
+          "snapshot_id": {
+            "minLength": 1,
+            "title": "Snapshot Id",
+            "type": "string"
+          },
+          "sorties": {
+            "items": {
+              "$ref": "#/components/schemas/Sortie"
+            },
+            "title": "Sorties",
+            "type": "array"
+          },
+          "week_end": {
+            "format": "date",
+            "title": "Week End",
+            "type": "string"
+          },
+          "week_start": {
+            "format": "date",
+            "title": "Week Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plan_id",
+          "iso_week",
+          "week_start",
+          "week_end",
+          "snapshot_id",
+          "ruleset_version",
+          "semantics_version",
+          "runway_model",
+          "relaxation_tier",
+          "content_sha256"
+        ],
+        "title": "SchedulePlan",
+        "type": "object"
+      },
+      "ScheduleRequest": {
+        "additionalProperties": false,
+        "description": "`POST /api/v1/schedule` —— 结构化排班入口。\n\n**它同时是 FTS-4001 的降级路径**（v6 §9.3 脚注：LLM 挂了，排班能力必须还在）。\n所以这里的字段全是结构化的，一个自然语言字段都没有——走这条路不碰 LLM。",
+        "properties": {
+          "aircraft_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Aircraft Ids",
+            "type": "array"
+          },
+          "client_request_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "不给就按请求体内容算幂等键",
+            "title": "Client Request Id"
+          },
+          "person_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Person Ids",
+            "type": "array"
+          },
+          "relaxation_tier": {
+            "default": 0,
+            "maximum": 3.0,
+            "minimum": 0.0,
+            "title": "Relaxation Tier",
+            "type": "integer"
+          },
+          "snapshot_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot Id"
+          },
+          "week_start": {
+            "description": "排班周周一",
+            "format": "date",
+            "title": "Week Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "week_start"
+        ],
+        "title": "ScheduleRequest",
+        "type": "object"
+      },
+      "SchemaCheckReport": {
+        "additionalProperties": false,
+        "description": "闸门 3：Excel 回读反解与源对象的深度相等断言（v6 §4.3）。\n\n`diff` 必须为空——写出的内容能被完整反解回原对象，格式就不可能错。",
+        "properties": {
+          "diff": {
+            "description": "深度比对的差异路径",
+            "items": {
+              "type": "string"
+            },
+            "title": "Diff",
+            "type": "array"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "sheet_names": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sheet Names",
+            "type": "array"
+          },
+          "workbook_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workbook Path"
+          }
+        },
+        "required": [
+          "passed"
+        ],
+        "title": "SchemaCheckReport",
+        "type": "object"
+      },
+      "SolverPanelView": {
+        "additionalProperties": false,
+        "description": "v6 §8.2 求解面板的八个数 + 跑道分配统计。",
+        "properties": {
+          "runway_allocation": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Runway Allocation",
+            "type": "object"
+          },
+          "stats": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SolverStats"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "SolverPanelView",
+        "type": "object"
+      },
+      "SolverStats": {
+        "additionalProperties": false,
+        "description": "CP-SAT 求解统计（v6 §8.2 求解面板）。\n\n`random_seed` 与 `num_workers` 都是**可复现性的组成部分**（v6 §3.11）：\nCP-SAT 的多线程搜索在不同 worker 数下可能返回不同的等价最优解，所以\n两者必须随统计一起落库并进 manifest。",
+        "properties": {
+          "best_bound": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Bound"
+          },
+          "gap": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gap"
+          },
+          "num_branches": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Num Branches",
+            "type": "integer"
+          },
+          "num_candidates": {
+            "minimum": 0.0,
+            "title": "Num Candidates",
+            "type": "integer"
+          },
+          "num_conflicts": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Num Conflicts",
+            "type": "integer"
+          },
+          "num_constraints": {
+            "minimum": 0.0,
+            "title": "Num Constraints",
+            "type": "integer"
+          },
+          "num_variables": {
+            "minimum": 0.0,
+            "title": "Num Variables",
+            "type": "integer"
+          },
+          "num_workers": {
+            "default": 4,
+            "minimum": 1.0,
+            "title": "Num Workers",
+            "type": "integer"
+          },
+          "objective_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objective Value"
+          },
+          "random_seed": {
+            "default": 42,
+            "title": "Random Seed",
+            "type": "integer"
+          },
+          "relaxation_tier": {
+            "default": 0,
+            "maximum": 3.0,
+            "minimum": 0.0,
+            "title": "Relaxation Tier",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "OPTIMAL",
+              "FEASIBLE",
+              "INFEASIBLE",
+              "UNKNOWN",
+              "MODEL_INVALID"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "wall_time_ms": {
+            "minimum": 0.0,
+            "title": "Wall Time Ms",
+            "type": "number"
+          }
+        },
+        "required": [
+          "status",
+          "num_candidates",
+          "num_variables",
+          "num_constraints",
+          "wall_time_ms"
+        ],
+        "title": "SolverStats",
+        "type": "object"
+      },
+      "Sortie": {
+        "additionalProperties": false,
+        "description": "单个架次。**LLM 从头到尾不生成、不修改任何一条本记录**（v6 §0.1）。",
+        "properties": {
+          "aircraft_id": {
+            "pattern": "^AC\\d+$",
+            "title": "Aircraft Id",
+            "type": "string"
+          },
+          "airspace_id": {
+            "minLength": 1,
+            "title": "Airspace Id",
+            "type": "string"
+          },
+          "crew": {
+            "items": {
+              "$ref": "#/components/schemas/CrewMember"
+            },
+            "maxItems": 2,
+            "minItems": 1,
+            "title": "Crew",
+            "type": "array"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "is_recurrent": {
+            "default": false,
+            "title": "Is Recurrent",
+            "type": "boolean"
+          },
+          "landing": {
+            "format": "time",
+            "title": "Landing",
+            "type": "string"
+          },
+          "mission_id": {
+            "pattern": "^mission[A-Z]-\\d+$",
+            "title": "Mission Id",
+            "type": "string"
+          },
+          "mission_name": {
+            "minLength": 1,
+            "title": "Mission Name",
+            "type": "string"
+          },
+          "runway_id": {
+            "pattern": "^RWY-\\d+$",
+            "title": "Runway Id",
+            "type": "string"
+          },
+          "sortie_id": {
+            "pattern": "^S\\d{6}$",
+            "title": "Sortie Id",
+            "type": "string"
+          },
+          "takeoff": {
+            "format": "time",
+            "title": "Takeoff",
+            "type": "string"
+          },
+          "weekday": {
+            "enum": [
+              "周一",
+              "周二",
+              "周三",
+              "周四",
+              "周五",
+              "周六",
+              "周日"
+            ],
+            "title": "Weekday",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sortie_id",
+          "date",
+          "weekday",
+          "takeoff",
+          "landing",
+          "mission_id",
+          "mission_name",
+          "airspace_id",
+          "aircraft_id",
+          "runway_id",
+          "crew"
+        ],
+        "title": "Sortie",
+        "type": "object"
+      },
+      "TraceEvent": {
+        "additionalProperties": false,
+        "description": "过程回放事件（v6 §8.2）。`seq` 保证回放顺序。",
+        "properties": {
+          "agent": {
+            "minLength": 1,
+            "title": "Agent",
+            "type": "string"
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
+          },
+          "kind": {
+            "enum": [
+              "agent_start",
+              "agent_end",
+              "reasoning",
+              "tool_call",
+              "tool_result",
+              "decision",
+              "constraint_check",
+              "solver_stats",
+              "handoff",
+              "negotiation",
+              "error",
+              "warning",
+              "human_gate"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          },
+          "seq": {
+            "description": "全局序号，保证回放顺序",
+            "minimum": 0.0,
+            "title": "Seq",
+            "type": "integer"
+          },
+          "token_usage": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token Usage"
+          },
+          "ts": {
+            "format": "date-time",
+            "title": "Ts",
+            "type": "string"
+          }
+        },
+        "required": [
+          "seq",
+          "ts",
+          "agent",
+          "kind"
+        ],
+        "title": "TraceEvent",
+        "type": "object"
+      },
+      "TrainingDebt": {
+        "additionalProperties": false,
+        "description": "松弛产生的训练欠账（v6 附录 B）。必须显式披露，不得静默吞掉。",
+        "properties": {
+          "debt": {
+            "minimum": 0.0,
+            "title": "Debt",
+            "type": "integer"
+          },
+          "mission_id": {
+            "pattern": "^mission[A-Z]-\\d+$",
+            "title": "Mission Id",
+            "type": "string"
+          },
+          "person_id": {
+            "pattern": "^P\\d+$",
+            "title": "Person Id",
+            "type": "string"
+          },
+          "relaxed_by": {
+            "enum": [
+              "TIER1",
+              "TIER2",
+              "TIER3"
+            ],
+            "title": "Relaxed By",
+            "type": "string"
+          },
+          "required": {
+            "description": "按 freq_days 滑窗推出的本周应排次数",
+            "minimum": 0.0,
+            "title": "Required",
+            "type": "integer"
+          },
+          "scheduled": {
+            "minimum": 0.0,
+            "title": "Scheduled",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "person_id",
+          "mission_id",
+          "required",
+          "scheduled",
+          "debt",
+          "relaxed_by"
+        ],
+        "title": "TrainingDebt",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "ValidationReport": {
+        "additionalProperties": false,
+        "description": "14 条逐条结果的汇总（v6 §7.4 `state.validation`）。",
+        "properties": {
+          "all_passed": {
+            "description": "14 条全部通过才算通过。空结果集不算通过——那是没跑，不是过了。",
+            "readOnly": true,
+            "title": "All Passed",
+            "type": "boolean"
+          },
+          "duration_ms": {
+            "default": 0.0,
+            "minimum": 0.0,
+            "title": "Duration Ms",
+            "type": "number"
+          },
+          "plan_id": {
+            "minLength": 1,
+            "title": "Plan Id",
+            "type": "string"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/CheckResult"
+            },
+            "title": "Results",
+            "type": "array"
+          },
+          "ruleset_version": {
+            "minLength": 1,
+            "title": "Ruleset Version",
+            "type": "string"
+          },
+          "semantics_version": {
+            "minLength": 1,
+            "title": "Semantics Version",
+            "type": "string"
+          },
+          "total_checked_items": {
+            "readOnly": true,
+            "title": "Total Checked Items",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "plan_id",
+          "ruleset_version",
+          "semantics_version",
+          "all_passed",
+          "total_checked_items"
+        ],
+        "title": "ValidationReport",
+        "type": "object"
+      },
+      "Violation": {
+        "additionalProperties": false,
+        "description": "单条违规。`fix_hint` 是给排班员看的可执行建议，不是给求解器的。",
+        "properties": {
+          "detail": {
+            "minLength": 1,
+            "title": "Detail",
+            "type": "string"
+          },
+          "fix_hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fix Hint"
+          },
+          "rule_id": {
+            "pattern": "^C(0[1-9]|1[0-4])$",
+            "title": "Rule Id",
+            "type": "string"
+          },
+          "severity": {
+            "default": "HARD",
+            "enum": [
+              "HARD",
+              "SOFT"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "subjects": {
+            "description": "涉及的实体：机号 / sortie_id / 跑道 / 空域",
+            "items": {
+              "type": "string"
+            },
+            "title": "Subjects",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rule_id",
+          "detail"
+        ],
+        "title": "Violation",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "全离线内网部署的飞行训练排班系统。**排班由 CP-SAT 求解、由一套与求解器实现\n完全独立的校验器兜底**；LLM 只做翻译、组织权衡与解释，**不生成、不修改任何一条\n架次记录**（v6 §0.1）。\n\n- 长任务一律异步：提交返回 `job_id`，轮询 `GET /jobs/{job_id}`（阶段 + 百分比），\n  完成后一次性取 `GET /runs/{trace_id}`（方案 + 校验报告 + TraceEvent 全量）。\n- 三态分离：`OPTIMAL/FEASIBLE` / `INFEASIBLE` / `UNKNOWN` 在错误码与数据模型上\n  全程不混（铁律 8）。\n- 认证：`Authorization: Bearer <token>`，角色 viewer < scheduler < director < admin。\n",
+    "title": "FTS 飞行训练排班系统 API",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/chat": {
+      "post": {
+        "description": "提交一句话，立即返回 `job_id` + `trace_id`（v6 §8.1）。\n\n`thread_id` 非空时**续接**那次运行（修订轮走这条路）：trace_id 沿用，\nLangGraph 按同一个 thread 从 checkpoint 接着跑。",
+        "operationId": "post_chat_api_v1_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobSubmitView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "自然语言入口（异步，返回 job_id）",
+        "tags": [
+          "会话"
+        ]
+      }
+    },
+    "/api/v1/ingest": {
+      "post": {
+        "description": "存盘 + 登记。**不在这里解析**——解析在 `/changeset`。\n\n多文件时的幂等键是「每份文件摘要按文件名排序后再摘要」：一批文件的身份\n应当与上传顺序无关，而 `sha256(a||b) != sha256(b||a)`。",
+        "operationId": "post_ingest_api_v1_ingest_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_post_ingest_api_v1_ingest_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestSubmitView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "上传数据文件（幂等键 = 文件 SHA256）",
+        "tags": [
+          "摄取"
+        ]
+      }
+    },
+    "/api/v1/ingest/{job_id}/changeset": {
+      "get": {
+        "operationId": "get_changeset_api_v1_ingest__job_id__changeset_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeSetView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "取待确认 Diff（含 §5.5 的冲突项与待答问题）",
+        "tags": [
+          "摄取"
+        ]
+      }
+    },
+    "/api/v1/ingest/{job_id}/confirm": {
+      "post": {
+        "operationId": "post_confirm_api_v1_ingest__job_id__confirm_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngestConfirmRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestConfirmView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "确认变更 → 落库 → 生成新 snapshot",
+        "tags": [
+          "摄取"
+        ]
+      }
+    },
+    "/api/v1/jobs/{job_id}": {
+      "get": {
+        "operationId": "get_job_api_v1_jobs__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatusView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "轮询任务状态（阶段 + 百分比 + 状态）",
+        "tags": [
+          "任务"
+        ]
+      }
+    },
+    "/api/v1/plans": {
+      "get": {
+        "operationId": "get_plans_api_v1_plans_get",
+        "parameters": [
+          {
+            "description": "ISO 周，如 2026-W02。不给则返回最近 50 条",
+            "in": "query",
+            "name": "week",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ISO 周，如 2026-W02。不给则返回最近 50 条",
+              "title": "Week"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanListView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "历史计划查询",
+        "tags": [
+          "计划"
+        ]
+      }
+    },
+    "/api/v1/runs/{trace_id}": {
+      "get": {
+        "operationId": "get_run_api_v1_runs__trace_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "trace_id",
+            "required": true,
+            "schema": {
+              "title": "Trace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunResultView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "取回完整结果：方案 + 校验报告 + TraceEvent 全量",
+        "tags": [
+          "任务"
+        ]
+      }
+    },
+    "/api/v1/schedule": {
+      "post": {
+        "operationId": "post_schedule_api_v1_schedule_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobSubmitView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "结构化排班入口（异步，零 LLM 依赖）",
+        "tags": [
+          "排班"
+        ]
+      }
+    },
+    "/api/v1/schedule/{trace_id}/approve": {
+      "post": {
+        "operationId": "post_approve_api_v1_schedule__trace_id__approve_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "trace_id",
+            "required": true,
+            "schema": {
+              "title": "Trace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "人工确认 → 归档 + 回写记忆（需训练主任）",
+        "tags": [
+          "排班"
+        ]
+      }
+    },
+    "/api/v1/schedule/{trace_id}/export": {
+      "get": {
+        "description": "取归档产物。**只在归档之后才有文件**（`commit_plan` 写的那个）。\n\n没有文件时报 FTS-1004 而不是 404 空响应：用户要的下一步很明确\n——先去人工门禁确认，产物才会生成。",
+        "operationId": "get_export_api_v1_schedule__trace_id__export_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "trace_id",
+            "required": true,
+            "schema": {
+              "title": "Trace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "下载本次运行归档的 xlsx",
+        "tags": [
+          "排班"
+        ]
+      }
+    },
+    "/api/v1/schedule/{trace_id}/reject": {
+      "post": {
+        "description": "驳回。**不自动重排**——驳回的理由要人来定（v6 §7.2.4 那张表）。",
+        "operationId": "post_reject_api_v1_schedule__trace_id__reject_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "trace_id",
+            "required": true,
+            "schema": {
+              "title": "Trace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "驳回附意见（不自动重排）",
+        "tags": [
+          "排班"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "description": "存活探针。**不连库、不连 Redis**（见 `HealthView` 的注释）。",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health",
+        "tags": [
+          "运维"
+        ]
+      }
+    }
+  }
+}

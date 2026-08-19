@@ -47,6 +47,13 @@ export REDIS_HOST="${REDIS_HOST:-127.0.0.1}"
 export REDIS_PORT="${REDIS_PORT:-6380}"
 export OLLAMA_HOST="${OLLAMA_HOST:-127.0.0.1:11434}"
 
+# 应用三进程（M8 补，供 start_all_app.sh 用）。绑 0.0.0.0 是设计意图：
+# 内网部署要从别的机器访问（与 Settings.APP_HOST 同一口径）。
+export APP_HOST="${APP_HOST:-0.0.0.0}"
+export APP_PORT="${APP_PORT:-8000}"
+export FRONTEND_PORT="${FRONTEND_PORT:-8501}"
+export RQ_QUEUE="${RQ_QUEUE:-fts}"
+
 # ── GPU：只用第 4 块卡（CLAUDE.md §2 硬约束）────────────────────────
 export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-3}"
 

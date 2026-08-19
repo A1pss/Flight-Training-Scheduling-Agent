@@ -1,0 +1,134 @@
+# ─────────────────────────────────────────────────────────────────────
+# deploy/compose/docker-compose.yml —— **交付备选路径**（v6 §11.1 / §11.4）
+#
+# ⚠️ 本项目的**主路径是裸装**（`deploy/native/`，CLAUDE.md §2「无 Docker」）。
+# 这份 compose 存在的理由只有一个：交付方的环境里如果只允许容器化部署，
+# 也要能起得来，且**跑出与裸装逐字节相同的结果**（v6 §11.4 那条硬要求，
+# 也是 M8 的出口标准之一）。
+#
+# ## 为什么是「瘦镜像 + bind-mount」而不是把环境打进镜像
+#
+# schedule 这个 conda 环境有 8.5 GB（torch + paddle + ortools + bge 权重路径）。
+# 把它烤进镜像意味着：① 镜像 ~15 GB，`docker save` 出来的 tar 更大；
+# ② 每次依赖变动都要重建整个镜像；③ 最要命的是**镜像里的环境与裸装那份不是
+# 同一个** —— 而出口标准要比的恰恰是「两条路径跑出同一个结果」。让容器
+# bind-mount 宿主同一份 conda 环境与同一份代码，比对的才是「部署方式」这一个
+# 变量，而不是「顺便还换了一套依赖」。
+#
+# 代价写在明处：容器与宿主的 glibc 必须兼容，所以 `Dockerfile` 的基础镜像
+# 钉在 `ubuntu:20.04`（宿主实测 Ubuntu 20.04.6 / glibc 2.31）。换宿主发行版时
+# 要同步换基础镜像 —— 这一点在 `deploy/compose/README.md` 里写着。
+#
+# ## 网络
+#
+# `network_mode: host` —— 三个服务（PG 5433 / Redis 6380 / Ollama 11434）在
+# 裸装形态下就是监听宿主回环，容器走 host 网络才能连到同一批服务，也才能让
+# `EGRESS_ALLOWLIST` 里的 `127.0.0.1` 在两条路径下含义相同。
+#
+# 真要做容器级 egress 封锁，用 `iptables_egress_drop.sh`（v6 §11.5「交付方若
+# 使用 compose 路径，额外用 iptables DROP 所有 egress」）。那个脚本要 root，
+# **本机不执行**，随交付包一起给运维。
+#
+# ## 镜像从哪来（两条，按现场有没有 registry 选）
+#
+# | 现场 | 做法 | 产物 |
+# |---|---|---|
+# | **离线（本项目的形态）** | `bash build_base_image.sh` —— 从宿主自身抽 glibc 闭包 | `fts-base:local`，**实测 6 MB** |
+# | 有 registry / 有 images/*.tar | `docker build -f Dockerfile .` 或 `docker load` | `fts-app:1.0.0` |
+#
+# 两者可互换，用 `FTS_APP_IMAGE` 指定。**这里没有 `build:` 段**是刻意的：
+# 有 `build:` 时 `docker compose run` 会在镜像缺失时**自动去拉基础镜像**，
+# 而离线机上那一步会挂很久然后失败 —— 报错还指向 compose 而不是「你没有镜像」。
+# 镜像必须是先建好的既成事实。
+#
+# ## 环境文件
+#
+# `env_file` 指向 `env/${FTS_ENV:-prod}.env`。生产不传 `FTS_ENV` 即用 prod；
+# 开发机上验两条路径一致性时用 `FTS_ENV=dev`（那份把 LLM_PROVIDER 钉成 mock，
+# 但**确定性五项与 prod 逐字相同** —— 见 env/dev.env.example 的开头）。
+# ─────────────────────────────────────────────────────────────────────
+
+services:
+  # ── 应用（API）────────────────────────────────────────────────────
+  api:
+    image: ${FTS_APP_IMAGE:-fts-base:local}
+    container_name: fts-api
+    network_mode: host
+    env_file:
+      # flow 风格 `[env/${FTS_ENV:-prod}.env]` 会被 YAML 当成 key: value 而解析失败
+      - env/${FTS_ENV:-prod}.env
+    environment:
+      FTS_DEPLOY_PATH: compose        # 只用于产物标注，不参与任何计算
+    volumes:
+      - ${FTS_REPO_DIR:?请设置 FTS_REPO_DIR（仓库绝对路径）}:${FTS_REPO_DIR}:ro
+      - ${FTS_CONDA_ENV_DIR:?请设置 FTS_CONDA_ENV_DIR（schedule 环境绝对路径）}:${FTS_CONDA_ENV_DIR}:ro
+      - ${FTS_DATA_DIR:-${FTS_REPO_DIR}/.data}:${FTS_DATA_DIR:-${FTS_REPO_DIR}/.data}
+      - ${FTS_PLANS_DIR:-${FTS_REPO_DIR}/data/plans}:${FTS_PLANS_DIR:-${FTS_REPO_DIR}/data/plans}
+    working_dir: ${FTS_REPO_DIR}
+    command: >-
+      ${FTS_CONDA_ENV_DIR}/bin/python -m uvicorn backend.api.main:app
+      --host 0.0.0.0 --port ${APP_PORT:-8000}
+    restart: unless-stopped
+
+  # ── RQ worker（缺它任务永远停在 QUEUED，M6 §9.3 特意点名的那条）──
+  worker:
+    image: ${FTS_APP_IMAGE:-fts-base:local}
+    container_name: fts-worker
+    network_mode: host
+    env_file:
+      # flow 风格 `[env/${FTS_ENV:-prod}.env]` 会被 YAML 当成 key: value 而解析失败
+      - env/${FTS_ENV:-prod}.env
+    depends_on: [api]
+    volumes:
+      - ${FTS_REPO_DIR}:${FTS_REPO_DIR}:ro
+      - ${FTS_CONDA_ENV_DIR}:${FTS_CONDA_ENV_DIR}:ro
+      - ${FTS_DATA_DIR:-${FTS_REPO_DIR}/.data}:${FTS_DATA_DIR:-${FTS_REPO_DIR}/.data}
+      - ${FTS_PLANS_DIR:-${FTS_REPO_DIR}/data/plans}:${FTS_PLANS_DIR:-${FTS_REPO_DIR}/data/plans}
+    working_dir: ${FTS_REPO_DIR}
+    # SimpleWorker（同进程执行）—— M6 §9.1 第 6 条：fork 型 Worker 没测过，
+    # 没测过的东西不写进交付脚本。
+    command: >-
+      ${FTS_CONDA_ENV_DIR}/bin/rq worker
+      --url redis://${REDIS_HOST:-127.0.0.1}:${REDIS_PORT:-6380}
+      --worker-class rq.SimpleWorker ${RQ_QUEUE:-fts}
+    restart: unless-stopped
+
+  # ── Streamlit 前端 ────────────────────────────────────────────────
+  frontend:
+    image: ${FTS_APP_IMAGE:-fts-base:local}
+    container_name: fts-frontend
+    network_mode: host
+    env_file:
+      # flow 风格 `[env/${FTS_ENV:-prod}.env]` 会被 YAML 当成 key: value 而解析失败
+      - env/${FTS_ENV:-prod}.env
+    depends_on: [api]
+    volumes:
+      - ${FTS_REPO_DIR}:${FTS_REPO_DIR}:ro
+      - ${FTS_CONDA_ENV_DIR}:${FTS_CONDA_ENV_DIR}:ro
+    working_dir: ${FTS_REPO_DIR}
+    command: >-
+      ${FTS_CONDA_ENV_DIR}/bin/streamlit run frontend/app.py
+      --server.port ${FRONTEND_PORT:-8501} --server.address 0.0.0.0
+    restart: unless-stopped
+
+  # ── 一次性任务：黄金用例指纹（两条路径比对用，不常驻）──────────────
+  #    docker compose run --rm golden
+  golden:
+    image: ${FTS_APP_IMAGE:-fts-base:local}
+    container_name: fts-golden
+    network_mode: host
+    env_file:
+      # flow 风格 `[env/${FTS_ENV:-prod}.env]` 会被 YAML 当成 key: value 而解析失败
+      - env/${FTS_ENV:-prod}.env
+    volumes:
+      - ${FTS_REPO_DIR}:${FTS_REPO_DIR}:ro
+      - ${FTS_CONDA_ENV_DIR}:${FTS_CONDA_ENV_DIR}:ro
+    working_dir: ${FTS_REPO_DIR}
+    environment:
+      # 与裸装侧逐字相同 —— 这几项进 content_sha256（见 env/prod.env.example 的 ★）
+      TZ: ${TZ:-Asia/Shanghai}
+      LANG: ${LANG:-C.UTF-8}
+      PYTHONHASHSEED: "0"
+    command: >-
+      ${FTS_CONDA_ENV_DIR}/bin/python deploy/scripts/golden_fingerprint.py --per-case
+    profiles: [verify]

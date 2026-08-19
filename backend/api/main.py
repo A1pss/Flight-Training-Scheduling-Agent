@@ -53,6 +53,7 @@ from backend.api.security import AuthError, TokenTable
 from backend.api.store import KeyValueStore, build_store
 from backend.core.config import Settings, get_settings
 from backend.core.errors import ErrorCode, ErrorResponse, FTSError, ScheduleLockedError
+from backend.core.integrity import enforce_model_integrity
 from backend.core.logging import bind_trace_id, configure_logging, get_logger, new_trace_id
 from backend.core.ruleset import load_ruleset, load_semantics
 from backend.schemas.api import HealthView
@@ -139,6 +140,13 @@ def create_app(
     cfg = settings or get_settings()
     configure_logging(cfg)
 
+    # ★ 模型完整性（v6 §11.5）：**启动即校验，不匹配就不给起**。
+    # 与 `healthcheck.sh` 共用 `backend.core.integrity` 的同一份判据（「双重校验」
+    # 指的是两个时机，不是两套算法）。`mock` / `replay` 两态整体跳过 —— 那两条路
+    # 一次都不碰 Ollama，拿一个用不上的 digest 卡住 CI 启动只会制造假红。
+    digest_check = enforce_model_integrity(cfg)
+    logger.info("model_integrity", detail=digest_check.render(), skipped=digest_check.skipped)
+
     app = FastAPI(
         title="FTS 飞行训练排班系统 API",
         version="1.0.0",
@@ -156,6 +164,16 @@ def create_app(
     app.state.idempotency = IdempotencyStore(backend_store)
     app.state.runner = runner or build_runner(cfg, backend_store)
     app.state.tokens = TokenTable.from_settings(cfg)
+
+    # 机密管理（v6 §11.5）：明文 token 仍然能用（M6 交付的配置不能一升级就全废），
+    # 但**必须说出来**。转成散列：`python -m backend.api.tokens_cli hash --tokens ...`
+    plaintext = app.state.tokens.plaintext_users
+    if plaintext:
+        logger.warning(
+            "API_TOKENS 中仍有明文口令",
+            users=list(plaintext),
+            hint='python -m backend.api.tokens_cli hash --tokens "$API_TOKENS"',
+        )
     app.state.session_factory = session_factory
     app.state.today = today
 

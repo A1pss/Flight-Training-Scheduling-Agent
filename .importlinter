@@ -66,9 +66,11 @@ source_modules =
     backend.llm
     backend.models
     backend.schemas
+    backend.core.audit
     backend.core.config
     backend.core.db
     backend.core.errors
+    backend.core.integrity
     backend.core.logging
     backend.core.ruleset
 ; import-linter 不接受外部包的子模块（urllib.request），故对整个 urllib 设禁 ——

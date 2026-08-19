@@ -1,7 +1,8 @@
 """审计与追踪表。
 
-`audit_log` 记录「谁在什么时候把什么改成了什么」——摄取的人工确认、松弛档位
-授权、计划审批都往这里写。`trace_events` 是 v6 §8.2 过程回放的持久化形态，
+`audit_log` 记录「谁在什么时候从哪台机器把什么改成了什么」——摄取的人工确认、
+松弛档位授权、计划审批、以及全部 POST 端点都往这里写（v6 §11.5「审计」）。
+写入口统一在 :mod:`backend.core.audit`。`trace_events` 是 v6 §8.2 过程回放的持久化形态，
 与 `backend.schemas.common.TraceEvent` 契约同构。
 """
 
@@ -55,11 +56,19 @@ class AuditLog(Base):
         DateTime(timezone=True), nullable=False, server_default=func.now(), index=True
     )
     actor: Mapped[str] = mapped_column(String(64), nullable=False)
+    #: 操作来源 IP（v6 §11.5「审计」四要素之一，M8 补）。取 `request.client.host`，
+    #: **不采信 `X-Forwarded-For`** —— 那个头客户端能随便写，采信它等于让审计可伪造。
+    #: 非 HTTP 入口（CLI 摄取、worker 内部）写空串，不写 `"local"` 之类的假值。
+    actor_ip: Mapped[str] = mapped_column(String(64), nullable=False, default="", server_default="")
     action: Mapped[str] = mapped_column(String(64), nullable=False)
     resource_type: Mapped[str] = mapped_column(String(32), nullable=False)
     resource_id: Mapped[str] = mapped_column(String(128), nullable=False)
     before: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     after: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    #: `before` → `after` 的顶层键差异，写入当时算好（`backend.core.audit.value_diff`）。
+    #: 形式上冗余于前两列，存它是为了「管理员不必自己对着两坨 JSON 找不同」，
+    #: 且日后算法改了也不会改写历史结论。
+    diff: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     trace_id: Mapped[str] = mapped_column(String(64), nullable=False, default="")
 
 

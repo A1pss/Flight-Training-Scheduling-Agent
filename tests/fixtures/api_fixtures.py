@@ -18,12 +18,23 @@ from backend.api.runner import InlineRunner
 from backend.api.store import InMemoryStore, KeyValueStore
 from backend.api.worker import RunPayload
 from backend.core.config import Settings
+from backend.models.audit import AuditLog
 
-#: 三个角色各一个 token，覆盖 §9.1 的最低角色矩阵。
-TEST_TOKENS = "tok-dir:P01:director,tok-sch:P02:scheduler,tok-view:P03:viewer"
+#: 四个角色各一个 token，覆盖 §9.1 的最低角色矩阵与 v6 §11.5 的 RBAC 四角色。
+#: `tok-adm` 是 M8 补的 —— 没有 admin 那一格，权限矩阵就只测了四分之三。
+TEST_TOKENS = "tok-dir:P01:director,tok-sch:P02:scheduler,tok-view:P03:viewer,tok-adm:P00:admin"
 DIRECTOR = {"Authorization": "Bearer tok-dir"}
 SCHEDULER = {"Authorization": "Bearer tok-sch"}
 VIEWER = {"Authorization": "Bearer tok-view"}
+ADMIN = {"Authorization": "Bearer tok-adm"}
+
+#: 角色 → 请求头，供权限矩阵逐格遍历。
+ROLE_HEADERS: dict[str, dict[str, str]] = {
+    "viewer": VIEWER,
+    "scheduler": SCHEDULER,
+    "director": DIRECTOR,
+    "admin": ADMIN,
+}
 
 BASELINE_WEEK = date(2026, 1, 5)
 BASELINE_TODAY = date(2026, 1, 2)
@@ -47,15 +58,51 @@ class FailingRunner:
         raise RuntimeError("队列不可用")
 
 
-class NullSession:
-    """什么都不做的会话替身（单测里不碰库）。"""
+class RecordingSession:
+    """不碰库的会话替身，但**把 `add()` 进来的对象留下**（单测里不连 PG）。
+
+    M8 起 API 层每个 POST 都写一行 `audit_log`（v6 §11.5）。原先那个只有
+    `close()` 的替身会让审计写入直接抛 `AttributeError` —— 而 `AuditRecorder`
+    对写失败是「记 ERROR 但不拖垮请求」，于是单测会**静默地测不到审计**。
+    改成记录型替身，审计断言在单测里就能做，不必都推到集成测试。
+    """
+
+    def __init__(self, sink: list[Any]) -> None:
+        self.sink = sink
+
+    def add(self, obj: Any) -> None:
+        self.sink.append(obj)
+
+    def flush(self) -> None:
+        return None
+
+    def commit(self) -> None:
+        return None
+
+    def rollback(self) -> None:
+        return None
 
     def close(self) -> None:
         return None
 
 
+class RecordingSessionFactory:
+    """会话工厂替身。`added` 汇集本 app 全部写入对象，`audit_rows` 只挑审计行。"""
+
+    def __init__(self) -> None:
+        self.added: list[Any] = []
+
+    def __call__(self) -> RecordingSession:
+        return RecordingSession(self.added)
+
+    @property
+    def audit_rows(self) -> list[AuditLog]:
+        return [item for item in self.added if isinstance(item, AuditLog)]
+
+
 def null_session_factory() -> Any:
-    return NullSession()
+    """无处收集的一次性替身。要断言审计行请改用 :class:`RecordingSessionFactory`。"""
+    return RecordingSession([])
 
 
 @contextmanager
@@ -186,16 +233,19 @@ def restored_db(snapshot_id: str) -> Iterator[ProgressRestore]:
 
 
 __all__ = [
+    "ADMIN",
     "BASELINE_TODAY",
     "BASELINE_WEEK",
     "DIRECTOR",
+    "ROLE_HEADERS",
     "SCHEDULER",
     "TEST_TOKENS",
     "VIEWER",
     "FailingRunner",
-    "NullSession",
     "ProgressRestore",
     "RecordingRunner",
+    "RecordingSession",
+    "RecordingSessionFactory",
     "build_test_app",
     "make_settings",
     "null_session_factory",

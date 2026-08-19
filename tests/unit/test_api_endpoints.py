@@ -4,7 +4,7 @@
 ——谁能调、幂等键是什么、拿不到锁怎么办。求解链路由
 `tests/integration/test_api_live.py` 用真库跑。
 
-会话替身是 `NullSession`：请求里显式给 `snapshot_id` 时 `require_snapshot`
+会话替身是 `RecordingSession`：请求里显式给 `snapshot_id` 时 `require_snapshot`
 短路，压根不查库。**这不是绕过检查**——「没给快照且库里也没有」那条分支
 由集成测试覆盖。
 """

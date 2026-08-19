@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, status
 
+from backend.api.audit import CurrentAudit
 from backend.api.deps import (
     CurrentIdempotency,
     CurrentJobs,
@@ -52,6 +53,7 @@ def post_chat(
     runner: CurrentRunner,
     settings: CurrentSettings,
     today: CurrentToday,
+    audit: CurrentAudit,
 ) -> JobSubmitView:
     """提交一句话，立即返回 `job_id` + `trace_id`（v6 §8.1）。
 
@@ -71,7 +73,7 @@ def post_chat(
         settings=settings,
         today=today,
     )
-    return submit_run(
+    submitted = submit_run(
         ctx,
         scope="chat",
         idem_token=body.client_request_id,
@@ -85,6 +87,19 @@ def post_chat(
         iso_week=iso_week,
         use_llm=True,
     )
+    audit.record(
+        action="api.chat.submit",
+        resource_type="run",
+        resource_id=submitted.trace_id,
+        after={
+            "job_id": submitted.job_id,
+            "snapshot_id": snapshot,
+            "iso_week": iso_week,
+            "message": body.message,
+            "idempotent_hit": submitted.idempotent_hit,
+        },
+    )
+    return submitted
 
 
 __all__ = ["router"]

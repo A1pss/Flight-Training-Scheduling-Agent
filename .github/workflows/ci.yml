@@ -137,6 +137,21 @@ jobs:
       - name: E2/E3 —— egress 静态扫描
         run: bash deploy/scripts/check_egress.sh
 
+      # ── M8：API 文档不许与代码分叉 ─────────────────────────────────
+      # `docs/openapi.json` 是交付物之一（v6 §13）。落一份进 Git 的价值在于
+      # **端点契约的变化会出现在 diff 里**；而它一旦与代码分叉，那个价值就没了。
+      # `--check` 只比对不写文件，分叉即红，逼人跑一次导出。
+      - name: OpenAPI 文档与代码一致
+        run: python deploy/scripts/export_openapi.py --check
+
+      # ── M8：两条部署路径的确定性配置 ───────────────────────────────
+      # 只跑 `--config-only`：CI 上没有 docker，跑不了 compose 那一侧。
+      # 但**配置分叉是可以静态查出来的** —— 有人只改了 .env.example 的
+      # SOLVER_SEED 而忘了改 compose 的 env 模板，这里就会红。
+      # 指纹本身的比对（要真起容器）由 M8 收工实测与交付前的人工验收覆盖。
+      - name: native/compose 确定性配置比对
+        run: bash deploy/scripts/compare_deploy_paths.sh --config-only
+
       # ── v6 §7.7.1 第 8 行：提示词版本治理 ──────────────────────────
       # 两步：① 锁文件与正文必须一致（改正文没换版本号 → 红）；
       #       ② `prompts/**` 有改动时跑该组件的 eval 子集。
