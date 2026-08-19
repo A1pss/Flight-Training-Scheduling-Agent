@@ -1,6 +1,6 @@
 {
-  "approved_at": null,
-  "approved_by": null,
+  "approved_at": "2026-08-20",
+  "approved_by": "Alps",
   "context": {
     "baseline_week": "2026W02",
     "eval_today": "2026-01-05",
@@ -29,7 +29,7 @@
     "v6 §5.4",
     "v6 §12.5.3"
   ],
-  "stage": "draft",
+  "stage": "approved",
   "strata": {
     "adversarial": 60,
     "ambiguous": 60,
