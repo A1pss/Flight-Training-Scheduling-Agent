@@ -30,6 +30,7 @@ from tests.datasets import (
     memory_probes,
     nl_catalog,
     ood_catalog,
+    seed_catalog,
     tool_call_catalog,
     trajectory_catalog,
 )
@@ -485,6 +486,62 @@ def write_ood_200() -> None:
     print(f"✅ ood_200 {len(items)} 条 · {loaded.sha256[:16]}… · {loaded.strata}")
 
 
+def write_sft_seed() -> None:
+    """SFT 种子。**只备种子，合成管线是 W12 的事。**"""
+    rows = seed_catalog.build()
+    directory = dataset_dir("sft_seed")
+    sha = write_jsonl(directory / "items.jsonl", rows)
+    strata: dict[str, int] = {}
+    for row in rows:
+        key = str(row["kind"])
+        strata[key] = strata.get(key, 0) + 1
+
+    previous = _previous(directory)
+    keep = previous is not None and previous.sha256 == sha
+    manifest = DatasetManifest(
+        name="sft_seed",
+        version="v1",
+        stage=previous.stage if (keep and previous is not None) else "draft",
+        item_count=len(rows),
+        strata=dict(sorted(strata.items())),
+        sha256=sha,
+        generated_at=(
+            previous.generated_at
+            if keep and previous
+            else datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+        ),
+        method=(
+            "60 条需求表述从 nl_360 的排班/指定/重排三层确定性抽样（每层按固定步长取 20）；"
+            "14 条规则从 rules/ruleset_v1.3.yaml **读出来**；13 条语义假设从 "
+            "rules/semantics.yaml 读；36 条实体来自 v6 §1.3 基准实体表。"
+            "**没有一条是手抄的** —— 手抄会在下一次改规则时悄悄分叉。"
+        ),
+        spec_refs=["v6 §15.2", "v6 §1.1", "v6 §1.3", "v6 §12.2"],
+        known_limitations=[
+            "**本集只是种子，不是训练样本。** §15.2 的六步合成管线（指令扩写 → 学生自采样 "
+            "→ 确定性过滤 → 教师补硬样本 → 程序化生成 → 难负例挖掘）是 W12 的交付物。",
+            "60 条需求表述与 nl_360 同源 —— 用它们合成的样本若拿去评 nl_360，"
+            "会有**训练/评测同源**的问题。W12 合成时要么换池子、要么在报告里声明。",
+            "规则与语义假设跟着 ruleset_version=1.3.0 / semantics_version=1.1.0 走："
+            "任一版本变动，本集的 sha256 必变、批准状态自动失效。",
+            "难负例（近音近形、歧义、注入）**不在种子里** —— §15.2 把它们放在第 ⑥ 步"
+            "「难负例挖掘」，输入是 §12.5.1 的失败模式分布表，那要 W13 跑完才有。",
+        ],
+        context={
+            "ruleset_version": "1.3.0",
+            "semantics_version": "1.1.0",
+            "sampling": "每层步长 = len(pool) // 20，确定性",
+            "pipeline_owner": "W12（M7 微调前的数据合成）",
+        },
+        approved_by=previous.approved_by if keep and previous else None,
+        approved_at=previous.approved_at if keep and previous else None,
+    )
+    write_manifest(directory, manifest)
+    (directory / "card.md").write_text(render_card(manifest), encoding="utf-8", newline="\n")
+    loaded, items = load_eval_dataset("sft_seed")
+    print(f"✅ sft_seed {len(items)} 条 · {loaded.sha256[:16]}… · {loaded.strata}")
+
+
 WRITERS = {
     "nl_360": write_nl_360,
     "memory_320": write_memory_320,
@@ -493,6 +550,7 @@ WRITERS = {
     "plan_scenarios": write_plan_scenarios,
     "golden_40": write_golden_40,
     "ood_200": write_ood_200,
+    "sft_seed": write_sft_seed,
 }
 
 

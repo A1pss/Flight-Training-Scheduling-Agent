@@ -36,6 +36,7 @@ from backend.datasets.schemas import (
     NLItem,
     OodItem,
     PlanScenarioItem,
+    SftSeedItem,
     ToolCallItem,
     TrajectoryItem,
 )
@@ -54,6 +55,7 @@ REGISTRY: Final[dict[str, type[DatasetItem]]] = {
     "plan_scenarios": PlanScenarioItem,
     "golden_40": GoldenCaseItem,
     "ood_200": OodItem,
+    "sft_seed": SftSeedItem,
 }
 
 
@@ -158,7 +160,7 @@ def stratum_field(items: list[DatasetItem]) -> str | None:
     """各集的分层字段名不同（nl 用 `layer`，后续几集用 `stratum` / `flow`）。"""
     if not items:
         return None
-    for candidate in ("layer", "memory_type", "flow", "stratum", "category", "status"):
+    for candidate in ("layer", "memory_type", "flow", "stratum", "category", "status", "kind"):
         if hasattr(items[0], candidate):
             return candidate
     return None

@@ -681,6 +681,40 @@ class OodItem(DatasetItem):
         return self
 
 
+# ══════════════════════════════════════════════════════════════════════
+# sft_seed（v6 §15.2 数据合成的种子）
+# ══════════════════════════════════════════════════════════════════════
+
+#: §15.2 那张流程图最上面那一格「种子数据（人工）」的三样东西。
+#: `entity` 是第三样（实体表）拆成的逐条形态。
+SeedKind = Literal["request", "rule", "semantic", "entity"]
+
+
+class SftSeedItem(DatasetItem):
+    """`sft_seed` 的一条种子（§15.2）。
+
+    **本窗口只备种子，合成管线是 W12 的事。** 所以这里没有「样本」也没有
+    「标签」—— 它是指令扩写（Self-Instruct）与程序化生成的**输入**。
+
+    规则与语义假设**从 yaml 读出来**而不是手抄：手抄会在下一次改规则时
+    悄悄分叉，而合成数据是拿它们当事实用的。
+    """
+
+    item_id: str = Field(pattern=r"^SEED-(?:REQ|RUL|SEM|ENT)-\d{3}$")
+    kind: SeedKind
+    text: str = Field(min_length=1)
+    #: 这条种子的出处：nl_360 的条目号 / ruleset 版本 / 开关号 / 基准实体表
+    source_ref: str = Field(min_length=1)
+    payload: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _prefix(self) -> SftSeedItem:
+        prefix = {"request": "REQ", "rule": "RUL", "semantic": "SEM", "entity": "ENT"}[self.kind]
+        if not self.item_id.startswith(f"SEED-{prefix}-"):
+            raise ValueError(f"{self.item_id}：编号前缀与 kind={self.kind} 不符")
+        return self
+
+
 __all__ = [
     "GRAPH_NODES",
     "PIPELINE_STAGES",
@@ -702,6 +736,8 @@ __all__ = [
     "ProbeKind",
     "ScenarioCategory",
     "ScenarioStatus",
+    "SeedKind",
+    "SftSeedItem",
     "ToolCallExpectation",
     "ToolCallItem",
     "ToolCallStratum",
