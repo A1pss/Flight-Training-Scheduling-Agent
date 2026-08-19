@@ -775,7 +775,7 @@ def write_dataset(root: Path, ents: Entities, cases: Sequence[ScenarioCase]) -> 
     return target
 
 
-def load_dataset(root: Path) -> list[ScenarioCase]:
+def load_eval_dataset(root: Path) -> list[ScenarioCase]:
     payload = json.loads((dataset_dir(root) / "scenarios.json").read_text(encoding="utf-8"))
     out: list[ScenarioCase] = []
     for row in payload:
@@ -830,7 +830,7 @@ __all__ = [
     "dataset_dir",
     "expiry_cases",
     "infeasible_cases",
-    "load_dataset",
+    "load_eval_dataset",
     "maintenance_cases",
     "reschedule_cases",
     "runway_cases",
