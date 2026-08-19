@@ -24,7 +24,7 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from backend.core.config import PROJECT_ROOT
-from tests.scenarios.catalog import ScenarioCase, load_eval_dataset
+from tests.scenarios.catalog import ScenarioCase, load_dataset
 from tests.scenarios.report import RESULT_PATH, SAMPLE_SEED, SAMPLES_PER_CATEGORY, load_results
 
 SOLVED = ("OPTIMAL", "FEASIBLE")
@@ -177,7 +177,7 @@ def _plans_by_scenario() -> dict[str, Mapping[str, Any]]:
 
 def render() -> str:
     _summary, results = load_results()
-    cases = {c.scenario_id: c for c in load_eval_dataset(PROJECT_ROOT)}
+    cases = {c.scenario_id: c for c in load_dataset(PROJECT_ROOT)}
     plans = _plans_by_scenario()
     picked = _sample(results)
 

@@ -17,8 +17,15 @@ from pathlib import Path
 
 from backend.datasets.card import render_card
 from backend.datasets.loader import dataset_dir, load_eval_dataset
-from backend.datasets.manifest import DatasetManifest, load_manifest, write_jsonl, write_manifest
+from backend.datasets.manifest import (
+    DatasetManifest,
+    load_manifest,
+    sha256_of,
+    write_jsonl,
+    write_manifest,
+)
 from tests.datasets import (
+    legacy_catalog,
     memory_catalog,
     memory_probes,
     nl_catalog,
@@ -299,11 +306,132 @@ def write_tool_calls_200() -> None:
     print(f"✅ tool_calls_200 {len(items)} 条 · {loaded.sha256[:16]}… · {loaded.strata}")
 
 
+def write_plan_scenarios() -> None:
+    """**只加卡片，不动数据。**
+
+    `items_file` 直接指向 W4 落的 `scenarios.json`（138 KB 的 JSON 数组）——
+    加载器为此支持了数组载体。复制成 jsonl 会立刻产生两个真相。
+    写卡片之前先跑一遍核对（条数 / 跑道关闭 / I1~I5 五族），有问题就不发卡片。
+    """
+    rows = legacy_catalog.scenario_rows()
+    problems = legacy_catalog.verify_scenarios(rows)
+    if problems:
+        raise SystemExit("plan_scenarios 核对未通过：\n  " + "\n  ".join(problems))
+
+    directory = dataset_dir("plan_scenarios")
+    strata: dict[str, int] = {}
+    for row in rows:
+        key = str(row["category"])
+        strata[key] = strata.get(key, 0) + 1
+
+    previous = _previous(directory)
+    sha = sha256_of(directory / "scenarios.json")
+    keep = previous is not None and previous.sha256 == sha
+    manifest = DatasetManifest(
+        name="plan_scenarios",
+        version="v1",
+        stage=previous.stage if (keep and previous is not None) else "draft",
+        items_file="scenarios.json",
+        item_count=len(rows),
+        strata=dict(sorted(strata.items())),
+        sha256=sha,
+        generated_at=(
+            previous.generated_at
+            if keep and previous
+            else datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+        ),
+        method=(
+            "W4 由 tests/scenarios/catalog.py 程序化生成（实体编号一律从快照读，"
+            "组合扰动用固定种子 20260812）。M9-A **只做核对与版本化，一条数据都没改**："
+            "核对了类别条数、单点扰动是否含跑道关闭、不可行是否为 I1~I5 五族"
+            "且每族 6 个变体、以及每条不可行是否都标注了真实冲突源。"
+        ),
+        spec_refs=["v6 §12.3", "v6 §3.9", "v6 §1.4"],
+        known_limitations=[
+            "单点扰动里跑道族只有 2 条 —— 全场就 2 条跑道，这是数据本身的上限，不是覆盖不足。",
+            "单点/组合扰动的 expected_status 是 EITHER：**不预设可行与否**，那正是要跑出来的。"
+            "预设了会诱导「为了对上预期而放宽约束」（CLAUDE.md §7 第 4 条）。",
+            "构建记录在 build_manifest.json（快照 id / 种子 / 实体表）；本文件是数据集卡片，"
+            "两者内容与用途都不同。",
+            "边界场景的「恰好」由成对定义互证（恰好够 + 紧一格即不可行），"
+            "标定过程在 calibration.json。",
+        ],
+        context={
+            "snapshot_id": "snap_9724982865ee",
+            "week_start": "2026-01-05",
+            "combo_seed": "20260812",
+            "infeasible_families": "I1~I5，每族 6 个沿同一方向更紧的变体",
+        },
+        approved_by=previous.approved_by if keep and previous else None,
+        approved_at=previous.approved_at if keep and previous else None,
+    )
+    write_manifest(directory, manifest)
+    (directory / "card.md").write_text(render_card(manifest), encoding="utf-8", newline="\n")
+    loaded, items = load_eval_dataset("plan_scenarios")
+    print(f"✅ plan_scenarios {len(items)} 条 · {loaded.sha256[:16]}… · {loaded.strata}")
+
+
+def write_golden_40() -> None:
+    """黄金用例的**索引 + 指纹**。yml 本体留在 tests/golden/，不复制。"""
+    rows = legacy_catalog.golden_rows()
+    directory = dataset_dir("golden_40")
+    sha = write_jsonl(directory / "items.jsonl", rows)
+    strata: dict[str, int] = {}
+    for row in rows:
+        key = str(row["status"])
+        strata[key] = strata.get(key, 0) + 1
+
+    previous = _previous(directory)
+    keep = previous is not None and previous.sha256 == sha
+    manifest = DatasetManifest(
+        name="golden_40",
+        version="v1",
+        stage=previous.stage if (keep and previous is not None) else "draft",
+        item_count=len(rows),
+        strata=dict(sorted(strata.items())),
+        sha256=sha,
+        generated_at=(
+            previous.generated_at
+            if keep and previous
+            else datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+        ),
+        method=(
+            "W4 由 pytest-regressions 落的 40 份基线快照（tests/golden/test_golden_plans/*.yml）。"
+            "M9-A **只抽索引与指纹，不复制数据本体**：用例名、状态、架次数、候选数、"
+            "content_sha256、两条校验通道的判定、阻塞项与欠账条数。"
+        ),
+        spec_refs=["v6 §12.1", "v6 §3.11.1", "v6 §11.4"],
+        known_limitations=[
+            "40 条里 2 条是 INFEASIBLE（空域关闭、关闭叠跑道）——它们没有方案，"
+            "因而没有 content_sha256。这与 Z-26 一致：两种状态都确定性可复现，"
+            "**唯一不许出现的是 FEASIBLE**（被预算截断，不保证逐字节可复现，§3.11.1）。",
+            "38 个 OPTIMAL 用例只有 30 个互不相同的指纹 —— 有 8 条与别的用例排出了"
+            "**逐字节相同**的方案（合成场景规模小，不同旋钮可能落到同一个最优解）。"
+            "这不影响回归价值：变化仍然会被看见。",
+            "本集是**索引**，不是数据本体。更新基线的唯一正确姿势仍是 "
+            "`pytest tests/golden -q --force-regen` 然后逐行读 diff。",
+        ],
+        context={
+            "baseline_dir": "tests/golden/test_golden_plans/",
+            "aggregate_fingerprint": "deploy/scripts/golden_fingerprint.py（两条部署路径的门禁）",
+            "m8_fingerprint": "4dc4df24…f0c0aca（native 与 compose 两条路径同值）",
+        },
+        approved_by=previous.approved_by if keep and previous else None,
+        approved_at=previous.approved_at if keep and previous else None,
+    )
+    write_manifest(directory, manifest)
+    (directory / "card.md").write_text(render_card(manifest), encoding="utf-8", newline="\n")
+    loaded, items = load_eval_dataset("golden_40")
+    print(f"✅ golden_40 {len(items)} 条 · {loaded.sha256[:16]}… · {loaded.strata}")
+
+
 WRITERS = {
     "nl_360": write_nl_360,
     "memory_320": write_memory_320,
     "trajectory_100": write_trajectory_100,
     "tool_calls_200": write_tool_calls_200,
+    "plan_scenarios": write_plan_scenarios,
+    "golden_40": write_golden_40,
 }
 
 

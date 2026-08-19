@@ -1,0 +1,92 @@
+{
+  "version": "v1",
+  "snapshot_id": "snap_9724982865ee",
+  "week_start": "2026-01-05",
+  "combo_seed": 20260812,
+  "counts": {
+    "baseline": 1,
+    "single": 60,
+    "combo": 60,
+    "boundary": 40,
+    "infeasible": 30,
+    "reschedule": 9
+  },
+  "total": 200,
+  "entities": {
+    "persons": [
+      "P01",
+      "P02",
+      "P03",
+      "P04",
+      "P05",
+      "P06",
+      "P07",
+      "P08"
+    ],
+    "aircraft": [
+      "AC10",
+      "AC27",
+      "AC34",
+      "AC49",
+      "AC61",
+      "AC73",
+      "AC84",
+      "AC95"
+    ],
+    "airspaces": {
+      "IFR": 1,
+      "RNG": 1,
+      "RT1": 1,
+      "RT2": 1,
+      "SAA": 2,
+      "SAB": 2
+    },
+    "runways": {
+      "RWY-1": [
+        "JL-8",
+        "JL-9"
+      ],
+      "RWY-2": [
+        "JL-8"
+      ]
+    },
+    "missions": [
+      "missionA-1",
+      "missionA-2",
+      "missionB-1",
+      "missionB-2",
+      "missionC-1",
+      "missionC-2",
+      "missionD-1",
+      "missionE-1",
+      "missionE-2",
+      "missionF-1",
+      "missionG-1",
+      "missionH-1"
+    ]
+  },
+  "infeasible_annotations": {
+    "I1": [
+      "C13",
+      "C03",
+      "C04"
+    ],
+    "I2": [
+      "C06",
+      "C03"
+    ],
+    "I3": [
+      "C06",
+      "C13"
+    ],
+    "I4": [
+      "C01",
+      "C13"
+    ],
+    "I5": [
+      "C09",
+      "C03",
+      "C13"
+    ]
+  }
+}

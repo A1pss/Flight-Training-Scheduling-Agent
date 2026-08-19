@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any
 
 from backend.core.config import PROJECT_ROOT
-from tests.scenarios.catalog import INFEASIBLE_FAMILIES, load_eval_dataset
+from tests.scenarios.catalog import INFEASIBLE_FAMILIES, load_dataset
 
 RESULT_PATH: Path = PROJECT_ROOT / "reports" / "M2C_200场景运行结果.json"
 
@@ -83,7 +83,7 @@ def overview(summary: Mapping[str, Any], results: Sequence[Mapping[str, Any]]) -
 
 
 def infeasible_section(summary: Mapping[str, Any], results: Sequence[Mapping[str, Any]]) -> str:
-    cases = {c.scenario_id: c for c in load_eval_dataset(PROJECT_ROOT)}
+    cases = {c.scenario_id: c for c in load_dataset(PROJECT_ROOT)}
     lines = [
         "### 不可行族 I1~I5",
         "",
@@ -130,7 +130,7 @@ def infeasible_section(summary: Mapping[str, Any], results: Sequence[Mapping[str
 
 
 def boundary_section(results: Sequence[Mapping[str, Any]]) -> str:
-    cases = {c.scenario_id: c for c in load_eval_dataset(PROJECT_ROOT)}
+    cases = {c.scenario_id: c for c in load_dataset(PROJECT_ROOT)}
     pairs: dict[str, dict[str, Mapping[str, Any]]] = {}
     for result in results:
         case = cases[result["scenario_id"]]

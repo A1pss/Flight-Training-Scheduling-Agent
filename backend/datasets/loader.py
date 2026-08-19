@@ -31,8 +31,10 @@ from backend.datasets.manifest import (
 )
 from backend.datasets.schemas import (
     DatasetItem,
+    GoldenCaseItem,
     MemoryItem,
     NLItem,
+    PlanScenarioItem,
     ToolCallItem,
     TrajectoryItem,
 )
@@ -48,6 +50,8 @@ REGISTRY: Final[dict[str, type[DatasetItem]]] = {
     "memory_320": MemoryItem,
     "trajectory_100": TrajectoryItem,
     "tool_calls_200": ToolCallItem,
+    "plan_scenarios": PlanScenarioItem,
+    "golden_40": GoldenCaseItem,
 }
 
 
@@ -55,7 +59,19 @@ def dataset_dir(name: str, version: str = "v1") -> Path:
     return DATASETS_DIR / name / version
 
 
-def _iter_jsonl(path: Path) -> Iterator[tuple[int, dict[str, object]]]:
+def _iter_items(path: Path) -> Iterator[tuple[int, dict[str, object]]]:
+    """逐条读条目。支持两种载体：
+
+    - `.jsonl` —— 一行一条（新造的数据集都用它，diff 可读）
+    - `.json` —— 一个 JSON 数组（`plan_scenarios` 是 W4 就落成这个形态的，
+      **不为了统一格式去复制一份 138KB 的数据**；行号按数组下标算）
+    """
+    if path.suffix == ".json":
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(payload, list):
+            raise DatasetIntegrityError(f"{path.name} 不是 JSON 数组")
+        yield from enumerate(payload, start=1)
+        return
     with path.open("r", encoding="utf-8") as handle:
         for lineno, line in enumerate(handle, start=1):
             text = line.strip()
@@ -86,7 +102,7 @@ def load_eval_dataset(
         raise DatasetIntegrityError(
             f"清单自称 {manifest.name}/{manifest.version}，实际位于 {name}/{version}"
         )
-    rows = list(_iter_jsonl(directory / manifest.items_file))
+    rows = list(_iter_items(directory / manifest.items_file))
     verify_manifest(directory, manifest, line_count=len(rows))
     if require_approved and manifest.stage != "approved":
         raise DatasetIntegrityError(
@@ -140,7 +156,7 @@ def stratum_field(items: list[DatasetItem]) -> str | None:
     """各集的分层字段名不同（nl 用 `layer`，后续几集用 `stratum` / `flow`）。"""
     if not items:
         return None
-    for candidate in ("layer", "memory_type", "flow", "stratum"):
+    for candidate in ("layer", "memory_type", "flow", "stratum", "category", "status"):
         if hasattr(items[0], candidate):
             return candidate
     return None

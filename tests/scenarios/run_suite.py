@@ -35,7 +35,7 @@ from tests.scenarios.catalog import (
     build_catalog,
     catalog_counts,
     dataset_dir,
-    load_eval_dataset,
+    load_dataset,
     write_dataset,
 )
 from tests.scenarios.runner import (
@@ -77,7 +77,7 @@ def generate(snapshot_id: str, week_start: date, root: Path) -> list[ScenarioCas
 
 
 def show(root: Path) -> None:
-    cases = load_eval_dataset(root)
+    cases = load_dataset(root)
     counts = catalog_counts(cases)
     print(f"共 {len(cases)} 个场景：{json.dumps(counts, ensure_ascii=False)}\n")
     current = ""
@@ -92,7 +92,7 @@ def show(root: Path) -> None:
 
 
 def run(root: Path, snapshot_id: str, week_start: date, only: Sequence[str] | None) -> int:
-    cases = load_eval_dataset(root)
+    cases = load_dataset(root)
     if only:
         cases = [c for c in cases if c.category in set(only)]
     results: list[ScenarioResult] = []

@@ -468,6 +468,106 @@ class ToolCallItem(DatasetItem):
         return self
 
 
+# ══════════════════════════════════════════════════════════════════════
+# plan_scenarios / golden_40（W4 已产出，M9-A 只做核对与版本化）
+# ══════════════════════════════════════════════════════════════════════
+
+#: §12.3 的六个类别。`infeasible` 是 I1~I5 **五族**（不是四族），每族 6 个
+#: 沿同一方向更紧的变体。
+ScenarioCategory = Literal["baseline", "single", "combo", "boundary", "infeasible", "reschedule"]
+
+#: 期望求解状态。`EITHER` 是刻意的 —— 单点/组合扰动**不预设**可行与否，
+#: 那正是要跑出来的东西；预设了就会诱导「为了对上预期而放宽约束」。
+ScenarioStatus = Literal["SOLVED", "INFEASIBLE", "EITHER"]
+
+
+class PlanScenarioItem(DatasetItem):
+    """`plan_scenarios` 的一条场景（§12.3，W4 产出）。
+
+    **本窗口不改内容，只加契约与卡片。** 字段与 `tests/scenarios/catalog.py`
+    的 `ScenarioCase.to_json()` 逐字对齐 —— 那份代码是这些数据的唯一来源。
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    item_id: str = Field(default="", exclude=True)
+    scenario_id: str = Field(min_length=1)
+    category: ScenarioCategory
+    family: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    expected_status: ScenarioStatus
+    overrides: dict[str, Any] = Field(default_factory=dict)
+    #: 人工标注的真实冲突源。**只有 `infeasible` 族非空** —— 它直接抄 v6 §12.3
+    #: 的「预期最小冲突集」列，不是 W4 自己编的
+    annotated_conflict_rules: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _fill_id(self) -> PlanScenarioItem:
+        """`scenario_id` 就是编号 —— 让加载器的查重能用上它。"""
+        if not self.item_id:
+            object.__setattr__(self, "item_id", self.scenario_id)
+        if self.category == "infeasible" and not self.annotated_conflict_rules:
+            raise ValueError(f"{self.scenario_id}：不可行场景必须标注真实冲突源")
+        if self.category == "infeasible" and self.expected_status != "INFEASIBLE":
+            raise ValueError(f"{self.scenario_id}：不可行族的期望状态只能是 INFEASIBLE")
+        return self
+
+
+class GoldenCaseItem(DatasetItem):
+    """`golden_40` 的一条黄金用例索引（§12.1，W4 产出）。
+
+    **数据本体是 `tests/golden/test_golden_plans/*.yml`**（pytest-regressions 的
+    基线快照），本集只是它们的**索引 + 指纹**：用例名、状态、架次数、
+    `content_sha256`、两条校验通道的判定。
+
+    这样做而不是把 yml 复制进来，是因为那些文件唯一合法的更新方式是
+    `pytest --force-regen` + 逐行读 diff；复制一份出来会立刻产生两个真相。
+
+    ## 40 条里有 2 条是 `INFEASIBLE`
+
+    这不是缺陷，是 `Z-26` 那句「40 个黄金用例全部落在 `OPTIMAL`/`INFEASIBLE`」的
+    另一半 —— 两种状态都**确定性可复现**（`INFEASIBLE` 根本没有方案可飘），
+    所以两条部署路径才能拿它们的聚合指纹当门禁。**唯一不许出现的是 `FEASIBLE`**：
+    那是被预算截断的结果，不保证逐字节可复现（§3.11.1）。
+    """
+
+    item_id: str = Field(pattern=r"^GOLD-\d{3}$")
+    case_id: str = Field(min_length=1, description="用例名，与 yml 文件名一致")
+    baseline_file: str = Field(min_length=1)
+    status: Literal["OPTIMAL", "INFEASIBLE"]
+    num_sorties: int = Field(ge=0)
+    num_candidates: int = Field(ge=0)
+    #: 方案内容的逐字节指纹。**`INFEASIBLE` 没有方案，所以为 None**
+    content_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    #: 主校验器 14 条是否全过（`INFEASIBLE` 无方案可校验 → None）
+    validator_passed: bool | None = None
+    #: 第三方 naive checker 是否同判（§12.3 三重独立验证的第二重）
+    naive_passed: bool | None = None
+    blocked_count: int = Field(ge=0)
+    debt_count: int = Field(ge=0)
+    rationale: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _status_consistency(self) -> GoldenCaseItem:
+        """`OPTIMAL` 必须有指纹与两条校验通道的判定；`INFEASIBLE` 必须没有方案。
+
+        ★ 状态里**不许出现 `FEASIBLE`** —— 它不保证逐字节可复现（§3.11.1），
+        拿它做门禁会得到一个会飘的判据。哪个用例掉到 FEASIBLE，要修的是那个
+        用例的规模，而不是把断言放宽。这条由 `status` 的 Literal 直接挡住。
+        """
+        if self.status == "OPTIMAL":
+            if not self.content_sha256:
+                raise ValueError(f"{self.case_id}：OPTIMAL 用例必须有 content_sha256")
+            if not (self.validator_passed and self.naive_passed):
+                raise ValueError(f"{self.case_id}：两条校验通道必须都判通过")
+        else:
+            if self.num_sorties != 0:
+                raise ValueError(f"{self.case_id}：INFEASIBLE 却有 {self.num_sorties} 个架次")
+            if self.content_sha256 is not None:
+                raise ValueError(f"{self.case_id}：INFEASIBLE 没有方案，不该有指纹")
+        return self
+
+
 __all__ = [
     "GRAPH_NODES",
     "PIPELINE_STAGES",
@@ -475,13 +575,17 @@ __all__ = [
     "ConstraintModifier",
     "DatasetItem",
     "ExpectedAction",
+    "GoldenCaseItem",
     "MemoryItem",
     "MemoryType",
     "ModifierKind",
     "NLItem",
     "NLLayer",
     "NLSlots",
+    "PlanScenarioItem",
     "ProbeKind",
+    "ScenarioCategory",
+    "ScenarioStatus",
     "ToolCallExpectation",
     "ToolCallItem",
     "ToolCallStratum",
