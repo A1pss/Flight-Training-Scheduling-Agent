@@ -290,14 +290,17 @@ commands ignored until end of transaction block
 | `ruff check . --fix` | ✅ All checks passed |
 | `ruff format .` | ✅ |
 | `mypy backend --strict` | ✅ 178 个源文件 |
-| `bandit -r backend -ll` | ✅ 0 issues（B615 的误报靠改名规避，未改配置） |
+| `bandit -r backend -ll` | ✅ Medium 0 / High 0（B615 的误报靠改名规避，未改配置） |
 | `lint-imports` | ✅ 3 kept, 0 broken |
-| `pytest --cov=backend --cov-fail-under=80` | 见 §6.1 |
+| `pytest --cov=backend --cov-fail-under=80` | ✅ **2662 个用例收集，退出码 0，覆盖率 91.27%**（门槛 80%） |
 | `check_no_placeholders.sh` | ✅ |
 | `check_egress.sh` | ✅ E2/E3 |
 
 **一处配置改动（收紧，非放宽）**：`.importlinter` 的禁令三把 `backend.datasets`
-纳入源模块列表 —— 新包也要受 egress 收口约束。
+纳入源模块列表 —— 新包也要受 egress 收口约束。**没有任何放宽。**
+
+新增测试 **102 条**（`tests/datasets/` 十个文件），其中 5 条是**真库集成测试**
+（`test_memory_timeline_live.py`：122 条时间线写入 + 三类 gold 逐条存在 + 偏好两版本）。
 
 ---
 
@@ -423,3 +426,44 @@ manifest, items = load_eval_dataset("memory_320", require_approved=True)
 
 **这四条里有三条只有真跑才会暴露。** 与 M8 §10「真断网这一步值不值」是同一个结论：
 凡是出口标准里写着「方案」「设计」「口径」的地方，**先想一想能不能真跑一遍**。
+
+---
+
+## 12. 给下一个窗口的前置条件
+
+### 12.1 给 **W12（M9-A 之后的数据合成 / M7 微调）**
+
+- `sft_seed` 是 §15.2 那一格「种子数据（人工）」的全部内容，**六步合成管线是你的活**；
+- ⚠️ **种子里的 60 条需求与 `nl_360` 同源** —— 合成出来的样本若拿去评 `nl_360`，
+  要么换池子、要么在报告里声明；
+- **难负例不在种子里**：§15.2 第 ⑥ 步的输入是 §12.5.1 的**失败模式分布表**，
+  那要 W13 跑完 `tool_calls_200` 才有。顺序不能反。
+
+### 12.2 给 **W13（M9-B 实验执行与验收）**
+
+**取数**（九集都已版本化，`require_approved=True` 会挡住未确认的）：
+
+```python
+manifest, items = load_eval_dataset("nl_360", require_approved=True)
+```
+
+**六条必须先处理的事**：
+
+1. **算召回指标前两侧 id 都要过 `canonical_doc_id()`**（`Z-30`）—— 不然 Recall@5
+   会被系统性低估，而它是**验收主指标**。
+2. **`proc:` 的召回单位要补一个发 id 的适配（约 3 行）** —— `preference_docs()`
+   现在只返回句子，程序类 80 条的 Recall@5 算不出来。
+3. **⑨ 的 179 条断言等业务方标注** —— 标完才谈得上算一致率与 Kappa；
+   **judge 没过 §12.4.1 的门槛（一致率 ≥85% ∧ Kappa ≥0.70），生成层两个指标一律不报数**。
+4. **75 条降级回答要单列**（§10.1）—— 74% 的探针跑满 6 步、71 条打穿请求级预算。
+   拿降级样本算 Faithfulness 会把「预算不够」记成「模型不忠实」。
+   **要不要调 §7.6 的预算是规格问题，得先裁定。**
+5. **`tool_calls_200` 的权重要用线上日志重算**（现在用的是 `trajectory_100` 的频次，
+   卡片里写明了这是可替换的假设）。
+6. **决定要不要给 `sql_query` 套 SAVEPOINT**（`Z-33`）。
+
+**验收报告的必述项**（§12.7）本窗口相关的两条：
+- 第 2 条**标注口径变更**：九集里 `nl_360` / `memory_320` / `trajectory_100` 三集
+  按 `SPEC_DECISIONS §D` 走「Claude Code 初稿 + Alps 复核」，**不报任何该口径下的 Kappa**；
+- 第 4 条 **judge 验证声明**：`judge_calib_50` 算出来的是「judge vs 人工」的 Kappa，
+  **实际计算故必报**，且必须与第 2 条并排写明两者同名不同义。
