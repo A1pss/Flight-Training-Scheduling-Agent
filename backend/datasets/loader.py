@@ -159,10 +159,15 @@ def _assert_strata(name: str, manifest: DatasetManifest, items: list[DatasetItem
 
 
 def stratum_field(items: list[DatasetItem]) -> str | None:
-    """各集的分层字段名不同（nl 用 `layer`，后续几集用 `stratum` / `flow`）。"""
+    """各集的分层字段名不同（nl 用 `layer`，后续几集用 `stratum` / `flow` / …）。
+
+    ★ **顺序有讲究**：`judge_calib_50` 同时有 `stratum` 与 `memory_type`，
+    而它的分层是前者（高风险 / 常规）—— `memory_type` 只是它的一个属性。
+    先查 `stratum` 才不会把这一集的分层统计成三类记忆。
+    """
     if not items:
         return None
-    for candidate in ("layer", "memory_type", "flow", "stratum", "category", "status", "kind"):
+    for candidate in ("layer", "stratum", "memory_type", "flow", "category", "status", "kind"):
         if hasattr(items[0], candidate):
             return candidate
     return None

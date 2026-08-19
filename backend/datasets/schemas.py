@@ -782,6 +782,10 @@ class CalibClaim(BaseModel):
     #: M5 逐句核验器的判定。**只作参考，不是标签** —— 它判的是「有没有出处」，
     #: 与 Faithfulness 的「有没有被召回内容支撑」口径不同（M5 §9.1 第 2 条）
     verifier_supported: bool | None = None
+    #: 这个片段是不是**陈述句**。判据纯机械（疑问句、以冒号结尾的引语头 → False），
+    #: **不涉及任何对内容的判断**。非陈述片段没有「有没有被支撑」可言 ——
+    #: 它们不进一致率的分母，标注时可以直接跳过
+    is_assertive: bool = True
 
 
 class JudgeCalibItem(DatasetItem):

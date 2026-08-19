@@ -53,6 +53,25 @@ REGULAR_QUOTA: Final[dict[str, int]] = {"semantic": 10, "episodic": 9, "procedur
 
 _ENTITY_RE: Final[re.Pattern[str]] = re.compile(r"P\d+|AC\d+|mission[A-Z]-\d+")
 _SENTENCE_SPLIT: Final[re.Pattern[str]] = re.compile(r"[。！？；\n]+")
+#: 疑问收尾的词。判据**纯机械** —— 只看形态，不看内容
+_QUESTION_TAIL: Final[tuple[str, ...]] = ("吗", "呢", "哪一个", "请问", "是什么")
+
+
+def is_assertive(text: str) -> bool:
+    """这个片段是不是陈述句。
+
+    ★ 纯机械判据，**不涉及任何对内容的判断**：疑问句、以冒号结尾的引语头
+    （「检索到以下相关内容：」）不是断言，「有没有被召回支撑」对它们无从谈起。
+    把它们混进一致率的分母，会让 judge 与人在一堆无意义的格子上「达成一致」，
+    把一致率抬高 —— 那正是 §12.4.1 说的虚高。
+    """
+    stripped = text.strip()
+    if not stripped:
+        return False
+    if stripped.endswith(("？", "?", "：", ":")):
+        return False
+    return not any(stripped.endswith(tail) for tail in _QUESTION_TAIL)
+
 
 #: 受控扰动：(名字, 查找, 替换)。**只改事实，不改语气** —— 要造的是
 #: 「读起来一样可信但事实错了」的负例，那才是 Faithfulness 要抓的东西。
@@ -113,6 +132,7 @@ def decompose(record: dict[str, Any]) -> list[dict[str, Any]]:
                 "verdict": None,
                 "context_used": None,
                 "verifier_supported": bool(item.get("verifier_supported")),
+                "is_assertive": is_assertive(str(item["claim"])),
             }
             for index, item in enumerate(claims, start=1)
         ]
@@ -124,6 +144,7 @@ def decompose(record: dict[str, Any]) -> list[dict[str, Any]]:
             "verdict": None,
             "context_used": None,
             "verifier_supported": None,
+            "is_assertive": is_assertive(piece),
         }
         for index, piece in enumerate(pieces, start=1)
     ] or [
@@ -133,6 +154,7 @@ def decompose(record: dict[str, Any]) -> list[dict[str, Any]]:
             "verdict": None,
             "context_used": None,
             "verifier_supported": None,
+            "is_assertive": True,
         }
     ]
 

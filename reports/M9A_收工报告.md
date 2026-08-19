@@ -72,3 +72,354 @@
 | `backend/datasets/ood_judge.py` | ⑦ 的五种确定性判据 + McNemar 精确检验 |
 | `backend/datasets/cli.py` | `verify` / `refresh` / `stats` / `approve` |
 | `tests/datasets/*_catalog.py` | 各集的构造代码（数据的唯一来源） |
+
+---
+
+## 3. 九集逐集：做了什么、业务方确认了什么
+
+### 3.1 `nl_360` —— 360 条自然语言标注（§12.2）
+
+六层各 60 条。分布：意图 schedule 174 / reschedule 87 / query 81 / unknown 13 / export 3 / ingest 2；
+动作 solve 152 / answer 66 / reschedule 65 / ask_clarify 62 / refuse 13 / route_* 2。
+对抗子类：typo 12 · colloquial 12 · near_confusable 10 · injection 10 · multi_intent 8 · out_of_scope 8。
+
+**业务方 2026-08-19 裁定的三处口径**（30 条样例复核时）：
+
+| # | 口径 | 影响 |
+|---|---|---|
+| 1 | **缺周次一律归歧义层** | §12.2 把「给所有人排班」举在标准层，但 `resolve_week_start` 三条来源全空时会按 FTS-1004 追问 —— 照文档举例标注会把一条应当反问的样本标成 solve。标准层 60 条全部带可解析周表述 |
+| 2 | **错别字唯一候选就执行** | 「何朝」在八人里只有一个姓何的候选 → `solve`；**候选不唯一时反问**（只说一个「超」字，何超与高超都命中）是同一条裁定的另一半 |
+| 3 | **多意图取主意图执行** | 副意图的周次**不进槽位**，否则 week 槽位会与排班周打架 |
+
+**2026-08-20 复核（抽查后）**：修了 9 条漏标 week 的条目，重新确认。
+
+### 3.2 `memory_320` —— 320 条记忆探针（§12.4）
+
+语义 120（fact 60 / prereq 20 / rule_text 20 / aggregate 10 / absent 10）·
+情景 120（recall 80 / decay 30 / temporal 5 / absent 5）·
+程序 80（preference 60 / temporal 12 / absent 8）。
+
+**四条易错事实 M1~M4 逐条在位**，`expected_answer` 与 v6 §12.4 表格逐字一致。
+20 周时间线 122 条情景记忆，**gold 由内容寻址算出、不是编的**：
+`tests/datasets/test_memory_timeline_live.py` 在真库上验证 5 项（122 条全部写入 /
+情景 gold 全在 / `ent:`+`rule:` gold 全在语料 / `proc:` gold 的 namespace+key 全在偏好表 /
+偏好确有两个版本）。
+
+业务方 2026-08-19 确认方案 **P-A**（合成会话历史 → 跑现有 `distill()`）与全量分布。
+
+### 3.3 `trajectory_100` —— 100 条轨迹标注（§12.6）
+
+query 30 + diagnosis 25（**自治两类 55 > 50**，满足 §12.6.2）+ schedule 15 +
+reschedule 10 + revision 10 + ingest 10。141 条可接受路径 + 172 条禁止路径 + 242 个工具步骤。
+
+**「可接受」的三条准入规则**（业务方 2026-08-20 确认）：A 同层并列调用的顺序差异 ·
+B 信息已足够时省略可选步骤 · C 自治循环的迭代次数差异。
+**对称的三条否决**：D 跳过确定性节点 · E 弱工具替代强工具 · F 不调工具直接回答。
+
+### 3.4 `tool_calls_200` —— 260 条工具调用场景（§12.5.1）
+
+200 合法 + 30 越权 + 30 超预算。**标签天然正确**（参数由 `params_model` 生成并校验、
+越权对取自 ACL 矩阵补集、超预算是预算池设 0 之后的必然结果）。
+
+两处刻意的分开：越权层 **24 条「有工具没权限」+ 6 条「凭空编的工具名」**；
+超预算层 **24 条 Harness 预算抛 FTS-4003 + 6 条探针池优雅返回 `BUDGET_EXHAUSTED`（无错误码）**。
+
+### 3.5 / 3.6 `plan_scenarios` 与 `golden_40` —— 核对与版本化
+
+本窗口点名要核的两条**都对上了**：单点扰动**含跑道关闭**（runway 2 条，全场就 2 条跑道）；
+不可行是 **I1~I5 五族**、每族 6 个变体、30 条全部带人工标注的真实冲突源。
+`golden_40` = **38 OPTIMAL + 2 INFEASIBLE，无 FEASIBLE**（与 `Z-26` 一致）。
+
+### 3.7 `ood_200` —— 200 条领域外样本（§15.4）
+
+业务方 2026-08-19 裁定 **O-A**：确定性判据 + McNemar 配对精确检验，
+门槛「整体绝对下降 ≤3 个点 **且** p ≥ 0.05」，子层下降 >8 个点单列警示。
+**不复用 §12.4.1 的 32B judge** —— 那个口径至今未经裁定（v6 §12.4.1 末尾原文）。
+
+### 3.8 `sft_seed` —— 123 条种子（§15.2）
+
+60 需求 + 14 规则 + 13 语义假设 + 36 实体。规则与语义假设**从 yaml 读**。
+
+### 3.9 `judge_calib_50` —— 50 条 judge 一致性标注集（§12.4.1）
+
+**这一集与其余八集的根本区别：必须由业务方全程人工标注**，不走「Claude Code 初稿 +
+复核」。§12.4.1 写明了理由 —— 它是给 judge 当基准真值的，**用 LLM 生成初稿会把要验证的
+偏差直接引进基准里**。所以本窗口只做两件事：抽样、断言分解。
+**标签栏交付时全空，由 `JudgeCalibItem` 在加载期强制**（填了就拒绝加载）。
+
+#### 3.9.1 先跑真回答并冻结（业务方 2026-08-19 确认的 S-A 方案）
+
+```
+环境指纹：ollama / qwen2.5:14b-instruct-q4_K_M / bge-m3 / chroma / bge-reranker-v2-m3
+320 条 · 60.1 分钟 · 平均 11.3 s/条 · 最长 27.6 s
+语料 170 篇（实体摘要 34 + 情景 122 + 规则 14）
+清理完成：残留 m9a 情景 0 条；偏好行还原一致=True
+```
+
+顺带补上了 **M5 §9.1 第 4 条、M6 §9.1 第 1 条欠到现在的那一项**：
+`VECTOR_BACKEND=chroma` + `EMBED_PROVIDER=bge` 的真机端到端验证。
+
+#### 3.9.2 分层分布 —— **不是全正例**（出口标准点名要贴的）
+
+| 层 | 条数 | 来源 |
+|---|---|---|
+| `high_risk` | **25** | 从 **174 条**命中确定性代理信号的回答里按 seed=42 抽 |
+| `regular` | **25** | 三条信号一个都没命中的，按语义/情景/程序 = 10/9/6 分层随机 |
+| **合成负例** | **0** | ★ **真实高风险样本 174 条，足量，一条注入都不需要** |
+
+高风险层的信号命中（一条可命中多个）：`recall_miss` 12 · `degraded` 12 ·
+`entity_not_retrieved` 7 · `low_supported_ratio` 2。
+记忆类型跨度：语义 18 / 情景 17 / 程序 15。
+
+**断言分解**：179 条，平均 3.6 条/样本。其中 **155 条是陈述句、24 条不是**
+（「检索到以下相关内容：」「请问是哪一个？」这类）。非陈述片段用**纯机械判据**
+（疑问收尾 / 冒号收尾）标了 `is_assertive=false`，**不进一致率的分母** ——
+把它们混进去会让 judge 与人在一堆无意义的格子上「达成一致」，正是 §12.4.1 说的虚高。
+
+> **标签非空的条目数：0**（测试 `test_labels_are_blank` 逐条断言）。
+
+---
+
+## 4. 抽查：①②③ 各随机抽 10 条人工核对
+
+抽样种子 `20260820`，逐条对照 v6 §1.3 实体表、§12.2/§12.4/§12.6 的口径与三处裁定。
+
+| 集 | 结果 | 说明 |
+|---|---|---|
+| `memory_320` | **10/10** | phrasing 的 sha 前 16 位与出现次数逐条复算；时效探针的 `as_of` 与版本对得上（MEM-EPI-116 as_of=第 9 周 → 恢复那一条） |
+| `trajectory_100` | **10/10** | 含两条边界：TRJ-RSC-004「RWY-2 下周三关闭」**无消解工具**（跑道编号逐字出现）、TRJ-SCH-009 句内自带修饰 → 首轮就要 `translate_revision` |
+| `nl_360` | **9/10** | 抓到一处真实缺陷，见下 |
+
+### 4.1 抽查抓到的缺陷（已修）
+
+`NL-QRY-041`「AC84 **这周**有维护计划吗？」标了 `week=None`。
+全集扫描发现**同类 9 条**（八架飞机的维护查询 + 一条「有谁的资质这周会到期」）。
+
+**根因**：写查询层时下意识觉得「查询不需要周次」。而**周次是 §12.2 五类槽位之一**，
+漏标会让槽位 F1 系统性低估 —— 模型抽对了反而被记成错。
+
+**处置**：① 修这 9 条；② 加回归断言
+`test_resolvable_week_surfaces_are_always_annotated`（句中出现可解析的周表述 →
+`week` 必须非空，歧义层除外）；③ `nl_360` 的 sha 变化使批准自动失效，
+业务方 **2026-08-20 重新确认**。
+
+> **这正是抽查该有的产出。** 覆盖度断言查得出「八人八机全覆盖」，
+> 查不出「这一族的某个槽位系统性漏标」—— 那要人真的逐条读。
+
+---
+
+## 5. 五件实测撞出来的事（下一个窗口最该读这一节）
+
+### 5.1 `pg:` 与 `ent:` 是同一实体的两种 doc id 形态
+
+路 A（结构化召回）发 `pg:persons:P04`（`backend/memory/semantic.py`），
+语料发 `ent:person:P04`（`backend/retrieval/corpus.py`）。
+`memory_320` 的 gold 只写了 `ent:` 形态 —— **直接按字符串比，语义类探针最强的那一路
+命中会被全判成未召回，Recall@5 被系统性低估**。
+
+处置：加 `backend.datasets.schemas.canonical_doc_id()`，把两种形态归一到同一个键
+（`pg:person_qualifications:P04:A` 也归到 `ent:person:P04`）。
+**数据内容一个字没动**，所以不影响已有的批准。
+
+> **给 W13**：算 Recall@5 / MRR@10 之前，两侧 id 都要先过 `canonical_doc_id()`。
+
+### 5.2 一条编错表名的 SQL 会让整个事务作废
+
+首次试跑时，模型查了不存在的 `instrument_ratings` / `instrument_ranks`，然后：
+
+```
+psycopg.errors.InFailedSqlTransaction: current transaction is aborted,
+commands ignored until end of transaction block
+```
+
+**同一会话里后续每一次查询都直接失败** —— 用一个长会话跑 320 条的话，
+第一条编错表名的探针会毒掉它后面的全部，而那些回答会变成一片「查不到」。
+
+处置：`run_probes.py` 改成**每条探针一个会话**。
+
+> ⚠️ **给 W13 的一条前置**：生产路径上 `runtime.build_deps` 的 `_shared` 同样是
+> **整个图共用一个会话**。一次工具调用编错表名，后面的 `commit_plan` 会跟着失败。
+> 这不是本窗口能改的（要动事务边界），但**验收前值得决定要不要给 `sql_query`
+> 套一个 SAVEPOINT**。
+
+### 5.3 `distill()` 不会自动改写同档来源的偏好
+
+原计划「第 8 周蒸馏一次、第 20 周再蒸一次 → 同一条偏好两个版本」。**真库上跑不出来**：
+两次的来源都是「排班确认记录」（同档），而 `put_preference` 对「同档且值不同」的处置是
+**升级人工**（§6.4 ③ / FTS-2001），不写新版本。
+
+**这是刻意设计**（偏好不该被自动改写），不是 bug。所以两个版本改走**可信度升级**：
+第 4 周「对话推断」Tier 0 → 第 20 周「排班确认记录」Tier 1（严格更高才覆盖）。
+
+### 5.4 工具参数必须过真实的 Pydantic 契约
+
+给 `ToolStep` 加了参数校验之后，它当场抓出我自己写错的三处：
+
+| 错 | 实际 |
+|---|---|
+| `check_authority` 的 `tier` / `role` | 是 `actor_role` / `requested_tier`，且 `actor_role` 是**中文枚举**（查看者/排班员/训练主任/管理员） |
+| `rank_relaxations.prefer="least_arrears"` | 枚举是 `least_debt` / `least_disruption` / `fastest` |
+| `propose_solve_intent.intent` 传字典片段 | 要的是**完整的 `SolveIntent`**（含 `estimated_blast_radius`） |
+
+**一份参数写错的标注，会把「参数准确率」测成模型的问题，而实际错的是标注。**
+现在两个数据集的参数一律从 `tests/datasets/tool_params.py` 取（33 个工具的合法默认值，
+返回前自己过一遍契约）。
+
+### 5.5 手写选择题的正确项会严重偏 B
+
+`ood_200` 的常识层 **23/40**、语言层 **31/40** 的正确项都在 B。
+一个「永远答 B」的模型能拿到 57%~77% —— **那层地板会盖住微调后的任何下降**。
+已程序化均衡到 A/B/C/D 各 10 条（用**交换**而非打乱：选项集合不变，可复现）。
+
+### 5.6 `bandit` 的 B615 会误判任何叫 `load_dataset` 的函数
+
+它按**函数名**识别 HuggingFace 的 `load_dataset`，我们这个与 HF 毫无关系，
+但重名就被判成「未固定 revision 的模型下载」。
+处置：加载器改名 `load_eval_dataset`，**没有放宽任何配置**（加 `# nosec` 要在每个调用点
+写一遍，而且会把真正的 B615 一起静音）。
+
+⚠️ 改名时我用了全局 sed，**误伤了 W4 的 `tests/scenarios/`**（那处的 `load_dataset`
+与 HF 无关）。已还原。教训：跨目录改名前先看一眼命中范围。
+
+---
+
+## 6. 质量门禁
+
+| 门禁 | 结果 |
+|---|---|
+| `ruff check . --fix` | ✅ All checks passed |
+| `ruff format .` | ✅ |
+| `mypy backend --strict` | ✅ 178 个源文件 |
+| `bandit -r backend -ll` | ✅ 0 issues（B615 的误报靠改名规避，未改配置） |
+| `lint-imports` | ✅ 3 kept, 0 broken |
+| `pytest --cov=backend --cov-fail-under=80` | 见 §6.1 |
+| `check_no_placeholders.sh` | ✅ |
+| `check_egress.sh` | ✅ E2/E3 |
+
+**一处配置改动（收紧，非放宽）**：`.importlinter` 的禁令三把 `backend.datasets`
+纳入源模块列表 —— 新包也要受 egress 收口约束。
+
+---
+
+## 7. 已知限制
+
+1. **`proc:` 目前没有真的 doc id**。`preference_docs()` 只返回句子。`memory_320` 约定
+   `proc:<namespace>/<key>` 作召回单位，**W13 侧要补一个发 id 的适配（约 3 行）**，
+   否则程序类 80 条的 Recall@5 算不出来。
+2. **没有跑道事实探针**。`entity_docs()` 只为 person / aircraft / mission / airspace
+   四类发实体摘要，跑道在语料里没有召回单位。硬安一个 gold 会让那条题变成在测规则召回。
+3. **`tool_calls_200` 的权重是一个可替换的假设**：取自 `trajectory_100` 的 242 个工具步骤
+   频次（目前唯一一份「工具各出现多少次」的数据）。**W13 跑完之后应该用线上日志重算。**
+4. **`sft_seed` 与 `nl_360` 同源** —— 用它合成的样本若拿去评 `nl_360`，有训练/评测同源问题。
+   W12 合成时要么换池子、要么在报告里声明。
+5. **`ood_200` 的拒绝层是规则匹配**，不如人判得准。它的用途是**配对回归**，
+   判定器的系统性偏差在 McNemar 的配对差分里会抵消 —— 但报告里必须写清这一点，
+   不能让它看起来像一个绝对水平的分数。
+6. **本窗口不报任何指标。** Recall@5 / MRR@10 / 时效正确率 / 端到端完成率一个都没算 ——
+   那是 W13 的事（铁律 6）。本窗口跑 320 条探针只为**冻结回答**，不是为了测指标。
+
+---
+
+## 8. 给下一个窗口的接口约定
+
+```bash
+# ── 数据集：加载、校验、看分布、批准 ────────────────────────────────
+python -m backend.datasets.cli verify                    # 全部
+python -m backend.datasets.cli stats nl_360
+python -m backend.datasets.cli refresh nl_360            # 手改数据后**必须**跑
+python -m backend.datasets.cli approve nl_360 --by Alps --at 2026-08-20
+
+# ── 重新生成（数据的唯一来源是构造代码）─────────────────────────────
+PYTHONPATH=. python tests/datasets/write_datasets.py            # 全部
+PYTHONPATH=. python tests/datasets/write_datasets.py nl_360     # 单集
+
+# ── 冻结一批探针回答（judge_calib 的输入）───────────────────────────
+PYTHONPATH=. VECTOR_BACKEND=chroma EMBED_PROVIDER=bge LLM_PROVIDER=ollama \
+  python tests/datasets/run_probes.py --out <路径>
+```
+
+```python
+from backend.datasets.loader import load_eval_dataset
+from backend.datasets.schemas import canonical_doc_id
+from backend.datasets.ood_judge import grade, regression_verdict
+
+manifest, items = load_eval_dataset("memory_320", require_approved=True)
+```
+
+**八条约定，照着用不会踩坑：**
+
+1. **`require_approved=True`** —— 实验取数一律带上它，未确认的数据集会被直接拒绝。
+2. **手改数据之后必须 `refresh`**，否则下一次加载会因哈希不符而拒绝（这是设计意图）。
+3. **数据的唯一来源是 `tests/datasets/*_catalog.py`** —— `items.jsonl` 与它逐字节一致，
+   两侧任一改动而另一侧没跟上，测试当场红。
+4. **重新生成会让批准自动失效**（sha 变则 stage 回 `draft`）——**这是特性不是 bug**。
+5. **算召回指标前先过 `canonical_doc_id()`**（§5.1）。
+6. **黄金用例的更新姿势没变**：`pytest tests/golden -q --force-regen` 然后**逐行读 diff**。
+   `datasets/golden_40/` 只是索引，不是数据本体。
+7. **`judge_calib_50` 的标签必须留空** —— schema 会拒绝任何非空标签（§12.4.1）。
+8. **跑 `run_probes.py` 期间不要跑 `tests/integration/test_memory_live.py`** ——
+   它的 fixture 会 `delete(ProceduralMemory)`，把跑批依赖的偏好删掉。
+
+---
+
+## 9. 待业务方裁定：提请合入 v6 的四条
+
+按 `CLAUDE.md` §7 第 8 条，**修改 `docs/` 下任何设计文档都要先问**。以下四条是本窗口
+实测撞出来的事实，**我没有改 v6，列在这里请业务方裁定要不要按 `Z-n` 惯例落进文档**：
+
+| # | 事实 | 建议落点 | 不落的后果 |
+|---|---|---|---|
+| 1 | **`pg:` 与 `ent:` 两种 doc id 形态**，算召回前必须归一 | §12.4 加一句 + §6.5.4 | W13 会拿一个系统性低估的 Recall@5 去对 92% 的交付线 |
+| 2 | **`distill()` 对同档来源的偏好冲突升级人工、不覆盖**（这是设计，不是缺陷） | §6.4 ③ 下方 | 下一个窗口会重复我这次的弯路（以为蒸馏两次就有两个版本） |
+| 3 | **`ood_200` 的判定口径**（O-A：确定性判据 + McNemar，门槛「≤3 个点 且 p≥0.05」） | §15.4「通用能力回归」那一行 | v6 §12.4.1 末尾还写着「口径未定、不得自行套用」，与已裁定的事实矛盾 |
+| 4 | **一条编错表名的 SQL 会让整个事务作废**，而图共用一个会话 | §7.7 或 §9.2 加风险条 | 线上一次工具调用编错表名，`commit_plan` 跟着失败，排查方向会跑偏 |
+
+> 第 3 条最要紧：**不落的话 v6 会自相矛盾** —— 这正是 `Z-2 / Z-3 / Z-4 / Z-8`
+> 四条共同的病根（文档某一处改对了、另一处没跟着改）。
+---
+
+## 10. 跑 320 条真回答时观察到的两件事（不是本窗口的交付，但 W13 要知道）
+
+**本节不报任何指标**（铁律 6）—— 下面两条是**运行形态**的观察，不是 §12.4 的数。
+
+### 10.1 Knowledge 自主循环几乎总是跑满步数上限
+
+| 观测 | 数 |
+|---|---|
+| 步数用满 6 步（`KNOWLEDGE_MAX_STEPS`） | **237 / 320** |
+| `llm_calls` 打到 10（Harness 的请求级上限） | **71 / 320** |
+| 生成降级或退回事实直出 | **75 / 320**（其中 38 条 `llm_calls ≥ 10`） |
+
+`agents/knowledge.py` 的注释写着「**上限，不是目标** —— 多数问题一轮就够」。
+**实测相反**：74% 的探针跑满 6 步。后果是 §7.6 的请求级 LLM 预算（10 次）被打穿，
+生成层退回事实直出。
+
+> **给 W13**：报 §12.4 生成层指标之前先看这件事 —— 有 75 条回答是**降级形态**，
+> 拿它们算 Faithfulness 会把「预算不够」记成「模型不忠实」。要么调预算、要么
+> 在报数时把降级样本单列。**本窗口没有改任何预算**（那是 §7.6 的规格，动它要先裁定）。
+
+### 10.2 模型会编表名，而这件事有下游代价
+
+51 次 `budget_exceeded` 警告之外，日志里还有一批 `tool_failed` —— 模型给 `sql_query`
+编了 `instrument_ratings` / `instrument_ranks` 这样的表。**编表名本身是可接受的探索**
+（工具是只读的，失败就失败），但它触发了 `Z-33` 那条：整个事务作废。
+
+---
+
+## 11. 一件事的复盘：为什么值得先跑真回答再抽样
+
+出口标准只要求「⑨ 的抽样方案先发我」。最省事的做法是**只交抽样规则**，
+把跑回答留给 W13 —— 那样 ⑨ 这一集本窗口根本交不出来。
+
+真跑了一遍（60 分钟）之后，多出来的东西不止一集数据：
+
+| 收获 | 只交规则的话会怎样 |
+|---|---|
+| **174 条真实高风险样本 → 一条合成负例都不需要** | 抽样方案里那套「不足时故障注入」的设计，到 W13 才知道用不上 |
+| **`pg:` / `ent:` 双 doc id 形态**（`Z-30`） | W13 会拿一个系统性低估的 Recall@5 去对 92% 的交付线 |
+| **一条坏 SQL 作废整个事务**（`Z-33`） | 线上撞到时，报错指向「事务已作废」而不是「谁编了表名」 |
+| **74% 的探针跑满步数上限、71 条打穿预算** | 生成层指标会把「预算不够」记成「模型不忠实」 |
+| **chroma + bge 真机验证**（M5/M6 欠了两个窗口） | 继续欠着 |
+
+**这四条里有三条只有真跑才会暴露。** 与 M8 §10「真断网这一步值不值」是同一个结论：
+凡是出口标准里写着「方案」「设计」「口径」的地方，**先想一想能不能真跑一遍**。

@@ -74,6 +74,18 @@ def test_every_item_has_at_least_one_claim(items: list[JudgeCalibItem]) -> None:
         assert all(c.text.strip() for c in item.claims), item.item_id
 
 
+def test_non_assertive_fragments_are_flagged(items: list[JudgeCalibItem]) -> None:
+    """★ 非陈述片段要标出来，且不能占满某一条。
+
+    「检索到以下相关内容：」「请问是哪一个？」这类片段没有「有没有被召回支撑」
+    可言。把它们混进一致率的分母，会让 judge 与人在一堆无意义的格子上
+    「达成一致」，把一致率抬高 —— 那正是 §12.4.1 说的虚高。
+    判据是**纯机械**的（疑问收尾 / 冒号收尾），不涉及对内容的判断。
+    """
+    for item in items:
+        assert any(c.is_assertive for c in item.claims), f"{item.item_id} 全是非陈述片段"
+
+
 def test_probe_ids_are_unique(items: list[JudgeCalibItem]) -> None:
     """★ 50 条要来自 50 个不同的探针 —— 同一条抽两次等于样本量虚标。"""
     ids = [i.probe_id for i in items]
