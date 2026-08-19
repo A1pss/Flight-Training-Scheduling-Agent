@@ -1,6 +1,6 @@
 {
-  "approved_at": null,
-  "approved_by": null,
+  "approved_at": "2026-08-20",
+  "approved_by": "Alps",
   "context": {
     "archive_horizon": "60 周（最长 cycle_weeks 20 × 3，Z-18）—— 20 周内不会有记忆被归档",
     "preference_versions": "relaxation/preferred_tier 有两版：第 4 周对话推断 Tier 0 → 第 20 周排班确认记录 Tier 1",
@@ -31,7 +31,7 @@
     "v6 §1.3",
     "SPEC_DECISIONS §D"
   ],
-  "stage": "draft",
+  "stage": "approved",
   "strata": {
     "episodic": 120,
     "procedural": 80,

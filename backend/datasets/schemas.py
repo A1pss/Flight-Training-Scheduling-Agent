@@ -8,11 +8,14 @@
 from __future__ import annotations
 
 import re
-from typing import Literal
+from typing import Any, Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from backend.datasets.entities import is_known_entity
+from backend.harness.acl import ACL_MATRIX
+from backend.harness.tools import TOOL_CATALOG
+from backend.harness.types import ALL_COMPONENTS
 from backend.schemas.intent import Intent, RevisionKind
 
 #: §12.2 的六层。`ambiguous` 层的期望动作恒为 `ask_clarify`（「正确地反问」计为成功）。
@@ -250,7 +253,150 @@ class MemoryItem(DatasetItem):
         return self
 
 
+# ══════════════════════════════════════════════════════════════════════
+# trajectory_100（v6 §12.6）
+# ══════════════════════════════════════════════════════════════════════
+
+#: 五类流程 + 两处受控自治。§12.6.2 明确要求 **Knowledge 检索循环与 Diagnosis
+#: 探测循环合计占标注集一半以上** —— 排班/重排的期望路径是固定序列（主体为静态
+#: 工作流），在那两类上轨迹评估只验「没跑偏」；真正考察自主决策质量的是这两处。
+TrajectoryFlow = Literal[
+    "query",
+    "diagnosis",
+    "schedule",
+    "reschedule",
+    "revision",
+    "ingest",
+]
+
+#: 图节点（`backend/graph/graph.py` 的 `add_node` 逐字对齐）
+GRAPH_NODES: Final[frozenset[str]] = frozenset(
+    {
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "knowledge",
+        "diagnosis",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END",
+    }
+)
+
+#: 图外的确定性阶段。摄取不在对话图内跑（走 `POST /api/v1/ingest`），
+#: 但它的两段式 + 人工确认门禁同样是要被验证的路径。
+PIPELINE_STAGES: Final[frozenset[str]] = frozenset(
+    {"ingest.prepare", "ingest.gate", "ingest.commit"}
+)
+
+
+def _valid_path_element(element: str) -> bool:
+    if element in GRAPH_NODES or element in PIPELINE_STAGES:
+        return True
+    return element.startswith("tool:") and element.removeprefix("tool:") in TOOL_CATALOG
+
+
+class ToolStep(BaseModel):
+    """轨迹里的一次工具调用及其期望参数。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    order: int = Field(ge=1)
+    component: str = Field(description="发起调用的组件（ACL 矩阵的行）")
+    tool: str
+    params: dict[str, Any] = Field(default_factory=dict)
+    #: 信息已足够时可以不调 —— 不调**不算缺失调用**
+    optional: bool = False
+    #: 等价工具：换成它们同样判对
+    alternatives: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _tool_is_allowed(self) -> ToolStep:
+        """★ 工具必须在目录里，**而且必须是该组件 ACL 行的子集**。
+
+        这条校验挡的是标注本身的错误：给 `planner` 标一次 `probe_solve`
+        看起来很合理（探一下影响面嘛），但 ACL 只把探针给了 `diagnosis`
+        （§7.7.2 的唯一例外 + 独立预算池）。一份把越权调用标成「期望路径」的
+        数据集，会把 §12.5.1 的越权拦截率直接测成负数。
+        """
+        if self.component not in ALL_COMPONENTS:
+            raise ValueError(f"{self.component!r} 不是 ACL 矩阵里的组件")
+        for name in (self.tool, *self.alternatives):
+            if name not in TOOL_CATALOG:
+                raise ValueError(f"{name!r} 不在工具目录里")
+            if name not in ACL_MATRIX[self.component]:
+                raise ValueError(f"{self.component} 无权调用 {name!r}（v6 §7.7.2 的权限矩阵）")
+        return self
+
+
+class TrajectoryItem(DatasetItem):
+    """`trajectory_100` 的一条标注（§12.6.2）。"""
+
+    item_id: str = Field(pattern=r"^TRJ-[A-Z]{3}-\d{3}$")
+    flow: TrajectoryFlow
+    utterance: str = Field(min_length=1)
+    #: 前置状态（「已有一版已批准计划」「求解返回 INFEASIBLE」）。
+    #: 轨迹是**有状态**的，同一句话在不同前置下的正确路径不同。
+    setup: str = Field(min_length=1)
+    expected_path: list[str] = Field(min_length=2)
+    #: **可接受的替代路径**：不同但同样合理，判定时按对即可（§12.6.2 原文的要求）
+    acceptable_paths: list[list[str]] = Field(default_factory=list)
+    #: 明确判错的路径。没有它，「可接受」是没有边界的
+    forbidden_paths: list[list[str]] = Field(default_factory=list)
+    steps: list[ToolStep] = Field(default_factory=list)
+    rationale: str = Field(min_length=1)
+
+    @field_validator("expected_path")
+    @classmethod
+    def _path_shape(cls, value: list[str]) -> list[str]:
+        for element in value:
+            if not _valid_path_element(element):
+                raise ValueError(f"{element!r} 既不是图节点、也不是 tool:<已登记工具>")
+        return value
+
+    @field_validator("acceptable_paths", "forbidden_paths")
+    @classmethod
+    def _alt_shape(cls, value: list[list[str]]) -> list[list[str]]:
+        for path in value:
+            for element in path:
+                if not _valid_path_element(element):
+                    raise ValueError(f"{element!r} 既不是图节点、也不是 tool:<已登记工具>")
+        return value
+
+    @model_validator(mode="after")
+    def _consistency(self) -> TrajectoryItem:
+        """三条跨字段规则。
+
+        ① 替代路径不许与期望路径相同（那不是替代，是抄一遍）；
+        ② 禁止路径不许同时出现在可接受里（自相矛盾的标注会让判定器两边都对）；
+        ③ `steps` 里的工具必须出现在期望路径**或某条可接受路径**上 —— 标了参数
+           却哪条路径都不经过的步骤，判定时永远比不到，等于白标。
+           （`optional=True` 的步骤经常只出现在替代路径里，所以并集是对的口径。）
+        """
+        expected = list(self.expected_path)
+        for path in self.acceptable_paths:
+            if path == expected:
+                raise ValueError(f"{self.item_id}：替代路径与期望路径完全相同")
+        for path in self.forbidden_paths:
+            if path in self.acceptable_paths or path == expected:
+                raise ValueError(f"{self.item_id}：同一条路径既被禁止又被接受")
+        reachable = [*expected, *(e for path in self.acceptable_paths for e in path)]
+        on_path = {e.removeprefix("tool:") for e in reachable if e.startswith("tool:")}
+        for step in self.steps:
+            if step.tool not in on_path:
+                raise ValueError(
+                    f"{self.item_id}：步骤 {step.tool!r} 在期望路径与全部可接受路径里都没出现"
+                )
+        return self
+
+
 __all__ = [
+    "GRAPH_NODES",
+    "PIPELINE_STAGES",
     "AdversarialKind",
     "ConstraintModifier",
     "DatasetItem",
@@ -262,4 +408,7 @@ __all__ = [
     "NLLayer",
     "NLSlots",
     "ProbeKind",
+    "ToolStep",
+    "TrajectoryFlow",
+    "TrajectoryItem",
 ]

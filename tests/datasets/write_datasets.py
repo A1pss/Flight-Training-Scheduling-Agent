@@ -18,7 +18,7 @@ from pathlib import Path
 from backend.datasets.card import render_card
 from backend.datasets.loader import dataset_dir, load_eval_dataset
 from backend.datasets.manifest import DatasetManifest, load_manifest, write_jsonl, write_manifest
-from tests.datasets import memory_catalog, memory_probes, nl_catalog
+from tests.datasets import memory_catalog, memory_probes, nl_catalog, trajectory_catalog
 
 
 def _previous(directory: Path) -> DatasetManifest | None:
@@ -177,7 +177,68 @@ def write_memory_320() -> None:
     print(f"✅ memory_320 {len(items)} 条 · {loaded.sha256[:16]}… · {loaded.strata}")
 
 
-WRITERS = {"nl_360": write_nl_360, "memory_320": write_memory_320}
+def write_trajectory_100() -> None:
+    """轨迹标注。分层字段是 `flow`，两处受控自治必须过半（§12.6.2）。"""
+    rows = trajectory_catalog.build_sample()
+    directory = dataset_dir("trajectory_100")
+    sha = write_jsonl(directory / "items.jsonl", rows)
+    strata: dict[str, int] = {}
+    for row in rows:
+        key = str(row["flow"])
+        strata[key] = strata.get(key, 0) + 1
+
+    previous = _previous(directory)
+    keep = previous is not None and previous.sha256 == sha
+    manifest = DatasetManifest(
+        name="trajectory_100",
+        version="v1",
+        stage=previous.stage if (keep and previous is not None) else "sample",
+        item_count=len(rows),
+        strata=dict(sorted(strata.items())),
+        sha256=sha,
+        generated_at=(
+            previous.generated_at
+            if keep and previous
+            else datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+        ),
+        method=(
+            "Claude Code 逐条构造 → Alps 逐批人工复核。路径元素取自真实的图节点"
+            "（backend/graph/graph.py 的 add_node）与工具目录；每个步骤的工具都经 "
+            "ACL 矩阵校验，越权的组合根本写不进数据集。"
+        ),
+        spec_refs=["v6 §12.6", "v6 §7.5", "v6 §7.7.2", "v6 §3.9.1", "v6 §5.1", "SPEC_DECISIONS §D"],
+        known_limitations=[
+            "当前为 15 条送审样例，全量 100 条待业务方确认「可接受的替代路径」口径后生成。",
+            "路径判定用最长公共子序列相似度（§12.6.2），所以 acceptable_paths 给的是"
+            "**完整序列**而不是规则描述；三条准入规则（A 顺序 / B 可省 / C 迭代次数）"
+            "写在构造代码的模块文档里，供人复核，判定器不读它。",
+            "摄取流程不在对话图内（走 POST /api/v1/ingest），其路径元素用 "
+            "ingest.prepare / ingest.gate / ingest.commit 三个阶段名表示，"
+            "它们不是图节点。",
+            "标注口径按 SPEC_DECISIONS §D：Claude Code 初稿 + Alps 人工复核，"
+            "**不计算也不报告双人标注的 Cohen's Kappa**。",
+        ],
+        context={
+            "graph_source": "backend/graph/graph.py 的 add_node/destinations",
+            "acceptable_rules": "A 同层并列顺序 / B 信息足够时省略 / C 自治循环迭代次数",
+            "forbidden_rules": "D 跳过确定性节点 / E 弱工具替代强工具 / F 不调工具直接答",
+            "knowledge_max_steps": "6（KNOWLEDGE_MAX_STEPS）",
+            "probe_budget": "5 次 / 单次 30s / 累计 120s（与 LLM 预算互不挤占）",
+        },
+        approved_by=previous.approved_by if keep and previous else None,
+        approved_at=previous.approved_at if keep and previous else None,
+    )
+    write_manifest(directory, manifest)
+    (directory / "card.md").write_text(render_card(manifest), encoding="utf-8", newline="\n")
+    loaded, items = load_eval_dataset("trajectory_100")
+    print(f"✅ trajectory_100 {len(items)} 条 · {loaded.sha256[:16]}… · {loaded.strata}")
+
+
+WRITERS = {
+    "nl_360": write_nl_360,
+    "memory_320": write_memory_320,
+    "trajectory_100": write_trajectory_100,
+}
 
 
 def main(argv: list[str]) -> int:
