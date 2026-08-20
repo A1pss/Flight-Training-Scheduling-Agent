@@ -1,92 +1,37 @@
 {
-  "version": "v1",
-  "snapshot_id": "snap_9724982865ee",
-  "week_start": "2026-01-05",
-  "combo_seed": 20260812,
-  "counts": {
+  "approved_at": "2026-08-20",
+  "approved_by": "Alps",
+  "context": {
+    "combo_seed": "20260812",
+    "infeasible_families": "I1~I5，每族 6 个沿同一方向更紧的变体",
+    "snapshot_id": "snap_9724982865ee",
+    "week_start": "2026-01-05"
+  },
+  "generated_at": "2026-08-19T19:04:52Z",
+  "item_count": 200,
+  "items_file": "scenarios.json",
+  "known_limitations": [
+    "单点扰动里跑道族只有 2 条 —— 全场就 2 条跑道，这是数据本身的上限，不是覆盖不足。",
+    "单点/组合扰动的 expected_status 是 EITHER：**不预设可行与否**，那正是要跑出来的。预设了会诱导「为了对上预期而放宽约束」（CLAUDE.md §7 第 4 条）。",
+    "构建记录在 build_manifest.json（快照 id / 种子 / 实体表）；本文件是数据集卡片，两者内容与用途都不同。",
+    "边界场景的「恰好」由成对定义互证（恰好够 + 紧一格即不可行），标定过程在 calibration.json。"
+  ],
+  "method": "W4 由 tests/scenarios/catalog.py 程序化生成（实体编号一律从快照读，组合扰动用固定种子 20260812）。M9-A **只做核对与版本化，一条数据都没改**：核对了类别条数、单点扰动是否含跑道关闭、不可行是否为 I1~I5 五族且每族 6 个变体、以及每条不可行是否都标注了真实冲突源。",
+  "name": "plan_scenarios",
+  "sha256": "5c3252a45a1d7d56d5d318cf0f90f9433c88d598e67487094516f19f27552f33",
+  "spec_refs": [
+    "v6 §12.3",
+    "v6 §3.9",
+    "v6 §1.4"
+  ],
+  "stage": "approved",
+  "strata": {
     "baseline": 1,
-    "single": 60,
-    "combo": 60,
     "boundary": 40,
+    "combo": 60,
     "infeasible": 30,
-    "reschedule": 9
+    "reschedule": 9,
+    "single": 60
   },
-  "total": 200,
-  "entities": {
-    "persons": [
-      "P01",
-      "P02",
-      "P03",
-      "P04",
-      "P05",
-      "P06",
-      "P07",
-      "P08"
-    ],
-    "aircraft": [
-      "AC10",
-      "AC27",
-      "AC34",
-      "AC49",
-      "AC61",
-      "AC73",
-      "AC84",
-      "AC95"
-    ],
-    "airspaces": {
-      "IFR": 1,
-      "RNG": 1,
-      "RT1": 1,
-      "RT2": 1,
-      "SAA": 2,
-      "SAB": 2
-    },
-    "runways": {
-      "RWY-1": [
-        "JL-8",
-        "JL-9"
-      ],
-      "RWY-2": [
-        "JL-8"
-      ]
-    },
-    "missions": [
-      "missionA-1",
-      "missionA-2",
-      "missionB-1",
-      "missionB-2",
-      "missionC-1",
-      "missionC-2",
-      "missionD-1",
-      "missionE-1",
-      "missionE-2",
-      "missionF-1",
-      "missionG-1",
-      "missionH-1"
-    ]
-  },
-  "infeasible_annotations": {
-    "I1": [
-      "C13",
-      "C03",
-      "C04"
-    ],
-    "I2": [
-      "C06",
-      "C03"
-    ],
-    "I3": [
-      "C06",
-      "C13"
-    ],
-    "I4": [
-      "C01",
-      "C13"
-    ],
-    "I5": [
-      "C09",
-      "C03",
-      "C13"
-    ]
-  }
+  "version": "v1"
 }

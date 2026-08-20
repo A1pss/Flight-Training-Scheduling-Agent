@@ -769,7 +769,11 @@ def write_dataset(root: Path, ents: Entities, cases: Sequence[ScenarioCase]) -> 
         },
         "infeasible_annotations": {f.family_id: list(f.annotated) for f in INFEASIBLE_FAMILIES},
     }
-    (target / "manifest.json").write_text(
+    # ⚠️ 文件名是 `build_manifest.json` 而不是 `manifest.json`：M9-A 把这份数据集
+    # 纳入了 `backend/datasets` 的统一卡片体系，那边的 `manifest.json` 是**数据集卡片**
+    # （版本 / SHA256 / 分层 / 已知局限）。两份内容不同、用途不同，不能同名。
+    # 这一份是**构建记录**：谁用哪个快照、什么种子、生成了多少条。
+    (target / "build_manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     return target

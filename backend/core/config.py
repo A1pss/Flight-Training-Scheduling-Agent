@@ -114,10 +114,11 @@ class Settings(BaseSettings):
     PROBE_TOTAL_BUDGET_S: float = Field(default=120.0, gt=0)
 
     # ── Harness 预算（§7.7.1 第 4 行 / FTS-4003）────────────────────
-    # 四条上限**照抄 v6 §7.7.1**：LLM 调用 ≤10、工具调用 ≤20、墙钟 ≤180s、
-    # token ≤40k。M0 当时写的是 12 / 120k，与设计方案不符，M4-A 已改正。
+    # 四条上限**照抄 v6 §7.7.1**：LLM 调用 ≤14、工具调用 ≤20、墙钟 ≤180s、
+    # token ≤40k。M0 当时写的是 12 / 120k，与设计方案不符，M4-A 已改正；
+    # LLM 调用 2026-08-20 由 10 提到 14（`Z-34`，见 harness/budget.py 的说明）。
     # `BudgetLimits` 对这四项设了 `le=` 上界：配置只能往严里调，调不松。
-    HARNESS_MAX_LLM_CALLS: int = Field(default=10, ge=1, le=10)
+    HARNESS_MAX_LLM_CALLS: int = Field(default=14, ge=1, le=14)
     HARNESS_MAX_TOOL_CALLS: int = Field(default=20, ge=1, le=20)
     HARNESS_MAX_TOKENS: int = Field(default=40_000, ge=1, le=40_000)
     HARNESS_WALL_CLOCK_S: float = Field(default=180.0, gt=0, le=180.0)
