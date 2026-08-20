@@ -26,7 +26,14 @@ from backend.core.config import Settings, get_settings
 from backend.core.errors import BudgetExceededError
 
 #: v6 §7.7.1 的四条硬上限。配置可以调低（更严），不许调高。
-SPEC_MAX_LLM_CALLS: Final[int] = 10
+#:
+#: ⚠️ **LLM 调用上限 2026-08-20 由 10 提到 14（`Z-34`）**。原因不是「10 不够用」，
+#: 而是 §7.6 的预算表里**漏了 KnowledgeAgent 检索循环这一行** —— 排班链路只花
+#: ~5~6 次，10 绰绰有余；而问答链路是「改写 1 + 自主循环 ≤6 步 + 带引用生成 1 = 8」，
+#: 只剩 2 次给契约重试。M9-A 跑 320 条探针实测：`llm_calls` 分布
+#: `{8: 155, 9: 71, 10: 71}`，**71 条顶到 10 被截断、生成退回事实直出**。
+#: 那是量具装小了，不是模型不行。
+SPEC_MAX_LLM_CALLS: Final[int] = 14
 SPEC_MAX_TOOL_CALLS: Final[int] = 20
 SPEC_WALL_CLOCK_S: Final[float] = 180.0
 SPEC_MAX_TOKENS: Final[int] = 40_000

@@ -44,8 +44,15 @@ class FakeClock:
 
 
 def test_spec_limits_match_v6() -> None:
+    """★ 这四个数就是 v6 §7.7.1 那一行。改它们等于改设计方案。
+
+    LLM 调用上限 2026-08-20 由 10 提到 **14**（`Z-34`）：不是「10 不够用」，
+    而是 §7.6 的预算表**漏了 KnowledgeAgent 检索循环**（改写 1 + 自主循环 ≤6 步
+    + 带引用生成 1 = 8，只剩 2 次给契约重试）。M9-A 实测 320 条探针里 71 条顶到
+    旧上限被截断 —— 那是量具装小了，不是模型不行。
+    """
     assert (SPEC_MAX_LLM_CALLS, SPEC_MAX_TOOL_CALLS, SPEC_WALL_CLOCK_S, SPEC_MAX_TOKENS) == (
-        10,
+        14,
         20,
         180.0,
         40_000,
@@ -54,7 +61,7 @@ def test_spec_limits_match_v6() -> None:
 
 def test_defaults_come_from_spec() -> None:
     limits = BudgetLimits()
-    assert limits.max_llm_calls == 10
+    assert limits.max_llm_calls == 14
     assert limits.max_tool_calls == 20
     assert limits.wall_clock_s == 180.0
     assert limits.max_tokens == 40_000
@@ -63,7 +70,7 @@ def test_defaults_come_from_spec() -> None:
 @pytest.mark.parametrize(
     ("field", "value"),
     [
-        ("max_llm_calls", 11),
+        ("max_llm_calls", 15),
         ("max_tool_calls", 21),
         ("wall_clock_s", 181.0),
         ("max_tokens", 40_001),
@@ -78,7 +85,7 @@ def test_limits_cannot_be_loosened_beyond_spec(field: str, value: float) -> None
 def test_settings_defaults_come_from_spec_too() -> None:
     cfg = Settings(_env_file=None)  # type: ignore[call-arg]
     limits = BudgetLimits.from_settings(cfg)
-    assert (limits.max_llm_calls, limits.max_tool_calls, limits.max_tokens) == (10, 20, 40_000)
+    assert (limits.max_llm_calls, limits.max_tool_calls, limits.max_tokens) == (14, 20, 40_000)
 
 
 # ─── 四条闸各自熔断 ─────────────────────────────────────────────────
