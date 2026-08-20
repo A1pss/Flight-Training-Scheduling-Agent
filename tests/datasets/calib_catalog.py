@@ -9,7 +9,7 @@
 1. **抽样**（确定性，seed 固定）；
 2. **断言分解**（把回答切成一条条可判定的断言）。
 
-标签栏（`verdict` / `context_used`）交付时**必须全空** —— 由 `JudgeCalibItem`
+标签栏（断言的 `verdict`、召回条目的 `used`）交付时**必须全空** —— 由 `JudgeCalibItem`
 在加载期强制，不靠自觉。
 
 ## 分层不能用 judge 自己的标签
@@ -87,6 +87,10 @@ PERTURBATIONS: Final[tuple[tuple[str, str, str], ...]] = (
 FABRICATED_SENTENCE: Final[str] = "此外，该记录已于上周经训练主任复核并确认无误。"
 
 
+def _clip(text: str, limit: int = 400) -> str:
+    return " ".join(text.split())[:limit] or "（空）"
+
+
 def load_answers(path: Path) -> list[dict[str, Any]]:
     return [
         json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
@@ -130,7 +134,6 @@ def decompose(record: dict[str, Any]) -> list[dict[str, Any]]:
                 "claim_id": f"c{index}",
                 "text": str(item["claim"]),
                 "verdict": None,
-                "context_used": None,
                 "verifier_supported": bool(item.get("verifier_supported")),
                 "is_assertive": is_assertive(str(item["claim"])),
             }
@@ -142,7 +145,6 @@ def decompose(record: dict[str, Any]) -> list[dict[str, Any]]:
             "claim_id": f"c{index}",
             "text": piece,
             "verdict": None,
-            "context_used": None,
             "verifier_supported": None,
             "is_assertive": is_assertive(piece),
         }
@@ -152,7 +154,6 @@ def decompose(record: dict[str, Any]) -> list[dict[str, Any]]:
             "claim_id": "c1",
             "text": record["answer"].strip() or "（空回答）",
             "verdict": None,
-            "context_used": None,
             "verifier_supported": None,
             "is_assertive": True,
         }
@@ -168,8 +169,15 @@ def _perturb(record: dict[str, Any]) -> tuple[str, str]:
     return "追加一句语料中没有的断言", answer.rstrip() + FABRICATED_SENTENCE
 
 
-def build(answers: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """抽 50 条：高风险 25 + 常规 25（不足时用受控注入补足高风险层）。"""
+def build(
+    answers: list[dict[str, Any]], texts: dict[str, str] | None = None
+) -> list[dict[str, Any]]:
+    """抽 50 条：高风险 25 + 常规 25（不足时用受控注入补足高风险层）。
+
+    `texts` 是 doc_id → 原文的索引（`calib_contexts.build_text_index`）。
+    **没有它，条目里只有 doc id，标注者与 judge 都无从判断一条断言有没有被支撑** ——
+    所以正式生成时它是必需的；缺省只为单测方便。
+    """
     rng = random.Random(SEED)
     scored = [(record, risk_signals(record)) for record in answers]
     high_pool = sorted((r for r, s in scored if s), key=lambda r: str(r["item_id"]))
@@ -180,6 +188,28 @@ def build(answers: list[dict[str, Any]]) -> list[dict[str, Any]]:
         high_pool if len(high_pool) <= HIGH_RISK_TARGET else rng.sample(high_pool, HIGH_RISK_TARGET)
     )
     rows: list[dict[str, Any]] = []
+
+    index = texts or {}
+
+    def contexts(record: dict[str, Any]) -> list[dict[str, Any]]:
+        return [
+            {"doc_id": doc, "snippet": _clip(index.get(doc, doc)), "used": None}
+            for doc in record["retrieved_doc_ids"]
+        ]
+
+    def usage(record: dict[str, Any]) -> list[dict[str, Any]]:
+        """上下文利用率的判定对象：**gold ∩ Top-5**（归一化之后）。
+
+        §12.4.1 原文是「对每条**标注为相关且确实进入 Top-5** 的召回条目，
+        判定回答是否实际使用了它」—— 两个限定缺一不可：没进 Top-5 的谈不上
+        「用没用上」，不是 gold 的也不该算进这个指标。
+        """
+        gold = {canonical_doc_id(d) for d in record["expected_doc_ids"]}
+        rows: list[dict[str, Any]] = []
+        for doc in record["retrieved_doc_ids"][:5]:
+            if canonical_doc_id(doc) in gold:
+                rows.append({"doc_id": doc, "snippet": _clip(index.get(doc, doc)), "used": None})
+        return rows
 
     def emit(
         record: dict[str, Any],
@@ -203,6 +233,8 @@ def build(answers: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "answer": answer,
                 "retrieved_doc_ids": list(record["retrieved_doc_ids"]),
                 "expected_doc_ids": list(record["expected_doc_ids"]),
+                "retrieved_contexts": contexts(record),
+                "context_usage": usage(record),
                 "risk_signals": list(signals_by_id.get(record["item_id"], [])),
                 "is_synthetic_negative": synthetic,
                 "perturbation": perturbation,
@@ -218,7 +250,7 @@ def build(answers: list[dict[str, Any]]) -> list[dict[str, Any]]:
                         if synthetic
                         else ""
                     )
-                    + "★ 标签栏（verdict / context_used）交付时为空，由业务方人工标注（§12.4.1）。"
+                    + "★ 标签栏（断言 verdict、召回条目 used）交付时为空，由业务方人工标注（§12.4.1）。"
                 ),
             }
         )

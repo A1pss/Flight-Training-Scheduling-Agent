@@ -1,6 +1,6 @@
 {
-  "approved_at": null,
-  "approved_by": null,
+  "approved_at": "2026-08-20",
+  "approved_by": "Alps",
   "context": {
     "aggregate_fingerprint": "deploy/scripts/golden_fingerprint.py（两条部署路径的门禁）",
     "baseline_dir": "tests/golden/test_golden_plans/",
@@ -22,7 +22,7 @@
     "v6 §3.11.1",
     "v6 §11.4"
   ],
-  "stage": "draft",
+  "stage": "approved",
   "strata": {
     "INFEASIBLE": 2,
     "OPTIMAL": 38

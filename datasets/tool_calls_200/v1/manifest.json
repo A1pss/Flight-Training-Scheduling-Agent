@@ -1,6 +1,6 @@
 {
-  "approved_at": null,
-  "approved_by": null,
+  "approved_at": "2026-08-20",
+  "approved_by": "Alps",
   "context": {
     "acl_source": "backend.harness.acl.ACL_MATRIX 的补集（字典序，可复现）",
     "error_codes": "越权 FTS-4004 / Harness 预算 FTS-4003 / 探针池无错误码",
@@ -26,7 +26,7 @@
     "v6 §3.9.2",
     "v6 §9.3"
   ],
-  "stage": "draft",
+  "stage": "approved",
   "strata": {
     "acl_violation": 30,
     "budget_exhaustion": 30,

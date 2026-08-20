@@ -1,6 +1,6 @@
 {
-  "approved_at": null,
-  "approved_by": null,
+  "approved_at": "2026-08-20",
+  "approved_by": "Alps",
   "context": {
     "judge_impl": "backend/datasets/ood_judge.py（grade / mcnemar_exact / regression_verdict）",
     "layer_warning": "任一子层下降 >8 个百分点单列警示，不否决",
@@ -24,7 +24,7 @@
     "v6 §15.5",
     "v6 §12.4.1（判定口径的分界）"
   ],
-  "stage": "draft",
+  "stage": "approved",
   "strata": {
     "commonsense": 40,
     "instruction": 40,

@@ -15,6 +15,7 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+from backend.core.db import session_scope
 from backend.datasets.card import render_card
 from backend.datasets.loader import dataset_dir, load_eval_dataset
 from backend.datasets.manifest import (
@@ -35,6 +36,8 @@ from tests.datasets import (
     tool_call_catalog,
     trajectory_catalog,
 )
+from tests.datasets.calib_contexts import build_text_index
+from tests.datasets.calib_sheet import write_annotation_sheet
 
 
 def _previous(directory: Path) -> DatasetManifest | None:
@@ -558,7 +561,12 @@ def write_judge_calib_50() -> None:
             "    python tests/datasets/run_probes.py --out " + str(answers_path)
         )
     answers = calib_catalog.load_answers(answers_path)
-    rows = calib_catalog.build(answers)
+    # 把召回 id 还原成原文：**不重跑 LLM**（重跑会得到另一批回答，而 §12.4.1 的
+    # 全部意义在于「人工与 judge 面对同一批文本」）。语料与结构化事实都是确定性的。
+    with session_scope() as session:
+        texts = build_text_index(session)
+        session.rollback()
+    rows = calib_catalog.build(answers, texts)
     sha = write_jsonl(directory / "items.jsonl", rows)
     strata: dict[str, int] = {}
     for row in rows:
@@ -613,8 +621,10 @@ def write_judge_calib_50() -> None:
     )
     write_manifest(directory, manifest)
     (directory / "card.md").write_text(render_card(manifest), encoding="utf-8", newline="\n")
+    sheet_rows = write_annotation_sheet(directory / "annotation_sheet.csv", rows)
     loaded, items = load_eval_dataset("judge_calib_50")
     print(f"✅ judge_calib_50 {len(items)} 条 · {loaded.sha256[:16]}… · {loaded.strata}")
+    print(f"   标注表：{directory / 'annotation_sheet.csv'}（{sheet_rows} 行待填）")
 
 
 WRITERS = {

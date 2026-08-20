@@ -6,13 +6,16 @@
 
 from __future__ import annotations
 
+import csv
+import json
 from collections import Counter
+from pathlib import Path
 
 import pytest
 
 from backend.datasets.loader import dataset_dir, load_eval_dataset
 from backend.datasets.schemas import JudgeCalibItem, canonical_doc_id
-from tests.datasets import calib_catalog
+from tests.datasets import calib_catalog, calib_sheet
 
 pytestmark = pytest.mark.skipif(
     not (dataset_dir("judge_calib_50") / "items.jsonl").exists(),
@@ -39,7 +42,8 @@ def test_labels_are_blank(items: list[JudgeCalibItem]) -> None:
     for item in items:
         for claim in item.claims:
             assert claim.verdict is None, f"{item.item_id}/{claim.claim_id}"
-            assert claim.context_used is None, f"{item.item_id}/{claim.claim_id}"
+        for entry in item.context_usage:
+            assert entry.used is None, f"{item.item_id}/{entry.doc_id}"
 
 
 def test_stratification_is_not_all_positive(items: list[JudgeCalibItem]) -> None:
@@ -84,6 +88,103 @@ def test_non_assertive_fragments_are_flagged(items: list[JudgeCalibItem]) -> Non
     """
     for item in items:
         assert any(c.is_assertive for c in item.claims), f"{item.item_id} 全是非陈述片段"
+
+
+def test_every_item_carries_context_text(items: list[JudgeCalibItem]) -> None:
+    """★ 召回条目必须带**原文**，不能只有 doc id。
+
+    Faithfulness 判的是「这条断言有没有被**召回内容**支撑」——
+    只给 `ent:person:P04` 这样一个 id，标注者与 judge 都只能凭空判。
+    """
+    for item in items:
+        assert item.retrieved_contexts, item.item_id
+        for context in item.retrieved_contexts:
+            assert context.snippet.strip(), f"{item.item_id}/{context.doc_id}"
+            assert context.snippet != context.doc_id, (
+                f"{item.item_id}/{context.doc_id} 的原文没还原出来，只回退成了 id"
+            )
+
+
+def test_context_usage_is_gold_intersect_top5(items: list[JudgeCalibItem]) -> None:
+    """★ 上下文利用率的判定对象是 **gold ∩ Top-5**，两个限定缺一不可。
+
+    没进 Top-5 的谈不上「用没用上」；不是 gold 的也不该算进这个指标。
+    """
+    for item in items:
+        gold = {canonical_doc_id(d) for d in item.expected_doc_ids}
+        top5 = item.retrieved_doc_ids[:5]
+        expected = [d for d in top5 if canonical_doc_id(d) in gold]
+        assert [c.doc_id for c in item.context_usage] == expected, item.item_id
+
+
+def test_annotation_sheet_round_trips(tmp_path: Path, items: list[JudgeCalibItem]) -> None:
+    """★ 标注表 → 合并回 jsonl 的往返：**填错要抛，不许静默丢**。
+
+    一条被悄悄丢掉的标注会让分母对不上而没人发现 —— 而分母错了，
+    一致率与 Kappa 全错。
+    """
+    directory = dataset_dir("judge_calib_50")
+    rows = [
+        json.loads(line)
+        for line in (directory / "items.jsonl").read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    sheet = tmp_path / "sheet.csv"
+    written = calib_sheet.write_annotation_sheet(sheet, rows)
+    assert written == sum(
+        sum(1 for c in i.claims if c.is_assertive) + len(i.context_usage) for i in items
+    )
+
+    # 填两行（一条断言、一条召回条目），其余留空。
+    # ★ 必须用 csv 模块改：`contexts` 列里带换行（引号内），按行文本编辑会把 CSV 撕坏 ——
+    # 这正是 W11 第一版测试踩的坑。
+    with sheet.open("r", encoding="utf-8-sig", newline="") as handle:
+        records = list(csv.DictReader(handle))
+    claim_done = context_done = False
+    for record in records:
+        if record["kind"] == "claim" and not claim_done:
+            record["verdict"] = "SUPPORTED"
+            claim_done = True
+        elif record["kind"] == "context" and not context_done:
+            record["used"] = "Y"
+            context_done = True
+    with sheet.open("w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(calib_sheet.HEADER))
+        writer.writeheader()
+        writer.writerows(records)
+
+    target = tmp_path / "items.jsonl"
+    target.write_text(
+        "\n".join(json.dumps(r, ensure_ascii=False, sort_keys=True) for r in rows) + "\n",
+        encoding="utf-8",
+    )
+    claims, contexts = calib_sheet.merge_annotations(sheet, target)
+    assert (claims, contexts) == (1, 1)
+
+    merged = [json.loads(line) for line in target.read_text(encoding="utf-8").splitlines()]
+    assert any(c["verdict"] == "SUPPORTED" for r in merged for c in r["claims"])
+    assert any(e["used"] is True for r in merged for e in r["context_usage"])
+
+
+def test_merge_rejects_bad_values(tmp_path: Path) -> None:
+    """枚举外的取值必须抛 —— 「SUPPORT」少一个 ED 也不行。"""
+    sheet = tmp_path / "bad.csv"
+    sheet.write_text(
+        ",".join(calib_sheet.HEADER)
+        + "\nclaim,JCAL-001,c1,high_risk,semantic,q,t,a,ctx,,SUPPORT,\n",
+        encoding="utf-8-sig",
+    )
+    items = tmp_path / "items.jsonl"
+    items.write_text(
+        json.dumps(
+            {"item_id": "JCAL-001", "claims": [{"claim_id": "c1"}], "context_usage": []},
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="不在"):
+        calib_sheet.merge_annotations(sheet, items)
 
 
 def test_probe_ids_are_unique(items: list[JudgeCalibItem]) -> None:

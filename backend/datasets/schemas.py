@@ -777,8 +777,6 @@ class CalibClaim(BaseModel):
     text: str = Field(min_length=1)
     #: ★ 待业务方填：SUPPORTED / PARTIAL / NOT_SUPPORTED
     verdict: ClaimVerdict | None = None
-    #: ★ 待业务方填：该召回条目是否被回答**实际使用**（上下文利用率的判定对象）
-    context_used: bool | None = None
     #: M5 逐句核验器的判定。**只作参考，不是标签** —— 它判的是「有没有出处」，
     #: 与 Faithfulness 的「有没有被召回内容支撑」口径不同（M5 §9.1 第 2 条）
     verifier_supported: bool | None = None
@@ -786,6 +784,24 @@ class CalibClaim(BaseModel):
     #: **不涉及任何对内容的判断**。非陈述片段没有「有没有被支撑」可言 ——
     #: 它们不进一致率的分母，标注时可以直接跳过
     is_assertive: bool = True
+
+
+class CalibContextUse(BaseModel):
+    """一条**进了 Top-5 的 gold 召回条目**，待判「回答有没有实际用上它」。
+
+    ★ §12.4.1 把上下文利用率定义为「对每条**标注为相关且确实进入 Top-5** 的召回条目，
+    判定回答是否实际使用了它」—— 判定对象是**召回条目**，不是断言。
+    早先我把 `context_used` 放进了 `CalibClaim`，那是把两个指标的判定粒度混成一个；
+    混了之后「召回了却没用上」这件事就永远数不出来。
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    doc_id: str = Field(min_length=1)
+    #: 该条目的原文（截断）。**没有它，标注者无从判断「用没用上」**
+    snippet: str = Field(min_length=1)
+    #: ★ 待业务方填
+    used: bool | None = None
 
 
 class JudgeCalibItem(DatasetItem):
@@ -800,6 +816,11 @@ class JudgeCalibItem(DatasetItem):
     answer: str = Field(min_length=1)
     retrieved_doc_ids: list[str] = Field(default_factory=list)
     expected_doc_ids: list[str] = Field(default_factory=list)
+    #: 召回条目的**原文**。没有它，标注者与 judge 都无从判断一条断言有没有被支撑 ——
+    #: 只给 doc id 等于让人凭空判
+    retrieved_contexts: list[CalibContextUse] = Field(default_factory=list)
+    #: 上下文利用率的判定对象：gold ∩ Top-5（归一化之后）
+    context_usage: list[CalibContextUse] = Field(default_factory=list)
     risk_signals: list[RiskSignal] = Field(default_factory=list)
     #: 受控扰动造出来的负例。真实样本与它**必须分开报一致率**
     is_synthetic_negative: bool = False
@@ -817,11 +838,16 @@ class JudgeCalibItem(DatasetItem):
         把要验证的偏差直接引进基准里。这条断言就是那句话的执行形态。
         """
         for claim in self.claims:
-            if claim.verdict is not None or claim.context_used is not None:
+            if claim.verdict is not None:
                 raise ValueError(
-                    f"{self.item_id}：{claim.claim_id} 的标签非空 —— "
+                    f"{self.item_id}：{claim.claim_id} 的 verdict 非空 —— "
                     "本集交付时标签必须全空，由业务方人工标注（§12.4.1）"
                 )
+        for entry in self.context_usage:
+            if entry.used is not None:
+                raise ValueError(f"{self.item_id}：{entry.doc_id} 的 used 非空 —— 同上")
+        if not self.retrieved_contexts:
+            raise ValueError(f"{self.item_id}：没有召回原文 —— 标注者无从判断断言有没有被支撑")
         if self.is_synthetic_negative and not self.perturbation:
             raise ValueError(f"{self.item_id}：合成负例必须写明扰动方式")
         if self.stratum == "high_risk" and not (self.risk_signals or self.is_synthetic_negative):
@@ -834,6 +860,7 @@ __all__ = [
     "PIPELINE_STAGES",
     "AdversarialKind",
     "CalibClaim",
+    "CalibContextUse",
     "CalibStratum",
     "ClaimVerdict",
     "ConstraintModifier",
