@@ -188,6 +188,51 @@ def test_annotation_sheet_round_trips(tmp_path: Path, items: list[JudgeCalibItem
     assert any(e["used"] is True for r in merged for e in r["context_usage"])
 
 
+def test_annotated_label_count_detects_existing_work(tmp_path: Path) -> None:
+    """★ 「别把标注覆盖掉」那道闸的判据。
+
+    `judge_calib_50` 的 204 行标注是人工的、不可复现的劳动。而重新生成这一集会
+    产出一批**空标签**的新条目 —— 一次不带参数的 `write_datasets.py` 就能把它抹掉，
+    **且不留任何痕迹**。所以写盘前要先数一数现有文件里有没有标签。
+    """
+    blank = tmp_path / "blank.jsonl"
+    blank.write_text(
+        json.dumps(
+            {
+                "item_id": "JCAL-001",
+                "claims": [{"claim_id": "c1", "verdict": None}],
+                "context_usage": [{"doc_id": "d", "used": None}],
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    assert calib_sheet.annotated_label_count(blank) == (0, 0)
+    assert calib_sheet.annotated_label_count(tmp_path / "missing.jsonl") == (0, 0)
+
+    filled = tmp_path / "filled.jsonl"
+    filled.write_text(
+        json.dumps(
+            {
+                "item_id": "JCAL-001",
+                "claims": [{"claim_id": "c1", "verdict": "SUPPORTED"}],
+                "context_usage": [{"doc_id": "d", "used": True}],
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    assert calib_sheet.annotated_label_count(filled) == (1, 1)
+
+
+def test_shipped_dataset_is_detected_as_annotated() -> None:
+    """仓库里这一份**已经标完了** —— 闸必须认出来，否则它形同虚设。"""
+    counts = calib_sheet.annotated_label_count(dataset_dir("judge_calib_50") / "items.jsonl")
+    assert counts == (155, 49)
+
+
 def test_merge_rejects_bad_values(tmp_path: Path) -> None:
     """枚举外的取值必须抛 —— 「SUPPORT」少一个 ED 也不行。"""
     sheet = tmp_path / "bad.csv"

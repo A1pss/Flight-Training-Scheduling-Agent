@@ -113,6 +113,25 @@ def write_annotation_sheet(path: Path, items: Sequence[dict[str, Any]]) -> int:
     return written
 
 
+def annotated_label_count(items_path: Path) -> tuple[int, int]:
+    """数一份 `items.jsonl` 里已经填了多少标签，返回 `(断言, 召回条目)`。
+
+    ★ **给「别把标注覆盖掉」那道闸用的。** `judge_calib_50` 的标注是人工的、
+    不可复现的劳动（204 行），而重新生成这一集会产出一批空标签的新条目 ——
+    一次 `write_datasets.py`（不带参数 = 全部）就能把它抹掉，且不留任何痕迹。
+    """
+    if not items_path.exists():
+        return (0, 0)
+    claims = contexts = 0
+    for line in items_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        claims += sum(1 for c in row.get("claims", []) if c.get("verdict") is not None)
+        contexts += sum(1 for e in row.get("context_usage", []) if e.get("used") is not None)
+    return (claims, contexts)
+
+
 def merge_annotations(sheet: Path, items_path: Path) -> tuple[int, int]:
     """把填好的表合回 `items.jsonl`。返回 `(断言数, 召回条目数)`。
 
@@ -169,4 +188,9 @@ def merge_annotations(sheet: Path, items_path: Path) -> tuple[int, int]:
     return claims, contexts
 
 
-__all__ = ["HEADER", "merge_annotations", "write_annotation_sheet"]
+__all__ = [
+    "HEADER",
+    "annotated_label_count",
+    "merge_annotations",
+    "write_annotation_sheet",
+]
