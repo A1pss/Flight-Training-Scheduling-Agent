@@ -11,6 +11,7 @@ PYTHONPATH=. python tests/datasets/write_datasets.py nl_360
 
 from __future__ import annotations
 
+import os
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -27,6 +28,7 @@ from backend.datasets.manifest import (
 )
 from tests.datasets import (
     calib_catalog,
+    calib_sheet,
     legacy_catalog,
     memory_catalog,
     memory_probes,
@@ -559,6 +561,18 @@ def write_judge_calib_50() -> None:
             f"缺少 {answers_path} —— 先跑：\n"
             "  PYTHONPATH=. VECTOR_BACKEND=chroma EMBED_PROVIDER=bge LLM_PROVIDER=ollama \\\n"
             "    python tests/datasets/run_probes.py --out " + str(answers_path)
+        )
+    # ★ 别把人工标注覆盖掉。重新生成会产出一批**空标签**的新条目 ——
+    # 一次不带参数的 `write_datasets.py` 就能把 204 行人工标注抹掉，且不留痕迹。
+    # 按 §12.4.1 第 4 条，重跑本来就意味着重标；所以这里要求显式放行。
+    labelled = calib_sheet.annotated_label_count(directory / "items.jsonl")
+    if any(labelled) and os.environ.get("FTS_ALLOW_CALIB_OVERWRITE") != "1":
+        raise SystemExit(
+            f"拒绝重新生成 judge_calib_50：现有文件里已有 {labelled[0]} 条断言标注、"
+            f"{labelled[1]} 条召回条目标注，重新生成会把它们清空。\n"
+            "  · 若确实要重跑（比如换了一批回答），先备份 items.jsonl，"
+            "然后 FTS_ALLOW_CALIB_OVERWRITE=1 再跑；\n"
+            "  · 并且记住：**重跑意味着重标**（§12.4.1 第 4 条）。"
         )
     answers = calib_catalog.load_answers(answers_path)
     # 把召回 id 还原成原文：**不重跑 LLM**（重跑会得到另一批回答，而 §12.4.1 的

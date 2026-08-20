@@ -58,7 +58,7 @@
 | ⑥ | `golden_40` | 40 | **approved** | W4 产出，本窗口只抽索引 + 指纹 |
 | ⑦ | `ood_200` | 200 | **approved** | 全部自建，全部可程序判定 |
 | ⑧ | `sft_seed` | 123 | **approved** | 规则与语义假设**从 yaml 读**，需求从 nl_360 确定性抽样 |
-| ⑨ | `judge_calib_50` | 50 | draft | 从 320 条**真回答**分层抽样；**业务方已完成标注**（155 断言 + 49 召回条目） |
+| ⑨ | `judge_calib_50` | 50 | **draft（刻意）** | 从 320 条**真回答**分层抽样；**业务方已完成标注**（155 断言 + 49 召回条目）。★ 业务方裁定：**等 W13 真的拿它算过一次一致率、确认标注在实际判定中站得住之后再 approve** |
 
 ### 2.1 基础设施
 
@@ -373,6 +373,10 @@ commands ignored until end of transaction block
 
 ## 7. 已知限制
 
+0. **`judge_calib_50` 刻意保持 `draft`**（业务方 2026-08-20）—— 标注虽已完成，
+   但要等 W13 真的用它算过一次一致率、确认标注在实际判定中站得住之后再 `approve`。
+   ⚠️ 因此 `load_eval_dataset("judge_calib_50", require_approved=True)` 现在取不到它，
+   **这是有意的**。
 1. **`proc:` 目前没有真的 doc id**。`preference_docs()` 只返回句子。`memory_320` 约定
    `proc:<namespace>/<key>` 作召回单位，**W13 侧要补一个发 id 的适配（约 3 行）**，
    否则程序类 80 条的 Recall@5 算不出来。
@@ -429,6 +433,10 @@ manifest, items = load_eval_dataset("memory_320", require_approved=True)
 7. **`judge_calib_50` 的标签必须留空** —— schema 会拒绝任何非空标签（§12.4.1）。
 8. **跑 `run_probes.py` 期间不要跑 `tests/integration/test_memory_live.py`** ——
    它的 fixture 会 `delete(ProceduralMemory)`，把跑批依赖的偏好删掉。
+9. ⚠️ **`write_datasets.py`（不带参数 = 全部）会重新生成九集** ——
+   而 `judge_calib_50` 重新生成会产出**空标签**的新条目。已加一道闸：
+   检测到现有文件里有标签就拒绝写盘，需 `FTS_ALLOW_CALIB_OVERWRITE=1` 显式放行。
+   **按 §12.4.1 第 4 条，重跑本来就意味着重标**（60 分钟跑批 + 204 行重标）。
 
 ---
 
