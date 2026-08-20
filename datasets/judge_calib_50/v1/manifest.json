@@ -20,7 +20,7 @@
   ],
   "method": "从 320 条探针的**冻结回答**（answers_v1.jsonl，真 14B / 温度 0 / seed 42 / chroma + bge-m3 + bge-reranker）分层抽 50：高风险 25（三条确定性代理信号挑出，不是 judge 挑的）+ 常规 25（按 10/9/6 分层随机，seed 42）。断言分解优先用 M5 逐句核验器已切好的断言。**Claude Code 只做抽样与分解，标签栏交付时全空。**",
   "name": "judge_calib_50",
-  "sha256": "7eaf7d9f61245964f6a4e76e78f49c1f3f0b7b49294607b577893ede431ad9bc",
+  "sha256": "bba13a37189c742d7b591724ea01e284e695bb46a158f1b3e2b5d415589ad2ae",
   "spec_refs": [
     "v6 §12.4.1",
     "v6 §12.7 必述项 4",

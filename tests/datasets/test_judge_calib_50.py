@@ -33,17 +33,39 @@ def test_fifty_items(items: list[JudgeCalibItem]) -> None:
     assert len(items) == 50
 
 
-def test_labels_are_blank(items: list[JudgeCalibItem]) -> None:
-    """★ 最重要的一条：交付时标签必须全空。
+def test_labels_are_all_or_nothing(items: list[JudgeCalibItem]) -> None:
+    """★ 最重要的一条：标签要么**全空**（待标注），要么**全填**（已标注）。
 
-    §12.4.1 的「一处例外」——这一集是给 judge 当基准真值的，用 LLM 生成初稿
-    会把要验证的偏差直接引进基准里。填了标签就等于自己给自己判卷。
+    §12.4.1 的「一处例外」——这一集是给 judge 当基准真值的，预先填几个标签
+    等于把要验证的偏差引进基准里。而**半填**比两者都危险：它看起来是完整的，
+    分母按条数算、分子只有填了的那些，一致率会凭空变好看。
+
+    `is_assertive=False` 的片段永远不该有标签（它们没有「被不被支撑」可言）。
     """
     for item in items:
+        assertive = [c for c in item.claims if c.is_assertive]
+        labelled = [c for c in assertive if c.verdict is not None]
+        assert len(labelled) in (0, len(assertive)), item.item_id
+        used = [e for e in item.context_usage if e.used is not None]
+        assert len(used) in (0, len(item.context_usage)), item.item_id
         for claim in item.claims:
-            assert claim.verdict is None, f"{item.item_id}/{claim.claim_id}"
-        for entry in item.context_usage:
-            assert entry.used is None, f"{item.item_id}/{entry.doc_id}"
+            if not claim.is_assertive:
+                assert claim.verdict is None, f"{item.item_id}/{claim.claim_id}"
+
+
+def test_annotation_is_complete(items: list[JudgeCalibItem]) -> None:
+    """本窗口交付时业务方已标完 —— 155 条断言 + 49 条召回条目全部有标签。
+
+    这条断言的作用是**防倒退**：将来若有人重新生成这一集（比如换了一批回答），
+    标签会被清空，这里会红，提醒「重跑意味着重标」（§12.4.1 第 4 条：
+    judge 的提示词纳入 prompt_version 治理，改动触发重跑一致性验证）。
+    """
+    claims = [c for i in items for c in i.claims if c.is_assertive]
+    contexts = [e for i in items for e in i.context_usage]
+    assert all(c.verdict is not None for c in claims), "有断言未标注"
+    assert all(e.used is not None for e in contexts), "有召回条目未标注"
+    assert len(claims) == 155
+    assert len(contexts) == 49
 
 
 def test_stratification_is_not_all_positive(items: list[JudgeCalibItem]) -> None:

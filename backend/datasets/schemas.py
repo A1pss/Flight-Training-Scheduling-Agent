@@ -830,22 +830,39 @@ class JudgeCalibItem(DatasetItem):
     rationale: str = Field(min_length=1)
 
     @model_validator(mode="after")
-    def _labels_must_be_blank(self) -> JudgeCalibItem:
-        """★ 交付时标签必须全空。
+    def _labels_are_all_or_nothing(self) -> JudgeCalibItem:
+        """★ 标签要么**全空**（待标注），要么**全填**（已标注）—— 半填是错误状态。
 
-        §12.4.1 的「一处例外」：这一集**必须由业务方全程人工标注**，不走
-        「初稿 + 复核」——它是给 judge 当基准真值的，用 LLM 生成初稿等于
-        把要验证的偏差直接引进基准里。这条断言就是那句话的执行形态。
+        §12.4.1 的「一处例外」要求这一集由业务方**全程**人工标注，不走
+        「Claude Code 初稿 + 复核」：它是给 judge 当基准真值的，预先填几个标签
+        等于把要验证的偏差直接引进基准里。
+
+        所以这条规则不是「永远不许有标签」，而是**不许出现半填状态**：
+
+        - 全空 → 交付形态，等业务方标；
+        - 全填 → 标注完成，可以拿去算一致率与 Kappa；
+        - 半填 → 抛。半填最危险的地方在于它**看起来是完整的** ——
+          分母按条数算、分子只有填了的那些，一致率会凭空变好看。
+
+        `is_assertive=False` 的片段**不参与**（它们没有「被不被支撑」可言，
+        本来就不该有标签）。
         """
+        assertive = [c for c in self.claims if c.is_assertive]
+        labelled = [c for c in assertive if c.verdict is not None]
+        if labelled and len(labelled) != len(assertive):
+            raise ValueError(
+                f"{self.item_id}：{len(labelled)}/{len(assertive)} 条断言有标签 —— "
+                "要么全空要么全填，半填会让一致率的分子分母对不上"
+            )
         for claim in self.claims:
-            if claim.verdict is not None:
-                raise ValueError(
-                    f"{self.item_id}：{claim.claim_id} 的 verdict 非空 —— "
-                    "本集交付时标签必须全空，由业务方人工标注（§12.4.1）"
-                )
-        for entry in self.context_usage:
-            if entry.used is not None:
-                raise ValueError(f"{self.item_id}：{entry.doc_id} 的 used 非空 —— 同上")
+            if not claim.is_assertive and claim.verdict is not None:
+                raise ValueError(f"{self.item_id}：非陈述片段 {claim.claim_id} 不该有标签")
+        used = [e for e in self.context_usage if e.used is not None]
+        if used and len(used) != len(self.context_usage):
+            raise ValueError(
+                f"{self.item_id}：{len(used)}/{len(self.context_usage)} 条召回条目有标签 —— "
+                "同上，要么全空要么全填"
+            )
         if not self.retrieved_contexts:
             raise ValueError(f"{self.item_id}：没有召回原文 —— 标注者无从判断断言有没有被支撑")
         if self.is_synthetic_negative and not self.perturbation:
