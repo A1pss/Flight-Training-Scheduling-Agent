@@ -1,0 +1,226 @@
+{
+  "model": "qwen2.5:14b-instruct-q4_K_M",
+  "weights": {
+    "planner": 56,
+    "route": 12,
+    "diagnosis": 59,
+    "explain": 17,
+    "extract": 47,
+    "knowledge": 9
+  },
+  "configs": {
+    "zero_shot": {
+      "per_component": [
+        {
+          "component": "route",
+          "system_tokens": 17,
+          "schema_tokens": 579,
+          "gate_tokens": 596,
+          "raw": {
+            "full": 626,
+            "nosys": 609,
+            "notools": 30
+          }
+        },
+        {
+          "component": "planner",
+          "system_tokens": 17,
+          "schema_tokens": 1837,
+          "gate_tokens": 1854,
+          "raw": {
+            "full": 1884,
+            "nosys": 1867,
+            "notools": 30
+          }
+        },
+        {
+          "component": "extract",
+          "system_tokens": 17,
+          "schema_tokens": 1421,
+          "gate_tokens": 1438,
+          "raw": {
+            "full": 1468,
+            "nosys": 1451,
+            "notools": 30
+          }
+        },
+        {
+          "component": "knowledge",
+          "system_tokens": 17,
+          "schema_tokens": 646,
+          "gate_tokens": 663,
+          "raw": {
+            "full": 693,
+            "nosys": 676,
+            "notools": 30
+          }
+        },
+        {
+          "component": "diagnosis",
+          "system_tokens": 17,
+          "schema_tokens": 995,
+          "gate_tokens": 1012,
+          "raw": {
+            "full": 1042,
+            "nosys": 1025,
+            "notools": 30
+          }
+        },
+        {
+          "component": "explain",
+          "system_tokens": 17,
+          "schema_tokens": 851,
+          "gate_tokens": 868,
+          "raw": {
+            "full": 898,
+            "nosys": 881,
+            "notools": 30
+          }
+        }
+      ],
+      "weighted_gate_tokens": 1295.0
+    },
+    "production": {
+      "per_component": [
+        {
+          "component": "route",
+          "system_tokens": 384,
+          "schema_tokens": 579,
+          "gate_tokens": 963,
+          "raw": {
+            "full": 993,
+            "nosys": 609,
+            "notools": 30
+          }
+        },
+        {
+          "component": "planner",
+          "system_tokens": 563,
+          "schema_tokens": 1837,
+          "gate_tokens": 2400,
+          "raw": {
+            "full": 2430,
+            "nosys": 1867,
+            "notools": 30
+          }
+        },
+        {
+          "component": "extract",
+          "system_tokens": 462,
+          "schema_tokens": 1421,
+          "gate_tokens": 1883,
+          "raw": {
+            "full": 1913,
+            "nosys": 1451,
+            "notools": 30
+          }
+        },
+        {
+          "component": "knowledge",
+          "system_tokens": 353,
+          "schema_tokens": 646,
+          "gate_tokens": 999,
+          "raw": {
+            "full": 1029,
+            "nosys": 676,
+            "notools": 30
+          }
+        },
+        {
+          "component": "diagnosis",
+          "system_tokens": 401,
+          "schema_tokens": 995,
+          "gate_tokens": 1396,
+          "raw": {
+            "full": 1426,
+            "nosys": 1025,
+            "notools": 30
+          }
+        },
+        {
+          "component": "explain",
+          "system_tokens": 380,
+          "schema_tokens": 851,
+          "gate_tokens": 1231,
+          "raw": {
+            "full": 1261,
+            "nosys": 881,
+            "notools": 30
+          }
+        }
+      ],
+      "weighted_gate_tokens": 1733.7
+    },
+    "optimized": {
+      "per_component": [
+        {
+          "component": "route",
+          "system_tokens": 826,
+          "schema_tokens": 579,
+          "gate_tokens": 1405,
+          "raw": {
+            "full": 1435,
+            "nosys": 609,
+            "notools": 30
+          }
+        },
+        {
+          "component": "planner",
+          "system_tokens": 1005,
+          "schema_tokens": 1837,
+          "gate_tokens": 2842,
+          "raw": {
+            "full": 2872,
+            "nosys": 1867,
+            "notools": 30
+          }
+        },
+        {
+          "component": "extract",
+          "system_tokens": 904,
+          "schema_tokens": 1421,
+          "gate_tokens": 2325,
+          "raw": {
+            "full": 2355,
+            "nosys": 1451,
+            "notools": 30
+          }
+        },
+        {
+          "component": "knowledge",
+          "system_tokens": 795,
+          "schema_tokens": 646,
+          "gate_tokens": 1441,
+          "raw": {
+            "full": 1471,
+            "nosys": 676,
+            "notools": 30
+          }
+        },
+        {
+          "component": "diagnosis",
+          "system_tokens": 843,
+          "schema_tokens": 995,
+          "gate_tokens": 1838,
+          "raw": {
+            "full": 1868,
+            "nosys": 1025,
+            "notools": 30
+          }
+        },
+        {
+          "component": "explain",
+          "system_tokens": 822,
+          "schema_tokens": 851,
+          "gate_tokens": 1673,
+          "raw": {
+            "full": 1703,
+            "nosys": 881,
+            "notools": 30
+          }
+        }
+      ],
+      "weighted_gate_tokens": 2175.7
+    }
+  }
+}
