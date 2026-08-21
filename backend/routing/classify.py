@@ -108,6 +108,11 @@ class IntentResult:
     llm_calls: int = 0
     #: self-consistency 一致率（仅二级路径有值）
     agreement: float = 1.0
+    #: ★ 本次分类的**校准特征原样留档**（`CalibrationFeatures.vector()` 的四项来源）。
+    #  只读观测，不参与任何判定 —— 加它是因为 §7.3.5 的校准器要能**从日志重新拟合**，
+    #  而 `confidence` 是校准器的**输出**，用输出去拟合输出是循环的。
+    #  规则命中路径没有 LLM 往返，这里保持为空字典。
+    calibration_features: dict[str, Any] = field(default_factory=dict)
     errors: tuple[ErrorItem, ...] = ()
     raw_text: str = ""
 
@@ -171,6 +176,47 @@ def scan_slots(text: str, directory: EntityDirectory) -> _Slots:
             slots.week = found.group(0)
             break
     return slots
+
+
+def merge_slots(scanned: _Slots, proposed: _Slots) -> _Slots:
+    """把确定性扫描结果与模型给的槽位**合并**，逐类以扫描结果优先。
+
+    ## 这个函数为什么存在（M9-B 实测定位）
+
+    二级路径原先**完全不跑 `scan_slots`**：一级用确定性扫描、二级直接采信模型
+    自报的 surface。而实测下模型会把**工具调用表达式当成槽位值**交出来 ——
+
+    ```
+    「给所有人排 2026-W02 的班」        → week = "resolve_week(2026W02)"
+    「把 2026 年 1 月 5 日那一周的班排出来」→ week = "resolve_week(2026, 1, 5)"
+    「何超能不能排 missionB-1？」        → persons = ["resolve_person('何超')"]
+    ```
+
+    这些 surface 消解不了 → 记成歧义 → 整条请求被送去反问。而
+    `2026-W03` **就逐字写在原话里**，`_WEEK_SCANNERS` 一抓一个准。
+    M9-B 实测：360 条里 82 条因此被误判成 `ask_clarify`，端到端完成率
+    63.11%（目标 ≥92%），且**全部落在 `source=llm`，规则路径一条都没有**。
+
+    与 `Z-37`（模型自己去点 ACL 行之外的工具）是同一族：模型把「要抽取的槽位」
+    当成了「要调用的工具」—— `resolve_person` / `resolve_week` 正在 route 自己
+    那一行 ACL 上。
+
+    ## 合并口径：兼并，不是覆盖
+
+    - **扫描器抓到的那一类，用扫描器的**。它只认逐字出现的编号与名称，
+      不可能把 `2026-W03` 写成一个函数调用。
+    - **扫描器空着的那一类，保留模型的**。模型能处理「下周」「上上周」这类
+      扫描器覆盖不到的口语表述，把它一并丢掉是**用一个缺陷换另一个缺陷**。
+
+    所以两路互补：确定性的那部分不再被模型的自由发挥污染，模型的那部分
+    继续负责扫描器抓不到的说法。
+    """
+    return _Slots(
+        persons=list(scanned.persons) if scanned.persons else list(proposed.persons),
+        aircraft=list(scanned.aircraft) if scanned.aircraft else list(proposed.aircraft),
+        missions=list(scanned.missions) if scanned.missions else list(proposed.missions),
+        week=scanned.week or proposed.week,
+    )
 
 
 def _resolve_slots(
@@ -357,7 +403,11 @@ def classify_intent(
         )
 
     features = CalibrationFeatures.from_output(out.calibration_features(), agreement=agreement)
-    resolutions = _resolve_slots(slots, directory, today=today)
+    # ★ 二级路径同样要过确定性扫描器，再与模型给的槽位兼并（见 `merge_slots`）。
+    #   原先这里直接用 `slots`，模型把 surface 写成 `resolve_week(2026-W03)`
+    #   就会一路走到歧义与反问。
+    merged = merge_slots(scan_slots(stripped, directory), slots)
+    resolutions = _resolve_slots(merged, directory, today=today)
     return _finish(
         intent,
         confidence=cal.predict(features),
@@ -366,6 +416,12 @@ def classify_intent(
         resolutions=resolutions,
         llm_calls=llm_calls,
         agreement=agreement,
+        calibration_features={
+            "agreement": features.agreement,
+            "first_pass": features.first_pass,
+            "retries": features.retries,
+            "worst_failure_mode": features.worst_failure_mode,
+        },
     )
 
 
@@ -379,6 +435,7 @@ def _finish(
     llm_calls: int = 0,
     agreement: float = 1.0,
     errors: tuple[ErrorItem, ...] = (),
+    calibration_features: dict[str, Any] | None = None,
 ) -> IntentResult:
     ambiguities = tuple(collect_ambiguities(resolutions))
     return IntentResult(
@@ -393,6 +450,7 @@ def _finish(
         agreement=agreement,
         errors=errors,
         raw_text=raw_text,
+        calibration_features=dict(calibration_features or {}),
     )
 
 
