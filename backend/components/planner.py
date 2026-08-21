@@ -95,6 +95,10 @@ def _first_round(
         prev_plan=model_get(state, "solution", SchedulePlan),
         harness=harness,
         settings=cfg,
+        # ★ 黑板上已有的周次要交给 Planner。不传的话，「用户没说周次、但周次
+        #   早就在 state 里」这种常见情形会让它看到「（未指定）」并追问一遍，
+        #   而那会污染 §12.2 的误执行率与反问阈值（见 reports/M7_收工报告.md §6）。
+        week_start=state_get(state, "week_start", None),
     )
 
     update: dict[str, Any] = {

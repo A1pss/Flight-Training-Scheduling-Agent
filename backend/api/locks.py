@@ -37,11 +37,11 @@ import uuid
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import date
 from typing import Final
 
 from backend.api.store import KEY_PREFIX, KeyValueStore
 from backend.core.errors import ScheduleLockedError
+from backend.routing.entities import iso_week_of
 
 SCHEDULE_LOCK_PREFIX: Final[str] = f"{KEY_PREFIX}:lock:schedule"
 SNAPSHOT_LOCK_PREFIX: Final[str] = f"{KEY_PREFIX}:lock:snapshot"
@@ -50,12 +50,6 @@ SNAPSHOT_LOCK_PREFIX: Final[str] = f"{KEY_PREFIX}:lock:snapshot"
 #: 常规档预算 60 s，诊断档 300 s，再加报表与归档——1800 s 给足两个数量级的余量。
 #: **锁必须会过期**：进程被 kill 时没人来释放，不过期就等于那一周从此排不了。
 DEFAULT_LOCK_TTL_S: Final[int] = 1800
-
-
-def iso_week_of(day: date) -> str:
-    """`date → 2026W02`。与 `SchedulePlan.iso_week` 同一形态。"""
-    year, week, _ = day.isocalendar()
-    return f"{year}W{week:02d}"
 
 
 def schedule_lock_key(tenant_id: str, iso_week: str) -> str:
