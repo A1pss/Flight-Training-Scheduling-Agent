@@ -3,7 +3,7 @@
 M4-A 把 §7.6 的端到端一格标成**合成值**并写明「M4-B 装完图后要用真链路复测并
 替换这一格」——图当时还没装起来。本文件就是那次复测。
 
-**跑的是真 Ollama**（`LLM_PROVIDER=ollama`，`CUDA_VISIBLE_DEVICES=3`），
+**跑的是真 Ollama**（`LLM_PROVIDER=ollama`，`CUDA_VISIBLE_DEVICES=0`），
 所以带 `@pytest.mark.ollama`：CI 上没有 GPU、也不该有，那里一律跳过。
 
 ## 量的是什么

@@ -2,7 +2,7 @@
 
 ```bash
 # ① 工具调用基线（§12.5.1）—— 断点续跑，中断后原样重跑即可续上
-CUDA_VISIBLE_DEVICES=3 LLM_PROVIDER=ollama \
+CUDA_VISIBLE_DEVICES=0 LLM_PROVIDER=ollama \
   python -m backend.training.cli toolcall --config production --rounds 3
 
 # ② 聚合成指标表（不调模型，随时可跑）

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# 启动 Ollama：127.0.0.1:11434，**绑死 GPU 3**（CLAUDE.md §2 硬约束）。
+# 启动 Ollama：127.0.0.1:11434，**绑死 GPU 0**（CLAUDE.md §2 硬约束）。
 # 模型 blob 落在项目内 .data/ollama，不占根分区。
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/env.sh"
 
-export CUDA_VISIBLE_DEVICES=3          # ← 写死，不接受覆盖
+export CUDA_VISIBLE_DEVICES=0          # ← 写死，不接受覆盖
 
 # 本机 HTTP(S)_PROXY (127.0.0.1:17890) 会损坏长连接的 TLS 记录（"tls: bad record
 # MAC"），导致 `ollama pull` 反复重试、几乎拉不动模型。**服务端进程会继承这些

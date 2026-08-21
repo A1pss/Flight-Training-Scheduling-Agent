@@ -58,7 +58,7 @@
 | 项 | 值 |
 |---|---|
 | Python 环境 | conda 虚拟环境 **`schedule`**。所有命令前置 `conda run -n schedule` 或先 `conda activate schedule` |
-| GPU | **只用第 4 块卡**：`CUDA_VISIBLE_DEVICES=3`。写进 `.env`、所有训练/推理脚本、Ollama 启动环境 |
+| GPU | **只用第 1 块卡（GPU 0）**：`CUDA_VISIBLE_DEVICES=0`。写进 `.env`、所有训练/推理脚本、Ollama 启动环境。⚠️ **2026-08-21 由 3 号卡迁来**：另一用户长期占着 GPU 3 的 12+ GB，14B-Q4 被迫把 24/49 层卸到 CPU，推理慢 3~5 倍且 QLoRA 的 ~21 GB 根本放不下。**迁卡不改「只用一块卡」这条约束本身**，只改是哪一块 |
 | 容器 | **无 Docker**。PostgreSQL 16 / Redis 7 / Ollama 全部裸装，用户态运行，不要求 root |
 | 网络 | 服务器**可联外网**（仅用于安装依赖与拉模型）。但**应用代码本身必须写成全离线可运行**，§11.4 的 egress 禁令照常实现与测试 |
 | 数据库 | PG16 用 `initdb` 在项目目录下起独立实例（非系统服务），端口默认 5433 避让 |
@@ -282,12 +282,12 @@ fts/
 ```bash
 # 环境
 conda activate schedule
-export CUDA_VISIBLE_DEVICES=3
+export CUDA_VISIBLE_DEVICES=0
 
 # 服务（裸装，脚本在 deploy/native/）
 bash deploy/native/start_pg.sh      # PG16, 127.0.0.1:5433
 bash deploy/native/start_redis.sh   # Redis7, 127.0.0.1:6380
-bash deploy/native/start_ollama.sh  # Ollama, 127.0.0.1:11434, 绑 GPU 3
+bash deploy/native/start_ollama.sh  # Ollama, 127.0.0.1:11434, 绑 GPU 0
 bash deploy/native/healthcheck.sh   # 全栈体检（含 alembic 版本检查）
 
 # 数据库迁移（**跑集成测试前必须先做**，见 §6）

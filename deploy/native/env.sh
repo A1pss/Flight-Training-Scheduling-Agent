@@ -54,8 +54,8 @@ export APP_PORT="${APP_PORT:-8000}"
 export FRONTEND_PORT="${FRONTEND_PORT:-8501}"
 export RQ_QUEUE="${RQ_QUEUE:-fts}"
 
-# ── GPU：只用第 4 块卡（CLAUDE.md §2 硬约束）────────────────────────
-export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-3}"
+# ── GPU：只用第 1 块卡 GPU 0（CLAUDE.md §2 硬约束）────────────────────────
+export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}"
 
 # ── 模型 ─────────────────────────────────────────────────────────────
 export FTS_LLM_MODEL="${FTS_LLM_MODEL:-qwen2.5:14b-instruct-q4_K_M}"
