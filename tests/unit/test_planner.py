@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import json
-from datetime import time
+from datetime import date, time
 
 import pytest
 
 from backend.core.config import Settings
+from backend.harness import ContextBlock
 from backend.planner import (
     RELAX_TIER_AUTHORITY,
     ROLE_RANK,
@@ -28,7 +29,9 @@ from backend.planner import (
     translate_revision,
 )
 from backend.planner.authority import normalize_role
+from backend.planner.intent import _planner_blocks, target_week_of
 from backend.planner.revision import FEW_SHOT, REVISION_KINDS, for_solver, to_solver_params
+from backend.routing.entities import iso_week_of, week_start_of
 from backend.schemas.intent import (
     ConstraintSpec,
     IncrementalConstraint,
@@ -555,3 +558,85 @@ def test_llm_degradation_falls_back_to_rules(settings: Settings) -> None:
     assert result.source == "rule"
     assert result.constraint.kind == "FORBID"
     assert any("降级" in w for w in result.warnings)
+
+
+# ─────────────────────────────────────────────────────────────────────
+# 目标周的三级回退（fix/planner-week-from-state）
+# ─────────────────────────────────────────────────────────────────────
+
+
+def _week_line(blocks: list[ContextBlock]) -> str:
+    summary = next(b for b in blocks if b.kind == "summary")
+    return next(line.strip() for line in summary.content.splitlines() if "目标周" in line)
+
+
+def test_target_week_prefers_the_resolved_iso_week() -> None:
+    request = SchedulingRequest(
+        kind="schedule",
+        raw_text="排 2026-W02 的班",
+        iso_week="2026W02",
+        week_start=date(2026, 1, 5),
+    )
+    assert target_week_of(request, "2026-01-12") == "2026W02"
+
+
+def test_target_week_falls_back_to_the_request_week_start() -> None:
+    """结构化入口按日期给周次时也要认 —— 原实现只读 iso_week，这里会是「（未指定）」。"""
+    request = SchedulingRequest(
+        kind="schedule", raw_text="给所有人排班", week_start=date(2026, 1, 5)
+    )
+    assert target_week_of(request) == "2026W02"
+
+
+def test_target_week_falls_back_to_the_blackboard_week() -> None:
+    """★ 本次修复的核心：话里没有周次，但周次早就在 state 里。
+
+    原实现在这里会渲染成「（未指定）」，Planner 于是追问一遍已经有的信息 ——
+    而那会同时推高 §12.2 的主指标、压低误执行率、让反推的反问阈值偏移。
+    """
+    request = SchedulingRequest(kind="schedule", raw_text="给所有人排班")
+    assert target_week_of(request, "2026-01-05") == "2026W02"
+    assert target_week_of(request, date(2026, 1, 5)) == "2026W02"
+
+
+def test_target_week_asks_when_all_three_sources_are_empty() -> None:
+    """**三源皆空照旧追问，绝不设默认周次**（S-14 / v6 §5.1.1 / FTS-1004）。
+
+    业务方 2026-08-21 确认此口径。这条红了就意味着有人给缺失的必需输入加了
+    静默默认值 —— CLAUDE.md 反模式清单点名的那一条。
+    """
+    request = SchedulingRequest(kind="schedule", raw_text="给所有人排班")
+    assert target_week_of(request, None) is None
+    assert target_week_of(None, None) is None
+
+
+def test_target_week_treats_an_unparsable_blackboard_value_as_absent() -> None:
+    """state 里的值解析不了就当没有 —— 不猜，照旧追问。"""
+    request = SchedulingRequest(kind="schedule", raw_text="给所有人排班")
+    assert target_week_of(request, "下周") is None
+    assert target_week_of(request, "2026-13-99") is None
+
+
+def test_planner_summary_shows_the_blackboard_week(settings: Settings) -> None:
+    """端到端形态：装配出来的摘要里必须是 2026W02，不是「（未指定）」。"""
+    request = SchedulingRequest(kind="schedule", raw_text="给所有人排班")
+    blocks = _planner_blocks(request, None, user_role="director", week_start="2026-01-05")
+    assert "2026W02" in _week_line(blocks)
+
+
+def test_planner_summary_still_says_unspecified_when_nothing_is_known(
+    settings: Settings,
+) -> None:
+    request = SchedulingRequest(kind="schedule", raw_text="给所有人排班")
+    blocks = _planner_blocks(request, None, user_role="director")
+    assert "（未指定）" in _week_line(blocks)
+
+
+def test_iso_week_helpers_are_inverses() -> None:
+    """`iso_week_of` 与 `week_start_of` 必须始终互逆（本修复把两者并到了一处）。"""
+    for iso in (
+        "2026W01",
+        "2026W02",
+        "2026W53" if date(2026, 12, 31).isocalendar()[1] == 53 else "2026W52",
+    ):
+        assert iso_week_of(week_start_of(iso)) == iso

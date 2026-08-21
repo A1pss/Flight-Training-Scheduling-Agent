@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
+from datetime import date
 from typing import Any, Final
 
 from backend.core.config import Settings, get_settings
@@ -42,6 +43,7 @@ from backend.core.errors import FTSError
 from backend.harness import AgentSpec, ContextBlock, Harness, structured_summary
 from backend.planner.authority import authorized_tiers
 from backend.planner.scope import ScopeDecision, apply_scope_policy
+from backend.routing.entities import iso_week_of
 from backend.schemas.intent import (
     ObjectiveWeights,
     QueryRequest,
@@ -125,11 +127,52 @@ def deterministic_intent(
     )
 
 
+def target_week_of(
+    request: SchedulingRequest | QueryRequest | None,
+    week_start: date | str | None = None,
+) -> str | None:
+    """本次请求的目标周，三级回退；**三处都没有就返回 `None`**。
+
+    | 优先级 | 来源 | 何时有值 |
+    |---|---|---|
+    | ① | `request.iso_week` | 用户话里说了周次，`resolve_week` 消解出来了 |
+    | ② | `request.week_start` | 结构化入口按日期给的 |
+    | ③ | `state["week_start"]` | 图的黑板上已有周次（上游节点或 API 放进去的） |
+
+    **③ 是本函数存在的理由。** 原实现只读 ①，于是「用户没说周次、但周次早就在
+    state 里」这种再普通不过的情形，Planner 会看到「（未指定）」并如实追问 ——
+    模型没做错，是它没拿到那个信息。这条缺陷会同时推高 §12.2 的主指标
+    （「正确地反问」计为成功）、压低误执行率、并让由误执行率反推的反问阈值偏移。
+
+    **三处皆空时返回 `None`，调用方据此渲染「（未指定）」并照旧追问** ——
+    这里**绝不设默认周次**（S-14 / v6 §5.1.1 / `FTS-1004`：缺输入即提问）。
+    业务方 2026-08-21 确认此口径。
+
+    ⚠️ 与 M9-A「缺周次一律归歧义层」的裁定不冲突：那条说的是**用户这句话里**
+    没有周次；周次来自 state 时不属于「缺」。
+    """
+    if isinstance(request, SchedulingRequest):
+        if request.iso_week:
+            return request.iso_week
+        if request.week_start is not None:
+            return iso_week_of(request.week_start)
+    if isinstance(week_start, str):
+        # state 里存的是 ISO 日期串。解析不了就当没有——不猜，照旧追问。
+        try:
+            week_start = date.fromisoformat(week_start)
+        except ValueError:
+            return None
+    if isinstance(week_start, date):
+        return iso_week_of(week_start)
+    return None
+
+
 def _planner_blocks(
     request: SchedulingRequest | QueryRequest | None,
     prev_plan: SchedulePlan | None,
     *,
     user_role: UserRole,
+    week_start: date | str | None = None,
 ) -> list[ContextBlock]:
     """装配 Planner 的上下文。**结构化数据只入摘要**（v6 §7.7.1 第 5 行）。"""
     summary: dict[str, Any] = {"角色": user_role}
@@ -137,7 +180,7 @@ def _planner_blocks(
         summary.update(
             {
                 "意图": request.kind,
-                "目标周": request.iso_week or "（未指定）",
+                "目标周": target_week_of(request, week_start) or "（未指定）",
                 "点名人员": request.persons or "（未点名，视为全体）",
                 "点名飞机": request.aircraft or "（无）",
                 "点名课目": request.missions or "（未点名，视为全部）",
@@ -187,10 +230,15 @@ def plan_solve_intent(
     prev_plan: SchedulePlan | None = None,
     harness: Harness | None = None,
     settings: Settings | None = None,
+    week_start: date | str | None = None,
 ) -> PlannerDecision:
     """v6 §7.3.3 的三步，完整落地。
 
     Planner **在一次请求内只被调用一次**，不自主循环、不自主选择下一跳。
+
+    `week_start` 是黑板上已有的周次（`state["week_start"]`），作为目标周的
+    第三级来源交给 :func:`target_week_of` —— 不给它，Planner 就看不到那个周次，
+    会在信息其实已经有的情况下追问。
     """
     cfg = settings or get_settings()
     notes: list[str] = []
@@ -202,7 +250,8 @@ def plan_solve_intent(
     if harness is not None:
         try:
             output = harness.call(
-                PLANNER_AGENT, _planner_blocks(request, prev_plan, user_role=user_role)
+                PLANNER_AGENT,
+                _planner_blocks(request, prev_plan, user_role=user_role, week_start=week_start),
             )
             llm_calls = output.llm_calls
             if output.degraded:

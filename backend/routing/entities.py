@@ -401,6 +401,16 @@ def _week_resolution(surface: str, day: date, *, reason: str) -> Resolution:
     )
 
 
+def iso_week_of(day: date) -> str:
+    """`2026-01-05` → `2026W02`。:func:`week_start_of` 的逆。
+
+    **两个方向放在一起**：它们必须始终互逆，分散在各处的私有实现迟早会漂移
+    （本函数落地时仓库里已经有三处等价写法）。
+    """
+    iso_year, iso_week, _ = day.isocalendar()
+    return f"{iso_year}W{iso_week:02d}"
+
+
 def week_start_of(iso_week: str) -> date:
     """`2026W02` → 该周周一（`2026-01-05`）。"""
     match = _ISO_WEEK.match(iso_week)
@@ -456,6 +466,7 @@ __all__ = [
     "Resolution",
     "collect_ambiguities",
     "directory_from_session",
+    "iso_week_of",
     "levenshtein",
     "monday_of",
     "resolve_aircraft",
