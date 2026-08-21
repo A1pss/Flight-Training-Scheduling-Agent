@@ -21,7 +21,7 @@ CI 上没有那 2.2GB 权重（`.data/` 已 gitignore），与 `memory/embedding
 
 ## 设备：默认 CPU
 
-与摄取期嵌入同一条理由（M1 的隔离方案）：GPU 3 上常驻 Ollama 的 14B（约 13GB
+与摄取期嵌入同一条理由（M1 的隔离方案）：GPU 0 上常驻 Ollama 的 14B（约 13GB
 / 24GB），M7 微调还要占同一张卡。重排的输入是 20 条几十字的短文本，CPU 上
 是毫秒到百毫秒量级，没有理由去抢显存。要切走 `RERANK_DEVICE` 即可。
 """

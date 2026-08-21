@@ -27,7 +27,7 @@ fts_info "内存    : $(free -h | awk '/^Mem:/{print $2" 总 / "$7" 可用"}')"
 ok "硬件信息采集完成"
 
 # ─────────────────────────────────────────────────────────────────────
-hdr "2. GPU（只用第 4 块卡，CUDA_VISIBLE_DEVICES=3）"
+hdr "2. GPU（只用第 1 块卡 GPU 0，CUDA_VISIBLE_DEVICES=0）"
 if ! command -v nvidia-smi >/dev/null 2>&1; then
   bad "未找到 nvidia-smi"
 else
@@ -35,35 +35,35 @@ else
   fts_info "物理 GPU 数：$TOTAL_GPUS"
   nvidia-smi --query-gpu=index,name,memory.used,memory.total,utilization.gpu \
              --format=csv,noheader | sed 's/^/   /'
-  if [ "$TOTAL_GPUS" -lt 4 ]; then
-    bad "物理 GPU 少于 4 块，无法定位第 4 块卡"
+  if [ "$TOTAL_GPUS" -lt 1 ]; then
+    bad "未检测到任何物理 GPU"
   else
-    USED3=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits -i 3)
-    if [ "$USED3" -le 512 ]; then
-      ok "GPU 3 空闲（已用 ${USED3} MiB）"
+    USED0=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits -i 0)
+    if [ "$USED0" -le 512 ]; then
+      ok "GPU 0 空闲（已用 ${USED0} MiB）"
     else
       # 常见且正常的情形：Ollama 把模型常驻显存（OLLAMA_KEEP_ALIVE=5m）。
       if curl -sf "http://$OLLAMA_HOST/api/ps" 2>/dev/null | grep -q '"name"'; then
-        ok "GPU 3 已用 ${USED3} MiB —— 系 Ollama 常驻模型，属预期"
+        ok "GPU 0 已用 ${USED0} MiB —— 系 Ollama 常驻模型，属预期"
       else
-        warn "GPU 3 已占用 ${USED3} MiB 且非本项目 Ollama 所持，训练/推理可能显存不足"
+        warn "GPU 0 已占用 ${USED0} MiB 且非本项目 Ollama 所持，训练/推理可能显存不足"
       fi
     fi
-    # 验证屏蔽后确实只暴露 1 块，且是物理 3 号。
+    # 验证屏蔽后确实只暴露 1 块，且是物理 0 号。
     # ⚠️ nvidia-smi 是驱动层工具，**不认 CUDA_VISIBLE_DEVICES**，拿它验证屏蔽
-    #    永远会看到全部 4 块。必须用 CUDA runtime（torch）才测得准。
-    UUID3=$(nvidia-smi --query-gpu=uuid --format=csv,noheader -i 3 | tr -d ' ')
-    PROBE=$(CUDA_VISIBLE_DEVICES=3 conda run -n "$FTS_PY_ENV" python -c '
+    #    永远会看到全部卡。必须用 CUDA runtime（torch）才测得准。
+    UUID0=$(nvidia-smi --query-gpu=uuid --format=csv,noheader -i 0 | tr -d ' ')
+    PROBE=$(CUDA_VISIBLE_DEVICES=0 conda run -n "$FTS_PY_ENV" python -c '
 import torch
 n = torch.cuda.device_count()
 u = torch.cuda.get_device_properties(0).uuid if n else ""
 print(f"{n}|GPU-{u}")
 ' 2>/dev/null | grep -v '^[[:space:]]*$' | tail -1)
     VIS="${PROBE%%|*}"; UUIDV="${PROBE##*|}"
-    if [ "$VIS" = "1" ] && [ "$UUID3" = "$UUIDV" ]; then
-      ok "CUDA_VISIBLE_DEVICES=3 下 CUDA 只暴露 1 块卡，且为物理 3 号（$UUID3）"
+    if [ "$VIS" = "1" ] && [ "$UUID0" = "$UUIDV" ]; then
+      ok "CUDA_VISIBLE_DEVICES=0 下 CUDA 只暴露 1 块卡，且为物理 0 号（$UUID0）"
     elif [ "$VIS" = "1" ]; then
-      bad "GPU 屏蔽指向了错误的卡：期望 $UUID3，实际 $UUIDV"
+      bad "GPU 屏蔽指向了错误的卡：期望 $UUID0，实际 $UUIDV"
     else
       bad "GPU 屏蔽异常：CUDA 暴露 ${VIS:-?} 块（期望 1）"
     fi
@@ -154,7 +154,7 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────
-hdr "8. Ollama @ $OLLAMA_HOST（GPU 3）"
+hdr "8. Ollama @ $OLLAMA_HOST（GPU 0）"
 if curl -sf "http://$OLLAMA_HOST/api/version" >/dev/null 2>&1; then
   ok "Ollama 可连，version=$(curl -s "http://$OLLAMA_HOST/api/version" | tr -d '{}\"')"
   MODELS=$(curl -s "http://$OLLAMA_HOST/api/tags" | tr ',' '\n' | grep -o '"name":"[^"]*"' | cut -d'"' -f4)

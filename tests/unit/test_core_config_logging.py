@@ -34,8 +34,13 @@ def test_default_ports_match_v6() -> None:
 
 
 def test_gpu_pinned_to_device_three() -> None:
-    """CLAUDE.md §2 硬约束：只用第 4 块卡。"""
-    assert Settings(_env_file=None).CUDA_VISIBLE_DEVICES == "3"  # type: ignore[call-arg]
+    """CLAUDE.md §2 硬约束：只用第 1 块卡（GPU 0）。
+
+    2026-08-21 由 GPU 3 迁到 GPU 0（另一用户长期占着 3 号卡，只剩 11 GB，
+    14B-Q4 有 24/49 层被迫卸到 CPU）。**这条断言是硬约束的执行点**，
+    改它等于改约束本身。
+    """
+    assert Settings(_env_file=None).CUDA_VISIBLE_DEVICES == "0"  # type: ignore[call-arg]
 
 
 def test_solver_budget_defaults() -> None:

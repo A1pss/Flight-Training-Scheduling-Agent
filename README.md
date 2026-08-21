@@ -18,7 +18,7 @@ cp .env.example .env
 bash deploy/native/init_pg.sh           # PG16 独立实例 → 127.0.0.1:5433，建库 fts
 bash deploy/native/start_redis.sh       # Redis7    → 127.0.0.1:6380
 bash deploy/native/install_ollama.sh    # 用户态解压安装（版本钉在 v0.6.8，见脚本注释）
-bash deploy/native/start_ollama.sh      # Ollama    → 127.0.0.1:11434，绑 GPU 3
+bash deploy/native/start_ollama.sh      # Ollama    → 127.0.0.1:11434，绑 GPU 0
 bash deploy/native/pull_models.sh       # qwen2.5:14b-instruct-q4_K_M
 bash deploy/native/fetch_bge.sh         # bge-m3 + bge-reranker-v2-m3
 bash deploy/native/fetch_paddleocr.sh   # PaddleOCR 中文模型（离线可用）

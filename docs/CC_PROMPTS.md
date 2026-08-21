@@ -55,13 +55,13 @@ M0   M1    M2-A   M2-B       M2-C  M3  M4-A M4-B  M5   M6   M8   M9-A   M7   M9-
   - 磁盘剩余空间（重点：够不够放 14B-Q4 约 9.5GB + BF16 基座约 28GB + bge 双模型约 2.5GB + PaddleOCR + wheels，合计预留 60GB）
   - 5433 / 6380 / 11434 / 8000 / 8501 端口是否被占
   - 外网连通性（pypi、ollama.com、huggingface 或其镜像）
-把结果贴给我。如果磁盘不足 60GB 或第 4 块卡不空闲，停下来等我。
+把结果贴给我。如果磁盘不足 60GB 或 GPU 0 不空闲，停下来等我。
 
 【第二步：装依赖（全部裸装，不用 Docker）】
 1. conda 环境 schedule：Python 3.11。装 ortools、langgraph、langchain-core、fastapi、uvicorn、streamlit、pydantic>=2、sqlalchemy、alembic、psycopg[binary]、redis、rq、chromadb、rank-bm25、pdfplumber、openpyxl、pandas、python-docx、paddleocr、paddlepaddle、hypothesis、pytest、pytest-cov、pytest-regressions、schemathesis、playwright、ruff、mypy、bandit、import-linter、pre-commit、FlagEmbedding（bge）等。生成 requirements.txt 并锁版本。
 2. PostgreSQL 16：conda-forge 装，用 initdb 在 /shares2/mingde/FTS_LANAU/.data/pg 建独立实例，端口 5433，建库 fts。写 deploy/native/start_pg.sh / stop_pg.sh。
 3. Redis 7：conda-forge 装，端口 6380，数据目录 /shares2/mingde/FTS_LANAU/.data/redis。写 start_redis.sh / stop_redis.sh。
-4. Ollama：用户态解压安装到 /shares2/mingde/FTS_LANAU/.tools/ollama，OLLAMA_MODELS=/shares2/mingde/FTS_LANAU/.data/ollama，启动脚本里写死 CUDA_VISIBLE_DEVICES=3。拉 qwen2.5:14b-instruct-q4_K_M，记录 digest 写进 .env.example。
+4. Ollama：用户态解压安装到 /shares2/mingde/FTS_LANAU/.tools/ollama，OLLAMA_MODELS=/shares2/mingde/FTS_LANAU/.data/ollama，启动脚本里写死 CUDA_VISIBLE_DEVICES=0。拉 qwen2.5:14b-instruct-q4_K_M，记录 digest 写进 .env.example。
 5. bge-m3 与 bge-reranker-v2-m3 权重下载到 /shares2/mingde/FTS_LANAU/.data/models/，记录 SHA256。
 6. PaddleOCR 中文模型权重预下载到本地，确保离线可用。
 7. Qwen2.5-14B-Instruct BF16 基座（微调用，约 28GB）：先只写下载脚本 deploy/native/fetch_sft_base.sh，**不要现在下载**，等 W12 窗口再执行。
@@ -99,8 +99,8 @@ M0   M1    M2-A   M2-B       M2-C  M3  M4-A M4-B  M5   M6   M8   M9-A   M7   M9-
 git init（若尚未）、加 remote git@github.com:A1pss/Flight-Training-Scheduling-Agent.git、建 main、建分支 feat/m0-bootstrap。
 
 【出口标准 —— 逐条实测并贴输出】
-□ healthcheck.sh 全绿（PG/Redis/Ollama/GPU3 全部可达）
-□ `ollama run qwen2.5:14b-instruct-q4_K_M "你好"` 能出中文，且 nvidia-smi 显示占用在 GPU 3 上
+□ healthcheck.sh 全绿（PG/Redis/Ollama/GPU0 全部可达）
+□ `ollama run qwen2.5:14b-instruct-q4_K_M "你好"` 能出中文，且 nvidia-smi 显示占用在 GPU 0 上
 □ bge-m3 与 reranker 能在 Python 里加载并算出向量/分数
 □ CLAUDE.md §6 六条质量门禁命令全绿
 □ `rg -n "TODO|FIXME|NotImplementedError|待实现" backend/ tests/` 输出为空
@@ -975,7 +975,7 @@ v6 §15 是**条件性交付**。出口条件允许是「做完消融后判定�
 
 【第四步：训练（v6 §15.3）】
 基座 Qwen2.5-14B-Instruct BF16（先跑 deploy/native/fetch_sft_base.sh 下载，约 28GB，确认磁盘）
-LLaMA-Factory + PEFT，全程离线，conda 环境 schedule，CUDA_VISIBLE_DEVICES=3
+LLaMA-Factory + PEFT，全程离线，conda 环境 schedule，CUDA_VISIBLE_DEVICES=0
 配置严格照 **v6 §15.3** 表格：QLoRA 4bit NF4、r=16 alpha=32 dropout=0.05、七个目标模块、lr 1e-4 cosine warmup 3%、3 epoch、per_device_batch=1 + 梯度累积 16、gradient_checkpointing=True、paged_adamw_8bit、sdpa、seq_len 4096
 预计 6~9 小时，整夜跑，**与在线推理和 32B 数据合成三者互斥、由一把 Redis 锁串行化**（v6 §11.3：三者峰值 17+20+21 GB 远超 24 GB，不能靠「反正不会同时跑」的默契）
 > v6 §15.3 表里的显存与耗时是按配置推算的区间，**dry-run 后用实测值替换并回填文档**。
@@ -1033,7 +1033,7 @@ v6 §15.4 消融六行全部实测（含 32B 原始 + few-shot 的离线对照�
 **报告首页要有一句话说清楚**：本次验收是**未微调基线**的验收，微调是否进行取决于本轮实验一/实验五的结果。
 
 【执行环境】
-conda schedule，CUDA_VISIBLE_DEVICES=3。
+conda schedule，CUDA_VISIBLE_DEVICES=0。
 §12.2 与 §12.4 的批跑走 §7.7 的**录制重放**底座：第一遍真机录制，后续回归零 LLM 调用。
 360 条 × 3 轮 + self-consistency 是一笔可观的推理量，先估算总时长报我，我们商量分几批跑。
 
@@ -1181,10 +1181,11 @@ v6 §12.5.4 **egress 拦截 E1~E4**（W10 已跑过，此处正式记录）。
 【必须先问我的】
 - 开跑前把总推理时长估算发我，商量分批策略（**注意 32B judge 批跑要和在线推理抢同一把 Redis 锁**；本轮没有 QLoRA 训练，见前置）
 - **Planner 的 `week_start` 缺陷**：确认是先合修复分支还是本窗口开头自行修
-- ⚠️ **GPU 3 可能被他人占用**：M7 窗口全程只有 25/49 层在卡上（另一用户占 12.3 GB），
-  推理慢 3~5 倍。开跑前跑一次 `nvidia-smi` 与 `grep layers.offload .data/logs/ollama.log`，
-  **若仍是部分卸载状态，本轮不要报任何延迟类指标**（M7 就是这么处理的），
-  或与我协调换卡/等卡
+- ⚠️ **开跑前确认 GPU 0 真的空闲**：M7 窗口时约束还是 GPU 3，而那块卡被另一用户占了
+  12.3 GB，全程只有 25/49 层在卡上、推理慢 3~5 倍 —— **2026-08-21 的迁卡（3 → 0）
+  就是为了这件事**。跑一次 `nvidia-smi` 与 `grep layers.offload .data/logs/ollama.log`，
+  确认 `layers.offload=49/49`；**若又变成部分卸载，本轮不要报任何延迟类指标**
+  （M7 就是这么处理的），或与我协调
 - ⚠️ **`answers_v1.jsonl` 那 320 条是旧预算（10）下跑的**，`Z-34` 已提到 14。
   §12.4 生成层指标要不要在新预算下重跑 320 条（重跑意味着 `judge_calib_50` 要重标），
   由我决定 —— 成本要提前算进排期（M9-A §12.2 第 4 条）

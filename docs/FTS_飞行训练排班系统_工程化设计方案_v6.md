@@ -438,7 +438,7 @@ C-1、missionC-2、missionF-1
 └─────────────────────────────┬────────────────────────────────────────┘
                               │
 ┌─────────────────────────────┴────────────────────────────────────────┐
-│ L0 模型层  Ollama :11434 (GPU 3)                                      │
+│ L0 模型层  Ollama :11434 (GPU 0)                                      │
 │            Qwen2.5-14B-Q4(开发=上线) · bge-m3 · bge-reranker-v2-m3    │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -993,7 +993,7 @@ Tier 3  Tier2 + 经授权放宽 R1（约束10/11/12，需人工审批后执行�
 | 参数 | 值 | 说明 |
 |---|---|---|
 | `max_time_in_seconds` | **60**（常规）/ 120（重排）/ 300（诊断） | UI 可调。**常规档 2026-08-13 由业务方裁定从 30 提到 60**（`Z-13`），理由见下方 |
-| `num_search_workers` | 开发期 4 / 上线期 8 | CP-SAT 纯 CPU，与 Ollama 抢核心。**Ollama 绑定 GPU 3 后 CPU 争抢缓解，但推理的 CPU 部分仍吃核**，故开发期固定 4 核并优先保障 solver（求解正确性不能被 LLM 饿死） |
+| `num_search_workers` | 开发期 4 / 上线期 8 | CP-SAT 纯 CPU，与 Ollama 抢核心。**Ollama 绑定 GPU 0 后 CPU 争抢缓解，但推理的 CPU 部分仍吃核**，故开发期固定 4 核并优先保障 solver（求解正确性不能被 LLM 饿死） |
 | `random_seed` | 固定 42 | 可复现性硬要求（`CLAUDE.md` 铁律 9） |
 | `cp_model_probing_level` | **0**（M2-A 补充） | presolve 探测在本模型上每次要花 4~6 秒，而一次请求会多次调 `Solve()`。实测基准周 probing=2 → 11.3s、=0 → 5.1s，**最优值一模一样**。probing 只影响搜索效率，不影响可行集与最优值 |
 | `max_deterministic_time` | **墙钟上限 × 3**（M2-A 补充） | 兜底用。它**不是秒**，是与机器无关的工作量单位，本模型 4 worker 下实测约为墙钟的 1.2~1.7 倍。早先直接设成墙钟秒数，结果它先到、把本来能证到最优的求解切断了 |
@@ -2141,13 +2141,15 @@ app = g.compile(checkpointer=PostgresSaver(...), store=FTSStore(...))
 
 | 环境 | 单次 LLM 调用 | 端到端（可行路径，~5 次调用） | 用途 |
 |---|---|---|---|
-| GPU 3（单卡，14B-Q4） | **工具调用形态 0.38~0.39 s / 生成形态 5.06~5.22 s（M4-A 实测）** | **36.0 s（M4-B 实测，真链路端到端）= 求解 17.8 s + LLM 与其余 18.3 s** | 生产基线 = 开发基线 |
+| GPU 3（单卡，14B-Q4）※ | **工具调用形态 0.38~0.39 s / 生成形态 5.06~5.22 s（M4-A 实测）** | **36.0 s（M4-B 实测，真链路端到端）= 求解 17.8 s + LLM 与其余 18.3 s** | 生产基线 = 开发基线 |
 | 纯 CPU 回退 | 15~40 s（估算，未实测） | 110~220 s（估算，未实测） | **仅用于真机联调与夜间 eval，不用于日常迭代** |
 | MockProvider / 录制重放 | 0 | < 2 s（不含求解） | 单测、CI、批量回归 |
 
 > **LLM 部分已是实测**（M4-A，2026-08-13）。实测环境：Ollama v0.6.8 +
 > `qwen2.5:14b-instruct-q4_K_M`、`num_ctx=8192`、`temperature=0`、`seed=42`、
-> RTX 4090D 24G（`CUDA_VISIBLE_DEVICES=3`）。量的是**整条 Harness 链路**
+> RTX 4090D 24G（`CUDA_VISIBLE_DEVICES=3` —— ※ **这是 M4-A 测量当时的卡**；
+> 约束已于 2026-08-21 迁到 GPU 0，见 §11.3 `Z-40`。**此处不改成 0，因为改了就是
+> 篡改实测记录**；要在新卡上复用这些数需重测）。量的是**整条 Harness 链路**
 > （上下文装配 → 工具 schema 导出 → 真机调用 → 契约校验 → 工具执行），
 > 不是裸 `POST /api/chat`。冷启动首次调用另计（0.52 s / 6.9 s，含模型驻留），
 > 表中取 10 次与 5 次稳态的 min~max。
@@ -2755,7 +2757,7 @@ relaxation_tier: 0
 solver: {name: cp-sat, version: 9.11.4210, seed: 42, num_search_workers: 8,
          time_limit_s: 30, status: OPTIMAL, objective: ..., wall_time_s: ...}
 llm: {provider: ollama, model: "qwen2.5:14b-instruct-q4_K_M", digest: "sha256:...",
-      cuda_visible_devices: "3"}
+      cuda_visible_devices: "0"}   # 2026-08-21 前归档的 manifest 里是 "3"，见 §11.3 Z-40
 prompt_versions: {route: v3, planner: v5, extract: v2, explain: v4}
 skill_version: sk_1.1
 code_version: git:8a3f21c
@@ -2793,7 +2795,7 @@ content_sha256: 7f3a9c21...
 | 项 | 值 |
 |---|---|
 | Python 环境 | conda 虚拟环境 **`schedule`**。所有命令前置 `conda run -n schedule` 或先 `conda activate schedule` |
-| GPU | **只用第 4 块卡**：`CUDA_VISIBLE_DEVICES=3`。写进 `.env`、所有训练/推理脚本、Ollama 启动环境 |
+| GPU | **只用第 1 块卡（GPU 0）**：`CUDA_VISIBLE_DEVICES=0`。写进 `.env`、所有训练/推理脚本、Ollama 启动环境。**2026-08-21 由 3 号卡迁来**（详见 §11.3 的迁卡说明） |
 | PostgreSQL 16 | `initdb` 在项目目录下起独立实例（非系统服务），`127.0.0.1:5433` |
 | Redis 7 | 裸装，`127.0.0.1:6380` |
 | Ollama | 用户态解压安装，`OLLAMA_HOST=127.0.0.1:11434`，`OLLAMA_MODELS` 指向项目内目录 |
@@ -2807,7 +2809,7 @@ deploy/native/
 ├── init_pg.sh          # initdb + 建库建角色 + Alembic 迁移
 ├── start_pg.sh         # PG16, 127.0.0.1:5433
 ├── start_redis.sh      # Redis7, 127.0.0.1:6380
-├── start_ollama.sh     # Ollama, 127.0.0.1:11434, CUDA_VISIBLE_DEVICES=3
+├── start_ollama.sh     # Ollama, 127.0.0.1:11434, CUDA_VISIBLE_DEVICES=0
 ├── pull_models.sh      # qwen2.5:14b-instruct-q4_K_M + bge-m3 + bge-reranker-v2-m3
 ├── stop_all.sh
 └── healthcheck.sh      # 全栈体检：端口、版本、模型 digest、GPU 可见性、磁盘余量
@@ -2850,7 +2852,7 @@ LLM_PROVIDER=ollama   LLM_MODEL=fts-qwen14b-sft:v1
 
 | 场景 | 模型 | 量化 | 占用 | 说明 |
 |---|---|---|---|---|
-| **上线期 / 开发期（GPU 3，24G）** | `qwen2.5:14b-instruct-q4_K_M` | Q4_K_M | ~9.5 GB VRAM | 生产基线 = 开发基线 |
+| **上线期 / 开发期（GPU 0，24G）** | `qwen2.5:14b-instruct-q4_K_M` | Q4_K_M | ~9.5 GB VRAM | 生产基线 = 开发基线 |
 | **CI / 单测 / 批量回归** | `MockProvider` + 录制重放 | — | — | 固定桩响应 + 历史 trace 重放，秒级，**零 LLM 调用，不依赖 Ollama、不依赖 GPU** |
 | **微调后（灰度→推荐）** | `fts-qwen14b-sft:v1`（§15） | Q4_K_M | ~9.5 GB VRAM | LoRA 合并后量化导入，推理侧零改动，显存持平 |
 | **数据合成 + 评测 judge（离线批任务）** | `qwen2.5:32b-instruct-q4_K_M`（**不上线**） | Q4_K_M | ~20 GB VRAM | **两个用途**：① §15.2 硬样本补充教师；② **§12.4.1 生成层指标的离线 judge**。与推理服务分时，不进离线交付包的运行时依赖。双重角色须在验收报告中声明（§12.7 必述项 4） |
@@ -2858,7 +2860,20 @@ LLM_PROVIDER=ollama   LLM_MODEL=fts-qwen14b-sft:v1
 
 > **MockProvider 是 CI 的确定性桩**，与主模型选型正交——无论主模型是什么，单测都不该依赖一个会飘的外部服务。真正承担「开发期速度」职责的是**录制重放**（§7.7.4）：改业务逻辑、改图结构、改校验器时跑 `replay(trace_id)`，零 LLM 调用；只有改提示词、改工具 schema 时才需要真机重跑该组件的 eval 子集。
 
-### 11.3 GPU 3 单卡显存预算（24G）
+### 11.3 GPU 0 单卡显存预算（24G）
+
+> **`Z-40`（2026-08-21 裁定）· 由 GPU 3 迁到 GPU 0。** 原约束是「只用第 4 块卡」，
+> 但另一用户长期占着 GPU 3 的 12+ GB：M7 窗口全程只有 **25/49 层**在卡上，
+> 其余卸到 CPU，推理慢 3~5 倍（工具调用 6.2 s/次，而 §7.6 的实测值是 0.38 s），
+> 且 §15.3 的 QLoRA 需要 ~21 GB —— **在那块卡上根本放不下**。
+>
+> **迁卡不改「只用一块卡」这条约束本身**，只改是哪一块：下面这张预算表、
+> 三者互斥的分时安排、`taskset` 的 CPU 隔离，全部照旧适用。
+>
+> ⚠️ **本章与 §7.6 的实测数字仍标注「GPU 3」的地方是有意保留的** ——
+> 那些是 M4-A / M4-B 当时真实的测量环境，改掉等于篡改实测记录（铁律 6）。
+> 换卡后若要复用那些数，应在 GPU 0 上重测。
+
 
 | 组件 | 显存 | 说明 |
 |---|---|---|
@@ -3457,7 +3472,7 @@ def test_validator_catches_injected_violations(plan):
 | R11 | 合成数据分布偏窄，微调收益不达预期 | 中 | 中 | 难负例主要来自**真实失败日志**而非纯合成；先做 few-shot 提示优化作对照，证明微调必要性 |
 | R12 | 多轮修订的语义映射出错，用户以为改对了其实没有 | 中 | 高 | 翻译结果**强制回显确认**（§7.3.4）；修订栈可撤销；轨迹评估专测修订翻译准确率 |
 | R13 | 师生能力差仅半档（32B→14B），教师蒸馏收益衰减 | 高 | 中 | 主力数据改为**学生自采样 + 校验器过滤的拒绝采样**（§15.2），教师只补「学生 8 次全败」的硬样本 |
-| R14 | ~~开发机纯 CPU 跑 14B 拖慢迭代~~ **已缓解** | 低 | 中 | 服务器有 GPU 3 可用（`CUDA_VISIBLE_DEVICES=3`），开发期与上线期同机同卡。日常迭代仍走 `LLM_PROVIDER=mock/replay`（零 LLM 调用），CI 完全不依赖 Ollama 与 GPU |
+| R14 | ~~开发机纯 CPU 跑 14B 拖慢迭代~~ **已缓解** | 低 | 中 | 服务器有 GPU 0 可用（`CUDA_VISIBLE_DEVICES=0`），开发期与上线期同机同卡。日常迭代仍走 `LLM_PROVIDER=mock/replay`（零 LLM 调用），CI 完全不依赖 Ollama 与 GPU |
 | R15 | 单卡 24G 训 14B QLoRA 峰值显存吃紧（~21 GB）导致 OOM | 中 | 中 | §15.3 的三级退让顺序写进脚本；**M7 启动前先做一次 5 步 dry-run 验证显存**；训练与在线推理由 Redis 锁串行化（§11.3） |
 | **R16**（v6 新增） | **基准周在某些参数组合下 INFEASIBLE** | 中 | 高 | §1.4 的纸面推演显示资源充裕，但推演不等于求解。**M2a 开工第一件事就是实测。若 INFEASIBLE，按 `CLAUDE.md §7` 第 4 条停下来报告，由业务方决定修数据 / 调规格 / 换基准周，绝不放宽硬约束。** 已知的高敏感参数：S-12 的锚点起算策略（改回 `gap=999` 必然不可行）、S-13 的约束3 适用范围 |
 | **R17**（v6 新增） | **S-11 改写了 `rules.pdf` 约束2 的字面语义，评审时被当成校验器漏判** | 高 | 中 | ① Sheet 4 区块 6 强制出现「授权改写声明」行；② §12.7 列为验收报告必述项；③ §12.3 的 S-11 专项测试用例明确断言「约束2 校验器不报违规」是**期望行为**；④ 演示时主动先讲这一条，不等提问 |
@@ -3601,7 +3616,7 @@ def test_validator_catches_injected_violations(plan):
 
 ### 15.3 训练配置
 
-全程离线，用内网预下载的 LLaMA-Factory + PEFT，conda 环境 `schedule`，`CUDA_VISIBLE_DEVICES=3`。**14B 在单卡 24G 上训练是「能训但吃紧」，下表每一行都是被显存倒逼出来的。**
+全程离线，用内网预下载的 LLaMA-Factory + PEFT，conda 环境 `schedule`，`CUDA_VISIBLE_DEVICES=0`。**14B 在单卡 24G 上训练是「能训但吃紧」，下表每一行都是被显存倒逼出来的。**
 
 | 项 | 配置 | 理由 |
 |---|---|---|

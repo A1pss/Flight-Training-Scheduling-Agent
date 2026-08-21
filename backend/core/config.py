@@ -86,7 +86,7 @@ class Settings(BaseSettings):
     OLLAMA_HOST: str = "127.0.0.1:11434"
     OLLAMA_MODELS: Path = PROJECT_ROOT / ".data" / "ollama"
     OLLAMA_NUM_PARALLEL: int = 4
-    CUDA_VISIBLE_DEVICES: str = "3"
+    CUDA_VISIBLE_DEVICES: str = "0"
 
     # ── 三态 Provider（§11.2）────────────────────────────────────────
     LLM_PROVIDER: ProviderName = "mock"
@@ -195,12 +195,12 @@ class Settings(BaseSettings):
     #: 嵌入实现。`bge` = 真模型（.data/models/bge-m3）；`hash` = 确定性哈希嵌入，
     #: 给 CI 用（那里没有 2.2GB 权重）。检索质量指标一律用 `bge` 跑。
     EMBED_PROVIDER: Literal["bge", "hash"] = "bge"
-    #: **摄取期固定 CPU**：GPU 3 上常驻 Ollama，语料极小没必要抢显存（M1 隔离方案）
+    #: **摄取期固定 CPU**：GPU 0 上常驻 Ollama，语料极小没必要抢显存（M1 隔离方案）
     EMBED_DEVICE: str = "cpu"
     #: 精排实现。`bge` = bge-reranker-v2-m3（2.2GB 权重）；`lexical` = 确定性
     #: 词元重合度，给 CI 用。**替身会在 `RerankResult.provider` 里如实标注**。
     RERANK_PROVIDER: Literal["bge", "lexical"] = "bge"
-    #: 精排设备。与嵌入同一条理由（GPU 3 上常驻 Ollama），默认 CPU
+    #: 精排设备。与嵌入同一条理由（GPU 0 上常驻 Ollama），默认 CPU
     RERANK_DEVICE: str = "cpu"
     #: 向量后端。`chroma` = v6 §6.1 指定的向量库；`memory` = 精确余弦（单测）
     VECTOR_BACKEND: Literal["chroma", "memory"] = "chroma"
