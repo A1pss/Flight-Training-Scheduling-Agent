@@ -63,6 +63,7 @@ from backend.routing.entities import EntityDirectory
 #: v6 §7.2.2「步数上限 6」。**上限，不是目标** —— 多数问题一轮就够。
 KNOWLEDGE_MAX_STEPS: Final[int] = 6
 
+
 #: 暴露给模型的工具。全部只读，且都是 ACL 里 `knowledge` 那一行的子集。
 #: **`memory.write` 不在其中** —— 它在 ACL 里只给了 `extract`（v6 §7.7.2）。
 KNOWLEDGE_TOOLS: Final[tuple[str, ...]] = (
@@ -380,6 +381,26 @@ def ask(
                 break
             if not out.calls:
                 break  # 模型自己决定停 —— 这正是它的自治所在
+
+            # ⚠️ **这里曾经加过一个「无新信息即停」的停止条件，实测后撤掉了。**
+            #
+            # 动机是实测到的原地打转：同一工具、同一组参数连调 7 步。
+            # 三个变体（停 1 步 / 停 2 步 / 只去重）在 30 条 query 轨迹上的结果：
+            #
+            #   指标        目标    原始     仅去重   停1步    停2步
+            #   冗余调用率  ≤15%   40.15%  38.40%  25.00%  30.91%
+            #   缺失调用率   ≤3%   51.43%  54.29%  57.14%  57.14%
+            #
+            # **三个变体都让缺失调用率变差**，而 §12.6 明写它是这组里最重要的
+            # 一条（失效是静默的）。停早了会把「模型在靠后步骤才做的那个必需
+            # 调用」一并砍掉 —— 拿最重要的指标去换冗余率，按规格自己的排序
+            # 是笔亏本买卖，所以不发。
+            #
+            # ⚠️ **重复调用这件事本身仍然被处理了**，只是处理在 Harness 层：
+            # `Harness._dedup_calls` 折叠同一次响应里参数完全相同的调用
+            # （那是保护预算所必需的，Planner 一次吐 100 个调用就是被它挡住的）。
+            # 真正没解决的是「必需调用压根没发生」，那是另一个问题，
+            # 收工报告列为改进项。
             tool_calls.extend(call.name for call in out.calls)
             gathered.extend(_tool_notes(out.calls, out.results))
             if step == max_steps:

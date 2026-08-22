@@ -97,6 +97,10 @@ class HarnessStats(BaseModel):
     degraded: int = 0
     acl_denials: int = 0
     budget_breaks: int = 0
+    #: 同一次响应里被折叠掉的**重复工具调用**数（见 `_dedup_calls`）。
+    #: 单列而不是并进 `tool_calls_validated`：折叠掉的那些是**模型行为**，
+    #: 是 §12.6「冗余调用率」的分子，藏起来这个指标就永远是 0。
+    duplicate_calls_collapsed: int = 0
     failure_modes: dict[str, int] = Field(default_factory=dict)
 
     def record_failure(self, mode: FailureMode) -> None:
@@ -246,6 +250,15 @@ class Harness:
                 continue
 
             self._modes.report_success(agent.name)
+            calls, collapsed = self._dedup_calls(calls)
+            if collapsed:
+                self.stats.duplicate_calls_collapsed += collapsed
+                _log.warning(
+                    "duplicate_tool_calls_collapsed",
+                    component=agent.name,
+                    collapsed=collapsed,
+                    kept=len(calls),
+                )
             try:
                 results = self._execute(agent, calls, snap)
             except BudgetExceededError as exc:
@@ -496,6 +509,46 @@ class Harness:
             )
             results.append(result)
         return results
+
+    @staticmethod
+    def _dedup_calls(calls: Sequence[ValidatedCall]) -> tuple[list[ValidatedCall], int]:
+        """折叠同一次响应里**参数完全相同**的重复调用，保留首次出现的顺序。
+
+        ## 为什么需要它（M9-B 实测）
+
+        模型会在**一次响应里**把同一组调用重复几十遍 —— 实测 Planner 一次吐出
+        约 100 个 `resolve_week` / `estimate_scope` 交替，**当场打满 `tool_calls`
+        上限 20**，于是一个工具结果都没拿到、整轮以 `FTS-4003` 收场。
+        Knowledge 的自主循环是同一个毛病的另一种形态（同一工具连调 7 次）。
+
+        ## 为什么折叠是安全的
+
+        **只折叠 `deterministic` 工具** —— 判据与 `ToolCache` 完全一致：
+        那层早就把「同 (工具, 参数, 快照) → 同结果」当成前提在查缓存了。
+        重复调用本来就只会拿到同一个缓存值，**唯一的区别是它白白吃掉一格预算**。
+        非确定性工具一律原样保留，一个都不折叠。
+
+        ⚠️ **折叠数单独计入 `duplicate_calls_collapsed`**，不是悄悄丢掉：
+        「模型重复了自己」是要报告的事实（§12.6 冗余调用率），不是可以抹平的噪声。
+        """
+        seen: dict[tuple[str, str], None] = {}
+        kept: list[ValidatedCall] = []
+        collapsed = 0
+        for call in calls:
+            spec = TOOL_CATALOG.get(call.name)
+            if spec is None or not spec.deterministic:
+                kept.append(call)
+                continue
+            key = (
+                call.name,
+                json.dumps(call.arguments, ensure_ascii=False, sort_keys=True, default=str),
+            )
+            if key in seen:
+                collapsed += 1
+                continue
+            seen[key] = None
+            kept.append(call)
+        return kept, collapsed
 
     def _run_one(
         self,

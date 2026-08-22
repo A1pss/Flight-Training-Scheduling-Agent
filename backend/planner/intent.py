@@ -40,7 +40,7 @@ from typing import Any, Final
 
 from backend.core.config import Settings, get_settings
 from backend.core.errors import FTSError
-from backend.harness import AgentSpec, ContextBlock, Harness, structured_summary
+from backend.harness import AgentOutput, AgentSpec, ContextBlock, Harness, structured_summary
 from backend.planner.authority import authorized_tiers
 from backend.planner.scope import ScopeDecision, apply_scope_policy
 from backend.routing.entities import iso_week_of
@@ -223,6 +223,53 @@ def _intent_from_calls(output: Any) -> tuple[SolveIntent | None, list[str]]:
     return intent, questions
 
 
+#: Planner 在**一次节点执行内**允许的最多轮次。
+#:
+#: 2 不是拍的：v6 §12.6 把排班的期望路径标注为
+#: `planner → tool:resolve_week → tool:estimate_scope → tool:propose_solve_intent`
+#: —— 模型**先消解、再提议**，这两件事天然分两轮。M9-B 实测单轮的后果是
+#: 模型把唯一一轮花在前置工具上，再也到不了提议那一步（复现 3/3）。
+#:
+#: ⚠️ **上限是 2，不是「循环到成功为止」**。铁律 4 与 §7.3.3 要求 Planner
+#: 不自主循环、不自主选择下一跳：轮次写死、由代码而非模型决定要不要再来一轮，
+#: 且第二轮之后无论有没有产出都收尾。
+PLANNER_MAX_TURNS: Final[int] = 2
+
+
+def _tool_feedback_block(output: AgentOutput) -> ContextBlock:
+    """把第一轮的工具调用与结果回灌给模型，供它据此提议 `SolveIntent`。
+
+    只回灌**已执行工具的结论**，不回灌提示词或工具表 —— 后者本来就还在
+    上下文里，重复塞一遍只会把窗口撑大（M7 §5.3 实测过回灌导致提示词越滚越长）。
+    """
+    lines: list[str] = []
+    for call, result in zip(output.calls, output.results, strict=False):
+        if result.ok:
+            lines.append(f"- {call.name}({_brief(call.arguments)}) → {_brief(result.value)}")
+        else:
+            lines.append(f"- {call.name}({_brief(call.arguments)}) → 失败：{result.error}")
+    body = "\n".join(lines) or "（上一轮没有可用结果）"
+    return ContextBlock(
+        kind="evidence",
+        role="user",
+        label="planner_turn1",
+        content=(
+            "你上一轮调用的工具与结果如下：\n"
+            f"{body}\n\n"
+            "现在请基于这些结果调用 `propose_solve_intent` 给出本次求解意图。"
+            "信息仍然不足时改调 `ask_user` 说明缺什么。"
+        ),
+    )
+
+
+def _brief(value: Any, limit: int = 160) -> str:
+    """把工具入参/返回压成一行，超长截断 —— 回灌的是结论不是明细。"""
+    text = (
+        json.dumps(value, ensure_ascii=False, default=str) if not isinstance(value, str) else value
+    )
+    return text if len(text) <= limit else text[: limit - 1] + "…"
+
+
 def plan_solve_intent(
     request: SchedulingRequest | QueryRequest | None,
     *,
@@ -234,7 +281,13 @@ def plan_solve_intent(
 ) -> PlannerDecision:
     """v6 §7.3.3 的三步，完整落地。
 
-    Planner **在一次请求内只被调用一次**，不自主循环、不自主选择下一跳。
+    Planner 节点**在一次请求内只执行一次**，不自主循环、不自主选择下一跳。
+
+    ⚠️ **「只执行一次」说的是节点，不是 LLM 轮次。** 节点内部允许最多
+    `PLANNER_MAX_TURNS`（= 2）轮：第一轮模型往往先调消解类工具
+    （`resolve_week` / `estimate_scope` / `resolve_person`），第二轮才据其结果
+    提议 `SolveIntent` —— 这正是 v6 §12.6 标注的期望路径。**轮数由代码写死、
+    模型无权决定要不要再来一轮**，所以它仍不是自主循环。
 
     `week_start` 是黑板上已有的周次（`state["week_start"]`），作为目标周的
     第三级来源交给 :func:`target_week_of` —— 不给它，Planner 就看不到那个周次，
@@ -248,19 +301,32 @@ def plan_solve_intent(
     intent: SolveIntent | None = None
 
     if harness is not None:
+        blocks = _planner_blocks(request, prev_plan, user_role=user_role, week_start=week_start)
         try:
-            output = harness.call(
-                PLANNER_AGENT,
-                _planner_blocks(request, prev_plan, user_role=user_role, week_start=week_start),
-            )
-            llm_calls = output.llm_calls
-            if output.degraded:
-                degraded = True
-                notes.append(f"Planner 降级（{output.error_code}），改用中性默认 SolveIntent")
-            else:
+            for turn in range(1, PLANNER_MAX_TURNS + 1):
+                output = harness.call(PLANNER_AGENT, blocks)
+                llm_calls += output.llm_calls
+                if output.degraded:
+                    degraded = True
+                    notes.append(f"Planner 降级（{output.error_code}），改用中性默认 SolveIntent")
+                    break
+
                 intent, questions = _intent_from_calls(output)
-                if intent is None:
-                    notes.append("模型未产出 propose_solve_intent，改用中性默认 SolveIntent")
+                if intent is not None or questions:
+                    # 提议出来了，或者模型明确说要问用户 —— 两种都是**结论**，收尾。
+                    break
+                if turn == PLANNER_MAX_TURNS:
+                    notes.append(
+                        f"模型{PLANNER_MAX_TURNS}轮仍未产出 propose_solve_intent，"
+                        "改用中性默认 SolveIntent"
+                    )
+                    break
+                # 只调了消解类工具、还没给结论 —— 把结果回灌，让它据此提议。
+                notes.append(
+                    f"第 {turn} 轮只调了 {'、'.join(c.name for c in output.calls) or '（无工具）'}，"
+                    "回灌结果后再问一轮"
+                )
+                blocks = [*blocks, _tool_feedback_block(output)]
         except FTSError as exc:
             degraded = True
             notes.append(f"Planner 不可用（{exc.message}），改用中性默认 SolveIntent")
