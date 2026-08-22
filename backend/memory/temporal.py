@@ -32,7 +32,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from typing import Any, Final, Generic, Protocol, TypeVar, runtime_checkable
 
 from backend.core.errors import DataConflictError
@@ -85,10 +85,31 @@ _T = TypeVar("_T")
 
 
 def _as_datetime(value: datetime | date) -> datetime:
-    """把 `date` 抬成当日 00:00，便于与 `valid_from` 直接比较。"""
+    """把「提问时点」抬成 `datetime`，**光秃秃的 `date` 取当日末刻**。
+
+    ## 为什么是末刻而不是 00:00（M9-B 实测改的）
+
+    这里抬的是**提问时点**（`is_active_at` 的 `at`），不是条目的生效时刻 ——
+    后者本来就带时分秒，走 `_naive()` 直接比较。
+
+    「截至 D 日」在业务上**包含 D 日当天写下的东西**。取 00:00 等于把提问
+    理解成「D 日刚开始那一瞬间」，于是当天写的一律判成「还没生效」。而记忆的
+    `valid_from` 几乎都带钟点：`distill()` 落的是当日 18:00，情景记忆各有时刻。
+
+    **M9-B 实测的代价**（`memory_320`，320 条探针）：
+
+    | 症状 | 00:00 | 当日末刻 |
+    |---|---|---|
+    | 可见偏好条数 | **1 / 26** | 25 / 26 |
+    | 第 20 周写入的情景记忆召回 | **0 / 5** | 5 / 5 |
+
+    半开区间语义不受影响：`valid_to` 落在当天的条目仍然按
+    `valid_to <= moment` 判失效 —— 「当天被取代」的版本在当天末刻确实已经不是
+    最新版了，这正是要的行为。
+    """
     if isinstance(value, datetime):
         return value
-    return datetime(value.year, value.month, value.day)
+    return datetime.combine(value, time.max)
 
 
 def _naive(value: datetime) -> datetime:

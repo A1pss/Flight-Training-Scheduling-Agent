@@ -40,7 +40,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from sqlalchemy.orm import Session
 
 from backend.core.config import Settings
-from backend.core.db import get_session_factory
+from backend.core.db import get_session_factory, session_scope
 from backend.datasets.loader import load_eval_dataset
 from backend.experiments.recorder import RecordingProvider
 from backend.experiments.trajectory_eval import (
@@ -76,20 +76,25 @@ class CallLog:
 
 
 def instrument(harness: Harness, log: CallLog) -> Harness:
-    """把已绑定的工具处理器换成「先记账再执行」的包装。
+    """让这个 Harness 把每一次工具调用记到 `log` 上。
 
-    不改 `ToolRegistry`、不改任何组件 —— 评测要观测工具调用，
-    生产代码不该为此长出一个钩子。
+    ## 为什么钩在 `_run_one` 而不是包 `ToolRegistry` 里的处理器
+
+    第一版是在 Harness 建好之后把 `registry.bound_names()` 里的处理器逐个包起来。
+    **实测漏掉了 Knowledge 的全部工具**：那些处理器是 knowledge 节点**运行时**
+    才注册的，包装那一刻还不存在，于是 `route → knowledge → END` 一条工具调用
+    都记不到（`tools=0/1 缺=1`，看起来像模型没调工具，其实是量具没装上）。
+
+    `_run_one` 是所有工具调用**唯一**的必经之路（包括重放路径），钩在这里就
+    不存在「注册早晚」的问题。只读记账，不改变返回值。
     """
-    registry = harness.registry
-    for name in registry.bound_names():
-        original = registry.handler(name)
+    original = harness._run_one
 
-        def wrapped(args: dict[str, Any], _n: str = name, _f: Any = original) -> Any:
-            log.calls.append((_n, dict(args)))
-            return _f(args)
+    def wrapped(component: Any, tool: str, arguments: dict[str, Any], snapshot_id: str) -> Any:
+        log.calls.append((tool, dict(arguments)))
+        return original(component, tool, arguments, snapshot_id)
 
-        registry.register(name, wrapped)
+    harness._run_one = wrapped  # type: ignore[method-assign]
     return harness
 
 
@@ -188,6 +193,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--traces", default="traces/m9b_trajectory")
     parser.add_argument("--out", default="reports/m9b/exp5_trajectory.jsonl")
+    parser.add_argument(
+        "--seed-timeline",
+        action="store_true",
+        help="先写入 20 周情景记忆时间线 —— 6 条 query 轨迹的 setup 点名要它",
+    )
     args = parser.parse_args(argv)
 
     cfg = Settings(_env_file=None, LLM_PROVIDER="ollama")
@@ -203,60 +213,79 @@ def main(argv: Sequence[str] | None = None) -> int:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text("", encoding="utf-8")
 
-    session = get_session_factory()()
+    # ★ **一条轨迹一个会话**（`Z-33` / M9-A §5.2 点名的规避方式）。
+    #
+    #   模型会给 `sql_query` 编表名，而**一条失败的 SQL 会把整个 PostgreSQL
+    #   事务置为 aborted**，此后同一会话里的每次查询都直接失败。图里所有节点
+    #   共用一个会话，所以一条坏 SQL 会毒掉它**后面的全部轨迹**。
+    #
+    #   本窗口先用一个长会话跑过一遍：39 条里 37 条报 `InFailedSqlTransaction`，
+    #   diagnosis 的工具一个都没跑起来（`tools=0/2`）—— 那批数是废的。
+    if args.seed_timeline:
+        # 数据集的 `setup` 是**前置条件**，不是说明文字。不建立它就等于
+        # 让被测系统在一个它没被告知的世界里跑 —— 失败会被记到 Agent 头上，
+        # 而实际是夹具没搭。
+        from tests.datasets.memory_seed import seed_timeline
+
+        with session_scope() as seeder:
+            seed_timeline(seeder)
+            seeder.commit()
+        print("已写入 20 周情景记忆时间线", flush=True)
+
+    probe = get_session_factory()()
     outcomes: list[TrajectoryOutcome] = []
     started = time.monotonic()
-    try:
-        snapshot = active_snapshot_id(session)
-        if not snapshot:
-            print("库里没有 ACTIVE 快照", file=sys.stderr)
-            return 2
-        for i, item in enumerate(items, start=1):
-            item_id = str(item["item_id"])
-            path_file = trace_dir / f"{item_id}.jsonl"
-            if args.mode == "record":
-                path_file.parent.mkdir(parents=True, exist_ok=True)
-                path_file.unlink(missing_ok=True)
-                provider: Any = RecordingProvider(build_provider(cfg), path_file)
-            else:
-                replay_cfg = Settings(
-                    _env_file=None, LLM_PROVIDER="replay", REPLAY_TRACE_DIR=path_file.parent
-                )
-                provider = ReplayProvider(replay_cfg, strict_order=False)
-
-            try:
-                path, calls, _last = run_graph_flow(
-                    str(item["utterance"]),
-                    session=session,
-                    snapshot=snapshot,
-                    cfg=cfg,
-                    provider=provider,
-                    thread_id=f"trj-{item_id}",
-                )
-                outcome = evaluate(item, path, calls)
-            except Exception as exc:
-                outcome = TrajectoryOutcome(
-                    item_id=item_id,
-                    flow=str(item["flow"]),
-                    expected_path=list(item["expected_path"]),
-                    error=f"{exc.__class__.__name__}: {exc}",
-                )
-                session.rollback()
-            outcomes.append(outcome)
-            with out.open("a", encoding="utf-8") as fh:
-                fh.write(json.dumps(outcome.to_json(), ensure_ascii=False, sort_keys=True) + "\n")
-            print(
-                f"[{i:3d}/{len(items)}] {item_id:14s} {outcome.flow:11s} "
-                f"path={'✅' if outcome.path_ok else '❌'} sim={outcome.path_similarity:.2f} "
-                f"tools={outcome.steps.tool_hits}/{outcome.steps.expected_steps} "
-                f"缺={outcome.steps.missing} 冗={outcome.steps.redundant} "
-                f"| {(time.monotonic() - started) / 60:.1f}min"
-                + (f" ⚠️{outcome.error[:50]}" if outcome.error else ""),
-                flush=True,
+    snapshot = active_snapshot_id(probe)
+    probe.close()
+    if not snapshot:
+        print("库里没有 ACTIVE 快照", file=sys.stderr)
+        return 2
+    for i, item in enumerate(items, start=1):
+        item_id = str(item["item_id"])
+        path_file = trace_dir / f"{item_id}.jsonl"
+        if args.mode == "record":
+            path_file.parent.mkdir(parents=True, exist_ok=True)
+            path_file.unlink(missing_ok=True)
+            provider: Any = RecordingProvider(build_provider(cfg), path_file)
+        else:
+            replay_cfg = Settings(
+                _env_file=None, LLM_PROVIDER="replay", REPLAY_TRACE_DIR=path_file.parent
             )
-    finally:
-        session.rollback()
-        session.close()
+            provider = ReplayProvider(replay_cfg, strict_order=False)
+
+        session = get_session_factory()()
+        try:
+            path, calls, _last = run_graph_flow(
+                str(item["utterance"]),
+                session=session,
+                snapshot=snapshot,
+                cfg=cfg,
+                provider=provider,
+                thread_id=f"trj-{item_id}",
+            )
+            outcome = evaluate(item, path, calls)
+        except Exception as exc:
+            outcome = TrajectoryOutcome(
+                item_id=item_id,
+                flow=str(item["flow"]),
+                expected_path=list(item["expected_path"]),
+                error=f"{exc.__class__.__name__}: {exc}",
+            )
+        finally:
+            session.rollback()
+            session.close()
+        outcomes.append(outcome)
+        with out.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(outcome.to_json(), ensure_ascii=False, sort_keys=True) + "\n")
+        print(
+            f"[{i:3d}/{len(items)}] {item_id:14s} {outcome.flow:11s} "
+            f"path={'✅' if outcome.path_ok else '❌'} sim={outcome.path_similarity:.2f} "
+            f"tools={outcome.steps.tool_hits}/{outcome.steps.expected_steps} "
+            f"缺={outcome.steps.missing} 冗={outcome.steps.redundant} "
+            f"| {(time.monotonic() - started) / 60:.1f}min"
+            + (f" ⚠️{outcome.error[:50]}" if outcome.error else ""),
+            flush=True,
+        )
 
     print("\n" + json.dumps(aggregate(outcomes), ensure_ascii=False, indent=2))
     return 0

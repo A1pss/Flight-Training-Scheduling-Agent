@@ -28,14 +28,17 @@ from __future__ import annotations
 import time
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, field
-from datetime import date, datetime, time as _time
+from datetime import date, datetime
+from datetime import time as _time
 from typing import Any
 
 from sqlalchemy.orm import Session
 
 from backend.datasets.schemas import canonical_doc_id
-from backend.memory.procedural import list_preferences
+from backend.memory.procedural import list_preferences, preference_docs
+from backend.retrieval.documents import RetrievedDoc
 from backend.retrieval.pipeline import RetrievalConfig, retrieve
+from backend.retrieval.rerank import rerank
 
 #: 与 `memory_320` 的约定一致的程序记忆召回单位。
 PROC_ID_TEMPLATE = "proc:{namespace}/{key}"
@@ -118,19 +121,37 @@ def run_probe(
 
     try:
         if out.memory_type == "procedural":
-            # ★ 程序记忆不走 `retrieve()` —— 它由 `memory.search` 取
-            #   `list_preferences(at=...)` 的前 top_k 条，**不按查询排序**。
-            #   时间过滤消融在这里的落点就是 `at` 传不传。
-            # `list_preferences` 的 `at` 是**必填 datetime**，没有「不过滤」这一档。
-            # 关掉时间过滤 = 用一个远期时点取「永远是最新版」，这与 §12.4 消融三
-            # 想验的东西一致：拿掉版本管理之后，问哪个时点都只会拿到当前版本。
+            # ★ 程序记忆不走 `retrieve()` —— 生产侧是 `memory.search` 工具：
+            #   `list_preferences(at=…)` → **按查询精排** → 取 top_k。
+            #   这里必须逐步照搬生产形态，否则测的不是生产链路：
+            #
+            #   ① `at` 取**当日末刻**，与 `knowledge.py` 的
+            #      `datetime.combine(moment, datetime.max.time())` 一致。
+            #      取 00:00 会把当天写入的偏好全判成「还没生效」（M9-B 实测
+            #      26 条只剩 1 条可见）。
+            #   ② 精排之后再截断。原实现按 (namespace, key) 序取前 5 条，
+            #      等于在 25 条里随机猜 5 条。
+            #
+            #   时间过滤消融的落点就是 `at`：关掉 = 取一个远期时点，
+            #   于是问哪个时点都只拿到当前版本。
             moment = (
-                datetime.combine(as_of, _time.min)
+                datetime.combine(as_of, _time.max)
                 if config.enable_time_filter
-                else datetime.combine(date(2999, 12, 31), _time.min)
+                else datetime.combine(date(2999, 12, 31), _time.max)
             )
             rows = list_preferences(session, at=moment)
-            retrieved = preference_doc_ids(rows)
+            docs = [
+                RetrievedDoc(
+                    doc_id=doc_id,
+                    text=text,
+                    source_kind="memory",
+                )
+                for doc_id, text in zip(
+                    preference_doc_ids(rows), preference_docs(rows), strict=True
+                )
+            ]
+            ranked = rerank(str(item["query"]), docs, top_k=config.rerank_top_k, reranker=reranker)
+            retrieved = [d.doc_id for d in ranked.docs]
         else:
             result = retrieve(
                 str(item["query"]),

@@ -124,6 +124,10 @@ class StepScore:
     """一条轨迹的工具层判定。"""
 
     expected_steps: int = 0
+    #: **非可选**的期望步骤数。§12.6 的「工具选择准确率」定义是「在**该调工具
+    #: 的步骤**上，选对工具的比例」—— 可选步骤不属于「该调」，放进分母会把
+    #: 「信息够了所以省略」（数据集规则 B 明确允许）记成选错工具。
+    required_steps: int = 0
     #: 该调工具的步骤上，选对工具的次数
     tool_hits: int = 0
     #: 工具选对的前提下，参数完全正确的次数
@@ -150,6 +154,8 @@ def score_steps(
     seen: list[tuple[str, str]] = []
 
     for step in expected:
+        if not step.get("optional"):
+            score.required_steps += 1
         tool = str(step["tool"])
         alts = {str(a) for a in (step.get("alternatives") or [])} | {tool}
         idx = next((i for i, (name, _) in enumerate(remaining) if name in alts), None)
@@ -204,6 +210,7 @@ class TrajectoryOutcome:
             "path_similarity": self.path_similarity,
             "steps": {
                 "expected_steps": self.steps.expected_steps,
+                "required_steps": self.steps.required_steps,
                 "tool_hits": self.steps.tool_hits,
                 "param_hits": self.steps.param_hits,
                 "param_denominator": self.steps.param_denominator,
@@ -221,7 +228,7 @@ class TrajectoryOutcome:
 def aggregate(outcomes: Sequence[TrajectoryOutcome]) -> dict[str, Any]:
     """§12.6.1 的八项指标。分母口径逐项写清楚，不合并。"""
     ok = [o for o in outcomes if not o.error]
-    exp_steps = sum(o.steps.expected_steps for o in ok)
+    req_steps = sum(o.steps.required_steps for o in ok)
     tool_hits = sum(o.steps.tool_hits for o in ok)
     param_den = sum(o.steps.param_denominator for o in ok)
     param_hits = sum(o.steps.param_hits for o in ok)
@@ -234,10 +241,11 @@ def aggregate(outcomes: Sequence[TrajectoryOutcome]) -> dict[str, Any]:
     return {
         "n_scored": len(ok),
         "n_errored": len(outcomes) - len(ok),
-        "tool_selection": {"hits": tool_hits, "n": exp_steps},
+        # 分母是**必需步骤**，不是全部期望步骤（见 `StepScore.required_steps`）。
+        "tool_selection": {"hits": tool_hits, "n": req_steps},
         "param_accuracy": {"hits": param_hits, "n": param_den},
         "redundant_calls": {"hits": redundant, "n": observed},
-        "missing_calls": {"hits": missing, "n": exp_steps},
+        "missing_calls": {"hits": missing, "n": req_steps},
         "path_correct": {"hits": sum(1 for o in ok if o.path_ok), "n": len(ok)},
         "invalid_loop": {"hits": sum(1 for o in ok if o.invalid_loop), "n": len(ok)},
         "revision_translation": {
