@@ -91,7 +91,13 @@ def show(root: Path) -> None:
             print(f"             标注冲突源 {list(case.annotated_conflict_rules)}")
 
 
-def run(root: Path, snapshot_id: str, week_start: date, only: Sequence[str] | None) -> int:
+def run(
+    root: Path,
+    snapshot_id: str,
+    week_start: date,
+    only: Sequence[str] | None,
+    out: Path | None = None,
+) -> int:
     cases = load_dataset(root)
     if only:
         cases = [c for c in cases if c.category in set(only)]
@@ -117,7 +123,7 @@ def run(root: Path, snapshot_id: str, week_start: date, only: Sequence[str] | No
             if result.error:
                 print(f"          错误：{result.error}", flush=True)
     summary = summarize(cases, results)
-    out_json = PROJECT_ROOT / "reports" / "M2C_200场景运行结果.json"
+    out_json = out or (PROJECT_ROOT / "reports" / "M2C_200场景运行结果.json")
     out_json.write_text(
         json.dumps(
             {
@@ -141,6 +147,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--snapshot", default=DEFAULT_SNAPSHOT)
     parser.add_argument("--week-start", default=DEFAULT_WEEK.isoformat())
     parser.add_argument("--only", default=None, help="只跑某几类，逗号分隔")
+    parser.add_argument(
+        "--out",
+        default=None,
+        help="结果 JSON 落点；不给就沿用 reports/M2C_200场景运行结果.json",
+    )
     args = parser.parse_args(argv)
     root = PROJECT_ROOT
     week_start = date.fromisoformat(args.week_start)
@@ -151,7 +162,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         show(root)
         return 0
     only = args.only.split(",") if args.only else None
-    return run(root, args.snapshot, week_start, only)
+    return run(root, args.snapshot, week_start, only, Path(args.out) if args.out else None)
 
 
 if __name__ == "__main__":  # pragma: no cover —— CLI 入口

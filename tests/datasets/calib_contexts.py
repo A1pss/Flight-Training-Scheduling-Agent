@@ -49,20 +49,22 @@ def build_text_index(session: Session) -> dict[str, str]:
         index[doc.doc_id] = doc.text
 
     for person in semantic.all_persons(session, snapshot_id):
-        doc = person.doc()
-        index[doc.doc_id] = doc.text
+        pdoc = person.doc()
+        index[pdoc.doc_id] = pdoc.text
         for qual in semantic.qualification_facts(session, snapshot_id, person.person_id):
             qdoc = qual.doc()
             index[qdoc.doc_id] = qdoc.text
+    # ★ 每个循环用各自的变量名：四类实体的 `doc()` 返回的不是同一个类型，
+    #   复用一个 `doc` 变量会让 mypy --strict 按第一次赋值把类型钉死。
     for plane in semantic.all_aircraft(session, snapshot_id):
-        doc = plane.doc()
-        index[doc.doc_id] = doc.text
+        adoc = plane.doc()
+        index[adoc.doc_id] = adoc.text
     for mission in semantic.all_missions(session, snapshot_id):
-        doc = mission.doc()
-        index[doc.doc_id] = doc.text
+        mdoc = mission.doc()
+        index[mdoc.doc_id] = mdoc.text
     for airspace in semantic.airspace_facts(session, snapshot_id):
-        doc = airspace.doc()
-        index[doc.doc_id] = doc.text
+        sdoc = airspace.doc()
+        index[sdoc.doc_id] = sdoc.text
 
     at = at_hour(20, 23)
     for row in list_preferences(session, at=at):

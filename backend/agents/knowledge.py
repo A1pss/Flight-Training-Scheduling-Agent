@@ -194,8 +194,28 @@ def knowledge_tool_handlers(
                 for e in episodes[:top_k]
             ]
         if "procedural" in kinds:
+            # ★ **按查询精排后再截断**，不是原样取前 `top_k`。
+            #
+            # 原实现是 `preference_docs(prefs)[:top_k]` —— `list_preferences`
+            # 按 (namespace, key) 排序返回，**与用户问的是什么毫无关系**，
+            # 截前 5 条等于在 25 条偏好里随机猜 5 条。M9-B 实测程序类
+            # Recall@5 只有 19.44%（25 选 5 的随机命中率就是 20%）。
+            #
+            # `list_preferences` 早就有 `prefix` 形参，但从来没人传 —— 而
+            # 前缀要从自然语言里猜，不如直接用管线现成的精排器：它认得
+            # 「松弛顺序」对应 `relaxation/…`、「常用说法」对应 `phrasing/…`。
             prefs = list_preferences(session, at=at)
-            out["procedural"] = preference_docs(prefs)[:top_k]
+            sentences = preference_docs(prefs)
+            pref_docs = [
+                RetrievedDoc(
+                    doc_id=f"proc:{row.namespace}/{row.key}",
+                    text=text,
+                    source_kind="memory",
+                )
+                for row, text in zip(prefs, sentences, strict=True)
+            ]
+            ranked = rerank(str(args.get("query", "")), pref_docs, top_k=top_k)
+            out["procedural"] = [d.text for d in ranked.docs]
         if "semantic" in kinds:
             hits = bm25.search(str(args.get("query", "")), top_k=top_k)
             out["semantic"] = [_hit(d) for d in hits]
@@ -330,7 +350,17 @@ def ask(
                 snapshot_id,
                 corpus=working_corpus,
                 vector_index=index,
-                at=datetime.combine(moment, datetime.min.time()),
+                # ★ **当日含入**：用当日的**末刻**而不是 `min.time()`（00:00）。
+                #
+                # 「截至 D 日」在业务上包含 D 日当天写下的东西，而记忆的
+                # `valid_from` 带时分秒 —— `distill()` 落的是当日 18:00，
+                # 情景记忆也各有钟点。取 00:00 等于把**当天写的一律判成
+                # 「还没生效」**。
+                #
+                # M9-B 实测代价：26 条偏好只有 1 条可见（程序类 Recall@5
+                # 27.78%）、第 20 周写入的情景记忆整组召不回（decay 0/5）。
+                # 改成末刻后两者分别恢复到 25 条可见与 5/5。
+                at=datetime.combine(moment, datetime.max.time()),
             )
         )
         gathered: list[str] = []

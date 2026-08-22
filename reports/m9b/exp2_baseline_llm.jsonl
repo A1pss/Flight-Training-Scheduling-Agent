@@ -1,0 +1,50 @@
+{"config": "llm_only", "error": "", "hard_violations": [], "num_sorties": 0, "parsed": false, "rounds_used": 1, "satisfied": false, "scenario_id": "BASE-01", "schema_errors": []}
+{"config": "llm_retry", "error": "", "hard_violations": ["C01", "C03", "C05", "C08", "C11", "C13", "C14"], "num_sorties": 22, "parsed": true, "rounds_used": 5, "satisfied": false, "scenario_id": "BASE-01", "schema_errors": []}
+{"config": "llm_only", "error": "", "hard_violations": [], "num_sorties": 0, "parsed": false, "rounds_used": 1, "satisfied": false, "scenario_id": "BD-03-E", "schema_errors": []}
+{"config": "llm_retry", "error": "", "hard_violations": ["C03", "C05", "C12", "C13", "C14"], "num_sorties": 23, "parsed": true, "rounds_used": 5, "satisfied": false, "scenario_id": "BD-03-E", "schema_errors": []}
+{"config": "llm_only", "error": "", "hard_violations": [], "num_sorties": 0, "parsed": false, "rounds_used": 1, "satisfied": false, "scenario_id": "BD-05-E", "schema_errors": []}
+{"config": "llm_retry", "error": "", "hard_violations": ["C03", "C05", "C12", "C13", "C14"], "num_sorties": 23, "parsed": true, "rounds_used": 5, "satisfied": false, "scenario_id": "BD-05-E", "schema_errors": []}
+{"config": "llm_only", "error": "", "hard_violations": [], "num_sorties": 0, "parsed": false, "rounds_used": 1, "satisfied": false, "scenario_id": "BD-09-E", "schema_errors": []}
+{"config": "llm_retry", "error": "", "hard_violations": ["C03", "C05", "C12", "C13", "C14"], "num_sorties": 23, "parsed": true, "rounds_used": 5, "satisfied": false, "scenario_id": "BD-09-E", "schema_errors": []}
+{"config": "llm_only", "error": "", "hard_violations": [], "num_sorties": 0, "parsed": false, "rounds_used": 1, "satisfied": false, "scenario_id": "BD-10-E", "schema_errors": []}
+{"config": "llm_retry", "error": "", "hard_violations": ["C03", "C05", "C12", "C13", "C14"], "num_sorties": 23, "parsed": true, "rounds_used": 5, "satisfied": false, "scenario_id": "BD-10-E", "schema_errors": []}
+{"config": "llm_only", "error": "", "hard_violations": [], "num_sorties": 0, "parsed": false, "rounds_used": 1, "satisfied": false, "scenario_id": "BD-15-E", "schema_errors": []}
+{"config": "llm_retry", "error": "", "hard_violations": ["C03", "C05", "C12", "C13", "C14"], "num_sorties": 23, "parsed": true, "rounds_used": 5, "satisfied": false, "scenario_id": "BD-15-E", "schema_errors": []}
+{"config": "llm_only", "error": "", "hard_violations": [], "num_sorties": 0, "parsed": false, "rounds_used": 1, "satisfied": false, "scenario_id": "BD-19-E", "schema_errors": []}
+{"config": "llm_retry", "error": "", "hard_violations": ["C03", "C05", "C12", "C13", "C14"], "num_sorties": 23, "parsed": true, "rounds_used": 5, "satisfied": false, "scenario_id": "BD-19-E", "schema_errors": []}
+{"config": "llm_only", "error": "", "hard_violations": [], "num_sorties": 0, "parsed": false, "rounds_used": 1, "satisfied": false, "scenario_id": "CB-12", "schema_errors": []}
+{"config": "llm_retry", "error": "", "hard_violations": ["C03", "C05", "C12", "C13", "C14"], "num_sorties": 23, "parsed": true, "rounds_used": 5, "satisfied": false, "scenario_id": "CB-12", "schema_errors": []}
+{"config": "llm_only", "error": "", "hard_violations": [], "num_sorties": 0, "parsed": false, "rounds_used": 1, "satisfied": false, "scenario_id": "CB-19", "schema_errors": []}
+{"config": "llm_retry", "error": "", "hard_violations": ["C03", "C05", "C12", "C13", "C14"], "num_sorties": 23, "parsed": true, "rounds_used": 5, "satisfied": false, "scenario_id": "CB-19", "schema_errors": []}
+{"config": "llm_only", "error": "", "hard_violations": [], "num_sorties": 0, "parsed": false, "rounds_used": 1, "satisfied": false, "scenario_id": "CB-23", "schema_errors": []}
+{"config": "llm_retry", "error": "", "hard_violations": ["C03", "C05", "C12", "C13", "C14"], "num_sorties": 23, "parsed": true, "rounds_used": 5, "satisfied": false, "scenario_id": "CB-23", "schema_errors": []}
+{"config": "llm_only", "error": "", "hard_violations": [], "num_sorties": 0, "parsed": false, "rounds_used": 1, "satisfied": false, "scenario_id": "CB-32", "schema_errors": []}
+{"config": "llm_retry", "error": "", "hard_violations": ["C03", "C05", "C12", "C13", "C14"], "num_sorties": 23, "parsed": true, "rounds_used": 5, "satisfied": false, "scenario_id": "CB-32", "schema_errors": []}
+{"config": "llm_only", "error": "", "hard_violations": [], "num_sorties": 0, "parsed": false, "rounds_used": 1, "satisfied": false, "scenario_id": "CB-50", "schema_errors": []}
+{"config": "llm_retry", "error": "", "hard_violations": ["C03", "C05", "C12", "C13", "C14"], "num_sorties": 23, "parsed": true, "rounds_used": 5, "satisfied": false, "scenario_id": "CB-50", "schema_errors": []}
+{"config": "llm_only", "error": "", "hard_violations": [], "num_sorties": 0, "parsed": false, "rounds_used": 1, "satisfied": false, "scenario_id": "CB-51", "schema_errors": []}
+{"config": "llm_retry", "error": "", "hard_violations": ["C03", "C05", "C12", "C13", "C14"], "num_sorties": 23, "parsed": true, "rounds_used": 5, "satisfied": false, "scenario_id": "CB-51", "schema_errors": []}
+{"config": "llm_only", "error": "", "hard_violations": [], "num_sorties": 0, "parsed": false, "rounds_used": 1, "satisfied": false, "scenario_id": "RS-01", "schema_errors": []}
+{"config": "llm_retry", "error": "", "hard_violations": ["C03", "C05", "C12", "C13", "C14"], "num_sorties": 23, "parsed": true, "rounds_used": 5, "satisfied": false, "scenario_id": "RS-01", "schema_errors": []}
+{"config": "llm_only", "error": "", "hard_violations": [], "num_sorties": 0, "parsed": false, "rounds_used": 1, "satisfied": false, "scenario_id": "RS-02", "schema_errors": []}
+{"config": "llm_retry", "error": "", "hard_violations": ["C03", "C05", "C12", "C13", "C14"], "num_sorties": 23, "parsed": true, "rounds_used": 5, "satisfied": false, "scenario_id": "RS-02", "schema_errors": []}
+{"config": "llm_only", "error": "", "hard_violations": [], "num_sorties": 0, "parsed": false, "rounds_used": 1, "satisfied": false, "scenario_id": "RS-03", "schema_errors": []}
+{"config": "llm_retry", "error": "", "hard_violations": ["C03", "C05", "C12", "C13", "C14"], "num_sorties": 23, "parsed": true, "rounds_used": 5, "satisfied": false, "scenario_id": "RS-03", "schema_errors": []}
+{"config": "llm_only", "error": "", "hard_violations": [], "num_sorties": 0, "parsed": false, "rounds_used": 1, "satisfied": false, "scenario_id": "RS-04", "schema_errors": []}
+{"config": "llm_retry", "error": "", "hard_violations": ["C03", "C05", "C12", "C13", "C14"], "num_sorties": 23, "parsed": true, "rounds_used": 5, "satisfied": false, "scenario_id": "RS-04", "schema_errors": []}
+{"config": "llm_only", "error": "", "hard_violations": [], "num_sorties": 0, "parsed": false, "rounds_used": 1, "satisfied": false, "scenario_id": "RS-05", "schema_errors": []}
+{"config": "llm_retry", "error": "", "hard_violations": ["C03", "C05", "C12", "C13", "C14"], "num_sorties": 23, "parsed": true, "rounds_used": 5, "satisfied": false, "scenario_id": "RS-05", "schema_errors": []}
+{"config": "llm_only", "error": "", "hard_violations": [], "num_sorties": 0, "parsed": false, "rounds_used": 1, "satisfied": false, "scenario_id": "RS-06", "schema_errors": []}
+{"config": "llm_retry", "error": "", "hard_violations": ["C03", "C05", "C12", "C13", "C14"], "num_sorties": 23, "parsed": true, "rounds_used": 5, "satisfied": false, "scenario_id": "RS-06", "schema_errors": []}
+{"config": "llm_only", "error": "", "hard_violations": [], "num_sorties": 0, "parsed": false, "rounds_used": 1, "satisfied": false, "scenario_id": "SP-ABS-11", "schema_errors": []}
+{"config": "llm_retry", "error": "", "hard_violations": ["C03", "C05", "C12", "C13", "C14"], "num_sorties": 23, "parsed": true, "rounds_used": 5, "satisfied": false, "scenario_id": "SP-ABS-11", "schema_errors": []}
+{"config": "llm_only", "error": "", "hard_violations": [], "num_sorties": 0, "parsed": false, "rounds_used": 1, "satisfied": false, "scenario_id": "SP-ABS-12", "schema_errors": []}
+{"config": "llm_retry", "error": "", "hard_violations": ["C03", "C05", "C12", "C13", "C14"], "num_sorties": 23, "parsed": true, "rounds_used": 5, "satisfied": false, "scenario_id": "SP-ABS-12", "schema_errors": []}
+{"config": "llm_only", "error": "", "hard_violations": [], "num_sorties": 0, "parsed": false, "rounds_used": 1, "satisfied": false, "scenario_id": "SP-ASP-02", "schema_errors": []}
+{"config": "llm_retry", "error": "", "hard_violations": ["C03", "C05", "C12", "C13", "C14"], "num_sorties": 23, "parsed": true, "rounds_used": 5, "satisfied": false, "scenario_id": "SP-ASP-02", "schema_errors": []}
+{"config": "llm_only", "error": "", "hard_violations": [], "num_sorties": 0, "parsed": false, "rounds_used": 1, "satisfied": false, "scenario_id": "SP-EXP-05", "schema_errors": []}
+{"config": "llm_retry", "error": "", "hard_violations": ["C03", "C05", "C12", "C13", "C14"], "num_sorties": 23, "parsed": true, "rounds_used": 5, "satisfied": false, "scenario_id": "SP-EXP-05", "schema_errors": []}
+{"config": "llm_only", "error": "", "hard_violations": [], "num_sorties": 0, "parsed": false, "rounds_used": 1, "satisfied": false, "scenario_id": "SP-MNT-01", "schema_errors": []}
+{"config": "llm_retry", "error": "", "hard_violations": ["C03", "C05", "C12", "C13", "C14"], "num_sorties": 23, "parsed": true, "rounds_used": 5, "satisfied": false, "scenario_id": "SP-MNT-01", "schema_errors": []}
+{"config": "llm_only", "error": "", "hard_violations": [], "num_sorties": 0, "parsed": false, "rounds_used": 1, "satisfied": false, "scenario_id": "SP-MNT-05", "schema_errors": []}
+{"config": "llm_retry", "error": "", "hard_violations": ["C03", "C05", "C12", "C13", "C14"], "num_sorties": 23, "parsed": true, "rounds_used": 5, "satisfied": false, "scenario_id": "SP-MNT-05", "schema_errors": []}

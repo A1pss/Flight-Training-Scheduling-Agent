@@ -1,0 +1,311 @@
+{
+  "variant": "no_rules",
+  "threshold": 0.75,
+  "n_observations": 360,
+  "n_rounds": 1,
+  "per_round": {
+    "1": {
+      "n": 360,
+      "completion": 0.7472222222222222,
+      "intent": 0.8833333333333333,
+      "misexec_over_all": 0.075
+    }
+  },
+  "completion": {
+    "point": 0.7472222222222222,
+    "low": 0.6998791482524894,
+    "high": 0.7893449236192122,
+    "n": 360
+  },
+  "intent_accuracy": {
+    "point": 0.8833333333333333,
+    "low": 0.8460528614897193,
+    "high": 0.9125192948956157,
+    "n": 360
+  },
+  "slot_f1_micro": {
+    "f1": 0.8244897959183674,
+    "precision": 0.9730250481695568,
+    "recall": 0.7152974504249292,
+    "tp": 505,
+    "fp": 14,
+    "fn": 201
+  },
+  "slot_per_kind": {
+    "persons": {
+      "f1": 0.9036402569593148,
+      "tp": 211,
+      "fp": 5,
+      "fn": 40
+    },
+    "aircraft": {
+      "f1": 0.8958333333333333,
+      "tp": 43,
+      "fp": 2,
+      "fn": 8
+    },
+    "missions": {
+      "f1": 0.38095238095238093,
+      "tp": 12,
+      "fp": 2,
+      "fn": 37
+    },
+    "week": {
+      "f1": 0.9646569646569647,
+      "tp": 232,
+      "fp": 3,
+      "fn": 14
+    },
+    "constraint_modifiers": {
+      "f1": 0.11864406779661019,
+      "tp": 7,
+      "fp": 2,
+      "fn": 102
+    }
+  },
+  "misexecution": {
+    "count": 27,
+    "over_all": {
+      "point": 0.075,
+      "low": 0.05205361938153164,
+      "high": 0.10692072897385782,
+      "n": 360
+    },
+    "over_unclear": {
+      "point": 0.43548387096774194,
+      "low": 0.31942588902489055,
+      "high": 0.5590701202785123,
+      "n": 62
+    }
+  },
+  "llm_calls_total": 1474,
+  "rule_hit_share": 0.0,
+  "errors": 0,
+  "error_samples": [],
+  "confusion_action": {
+    "solve→ask_clarify": 14,
+    "answer→ask_clarify": 11,
+    "ask_clarify→solve": 11,
+    "solve→refuse": 10,
+    "ask_clarify→reschedule": 7,
+    "reschedule→ask_clarify": 6,
+    "reschedule→solve": 6,
+    "ask_clarify→answer": 4,
+    "answer→route_ingest": 3,
+    "ask_clarify→refuse": 3,
+    "ask_clarify→route_export": 3,
+    "reschedule→route_export": 2
+  },
+  "threshold_sweep": [
+    {
+      "threshold": 0.0,
+      "completion": 0.7472222222222222,
+      "misexec_over_all": 0.075,
+      "misexec_over_unclear": 0.43548387096774194,
+      "misexec_count": 27,
+      "meets_over_all": false,
+      "meets_over_unclear": false
+    },
+    {
+      "threshold": 0.05,
+      "completion": 0.7472222222222222,
+      "misexec_over_all": 0.075,
+      "misexec_over_unclear": 0.43548387096774194,
+      "misexec_count": 27,
+      "meets_over_all": false,
+      "meets_over_unclear": false
+    },
+    {
+      "threshold": 0.1,
+      "completion": 0.7472222222222222,
+      "misexec_over_all": 0.075,
+      "misexec_over_unclear": 0.43548387096774194,
+      "misexec_count": 27,
+      "meets_over_all": false,
+      "meets_over_unclear": false
+    },
+    {
+      "threshold": 0.15,
+      "completion": 0.7472222222222222,
+      "misexec_over_all": 0.075,
+      "misexec_over_unclear": 0.43548387096774194,
+      "misexec_count": 27,
+      "meets_over_all": false,
+      "meets_over_unclear": false
+    },
+    {
+      "threshold": 0.2,
+      "completion": 0.7472222222222222,
+      "misexec_over_all": 0.075,
+      "misexec_over_unclear": 0.43548387096774194,
+      "misexec_count": 27,
+      "meets_over_all": false,
+      "meets_over_unclear": false
+    },
+    {
+      "threshold": 0.25,
+      "completion": 0.7472222222222222,
+      "misexec_over_all": 0.075,
+      "misexec_over_unclear": 0.43548387096774194,
+      "misexec_count": 27,
+      "meets_over_all": false,
+      "meets_over_unclear": false
+    },
+    {
+      "threshold": 0.3,
+      "completion": 0.7472222222222222,
+      "misexec_over_all": 0.075,
+      "misexec_over_unclear": 0.43548387096774194,
+      "misexec_count": 27,
+      "meets_over_all": false,
+      "meets_over_unclear": false
+    },
+    {
+      "threshold": 0.35,
+      "completion": 0.7472222222222222,
+      "misexec_over_all": 0.075,
+      "misexec_over_unclear": 0.43548387096774194,
+      "misexec_count": 27,
+      "meets_over_all": false,
+      "meets_over_unclear": false
+    },
+    {
+      "threshold": 0.4,
+      "completion": 0.7472222222222222,
+      "misexec_over_all": 0.075,
+      "misexec_over_unclear": 0.43548387096774194,
+      "misexec_count": 27,
+      "meets_over_all": false,
+      "meets_over_unclear": false
+    },
+    {
+      "threshold": 0.45,
+      "completion": 0.7472222222222222,
+      "misexec_over_all": 0.075,
+      "misexec_over_unclear": 0.43548387096774194,
+      "misexec_count": 27,
+      "meets_over_all": false,
+      "meets_over_unclear": false
+    },
+    {
+      "threshold": 0.5,
+      "completion": 0.7472222222222222,
+      "misexec_over_all": 0.075,
+      "misexec_over_unclear": 0.43548387096774194,
+      "misexec_count": 27,
+      "meets_over_all": false,
+      "meets_over_unclear": false
+    },
+    {
+      "threshold": 0.55,
+      "completion": 0.7472222222222222,
+      "misexec_over_all": 0.075,
+      "misexec_over_unclear": 0.43548387096774194,
+      "misexec_count": 27,
+      "meets_over_all": false,
+      "meets_over_unclear": false
+    },
+    {
+      "threshold": 0.6,
+      "completion": 0.7472222222222222,
+      "misexec_over_all": 0.075,
+      "misexec_over_unclear": 0.43548387096774194,
+      "misexec_count": 27,
+      "meets_over_all": false,
+      "meets_over_unclear": false
+    },
+    {
+      "threshold": 0.65,
+      "completion": 0.7472222222222222,
+      "misexec_over_all": 0.075,
+      "misexec_over_unclear": 0.43548387096774194,
+      "misexec_count": 27,
+      "meets_over_all": false,
+      "meets_over_unclear": false
+    },
+    {
+      "threshold": 0.7,
+      "completion": 0.7472222222222222,
+      "misexec_over_all": 0.075,
+      "misexec_over_unclear": 0.43548387096774194,
+      "misexec_count": 27,
+      "meets_over_all": false,
+      "meets_over_unclear": false
+    },
+    {
+      "threshold": 0.75,
+      "completion": 0.7472222222222222,
+      "misexec_over_all": 0.075,
+      "misexec_over_unclear": 0.43548387096774194,
+      "misexec_count": 27,
+      "meets_over_all": false,
+      "meets_over_unclear": false
+    },
+    {
+      "threshold": 0.8,
+      "completion": 0.7472222222222222,
+      "misexec_over_all": 0.075,
+      "misexec_over_unclear": 0.43548387096774194,
+      "misexec_count": 27,
+      "meets_over_all": false,
+      "meets_over_unclear": false
+    },
+    {
+      "threshold": 0.85,
+      "completion": 0.7472222222222222,
+      "misexec_over_all": 0.075,
+      "misexec_over_unclear": 0.43548387096774194,
+      "misexec_count": 27,
+      "meets_over_all": false,
+      "meets_over_unclear": false
+    },
+    {
+      "threshold": 0.9,
+      "completion": 0.7472222222222222,
+      "misexec_over_all": 0.075,
+      "misexec_over_unclear": 0.43548387096774194,
+      "misexec_count": 27,
+      "meets_over_all": false,
+      "meets_over_unclear": false
+    },
+    {
+      "threshold": 0.95,
+      "completion": 0.7472222222222222,
+      "misexec_over_all": 0.075,
+      "misexec_over_unclear": 0.43548387096774194,
+      "misexec_count": 27,
+      "meets_over_all": false,
+      "meets_over_unclear": false
+    },
+    {
+      "threshold": 1.0,
+      "completion": 0.7472222222222222,
+      "misexec_over_all": 0.075,
+      "misexec_over_unclear": 0.43548387096774194,
+      "misexec_count": 27,
+      "meets_over_all": false,
+      "meets_over_unclear": false
+    }
+  ],
+  "calibration": {
+    "ece": 0.00036087677152818465,
+    "n_fit_samples": 351,
+    "coefficients": {
+      "agreement": 0.5406132833516227,
+      "first_pass": 0.5406132833516227,
+      "retries_norm": 0.0,
+      "is_hallucination": 0.0,
+      "is_malformed": 0.0
+    },
+    "intercept": 1.180087780363807,
+    "reliability_bins": [
+      {
+        "lower": 0.9,
+        "upper": 1.0,
+        "n": 351,
+        "mean_confidence": 0.9056220292113778,
+        "accuracy": 0.905982905982906
+      }
+    ]
+  }
+}

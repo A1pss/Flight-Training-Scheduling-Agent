@@ -1,0 +1,204 @@
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-001", "judge": "SUPPORTED", "kind": "claim", "text": "- 「JL-9」有多个可能：JL-9(AC84)、JL-9(AC95)"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-002", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 17 周用户提出 3 条修订：这个架次取消、改到上午、把 AC73 换掉"}
+{"claim_id": "c3", "human": "SUPPORTED", "item_id": "JCAL-002", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 7 周用户提出 3 条修订：周末不排、带飞教员固定一个、先把阻塞项解开"}
+{"claim_id": "c4", "human": "SUPPORTED", "item_id": "JCAL-002", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 1 周用户提出 3 条修订：这个架次取消、改到上午、把 AC73 换掉"}
+{"claim_id": "c5", "human": "SUPPORTED", "item_id": "JCAL-002", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 8 周用户提出 3 条修订：往后挪挪、别排周三、教员换成孙军"}
+{"claim_id": "c6", "human": "SUPPORTED", "item_id": "JCAL-002", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 14 周用户提出 3 条修订：把两个架次合并看看、优先补落下的课、密度降一点"}
+{"doc_id": "epi:epi_078f328af6f1c30bd83b50f8", "human": true, "item_id": "JCAL-002", "judge": true, "kind": "usage"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-003", "judge": "SUPPORTED", "kind": "claim", "text": "第5周的课程missionA-2被推迟了。"}
+{"claim_id": "c2", "human": "PARTIAL", "item_id": "JCAL-003", "judge": "PARTIAL", "kind": "claim", "text": "原因是训练窗口时间被压缩到了08:00-16:00，导致该课目无法在原定时间内进行，因此推迟到下一周安排。"}
+{"doc_id": "epi:epi_f2177bec3eac09efb3f5a37a", "human": true, "item_id": "JCAL-003", "judge": true, "kind": "usage"}
+{"claim_id": "c1", "human": "PARTIAL", "item_id": "JCAL-004", "judge": "SUPPORTED", "kind": "claim", "text": "当你说「跑道换成 RWY-1」时，是指将飞机起降所使用的跑道改为 RWY-1。"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-004", "judge": "SUPPORTED", "kind": "claim", "text": "根据用户在第 3 周、第 11 周和第 19 周提出的修订内容以及 AC95 和 AC84 的机型信息，这两架 JL-9 飞机的可用跑道确实是 RWY-1。"}
+{"claim_id": "c3", "human": "PARTIAL", "item_id": "JCAL-004", "judge": "SUPPORTED", "kind": "claim", "text": "因此，「跑道换成 RWY-1」的意思就是将飞机起降所使用的跑道调整为 RWY-1。"}
+{"claim_id": "c1", "human": "NOT_SUPPORTED", "item_id": "JCAL-005", "judge": "PARTIAL", "kind": "claim", "text": "你说「别排周三」的意思是希望不要在每周三安排飞行任务。"}
+{"claim_id": "c2", "human": "PARTIAL", "item_id": "JCAL-005", "judge": "PARTIAL", "kind": "claim", "text": "根据之前的记录，在第16周、第8周和第17周、第7周以及第12周，用户都提到周三排了5个架次，认为过于密集，因此提出不希望周三继续安排这么多的飞行任务。"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-006", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 5 周选用 Tier 0 松弛，欠账 0 项"}
+{"claim_id": "c3", "human": "SUPPORTED", "item_id": "JCAL-006", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 14 周方案由李科长批准，松弛档 Tier 1"}
+{"claim_id": "c4", "human": "SUPPORTED", "item_id": "JCAL-006", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 9 周方案由王参谋批准，松弛档 Tier 1"}
+{"claim_id": "c5", "human": "SUPPORTED", "item_id": "JCAL-006", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 15 周方案由王参谋批准，松弛档 Tier 1"}
+{"claim_id": "c6", "human": "SUPPORTED", "item_id": "JCAL-006", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 17 周方案由李科长批准，松弛档 Tier 1"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-007", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 16 周 missionH-1 因RWY-1 单日关闭推迟到下周"}
+{"claim_id": "c3", "human": "SUPPORTED", "item_id": "JCAL-007", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 16 周用户提出 3 条修订：往后挪挪、别排周三、教员换成孙军"}
+{"claim_id": "c4", "human": "SUPPORTED", "item_id": "JCAL-007", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 16 周选用 Tier 1 松弛，欠账 2 项"}
+{"claim_id": "c5", "human": "SUPPORTED", "item_id": "JCAL-007", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 6 周 missionB-2 因带飞教员当日已达日上限推迟到下周"}
+{"claim_id": "c6", "human": "SUPPORTED", "item_id": "JCAL-007", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 13 周 missionA-2 因训练窗被压到 08:00-16:00推迟到下周"}
+{"doc_id": "epi:epi_e61eafd64ba7642b3e41a4a2", "human": true, "item_id": "JCAL-007", "judge": true, "kind": "usage"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-008", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 15 周用户提出 3 条修订：周末不排、带飞教员固定一个、先把阻塞项解开"}
+{"claim_id": "c3", "human": "SUPPORTED", "item_id": "JCAL-008", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 14 周用户提出 3 条修订：把两个架次合并看看、优先补落下的课、密度降一点"}
+{"claim_id": "c4", "human": "SUPPORTED", "item_id": "JCAL-008", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 1 周用户提出 3 条修订：这个架次取消、改到上午、把 AC73 换掉"}
+{"claim_id": "c5", "human": "SUPPORTED", "item_id": "JCAL-008", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 6 周用户提出 3 条修订：把两个架次合并看看、优先补落下的课、密度降一点"}
+{"claim_id": "c6", "human": "SUPPORTED", "item_id": "JCAL-008", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 16 周用户提出 3 条修订：往后挪挪、别排周三、教员换成孙军"}
+{"doc_id": "epi:epi_027681d041c23da295f83ff7", "human": true, "item_id": "JCAL-008", "judge": true, "kind": "usage"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-009", "judge": "SUPPORTED", "kind": "claim", "text": "空域 IFR（IFR Route）的同时段容量为 1 架次。"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-009", "judge": "SUPPORTED", "kind": "claim", "text": "空域 RNG（Range Area）的同时段容量为 1 架次。"}
+{"claim_id": "c3", "human": "SUPPORTED", "item_id": "JCAL-009", "judge": "SUPPORTED", "kind": "claim", "text": "空域 RT1（Route 1）的同时段容量为 1 架次。"}
+{"claim_id": "c4", "human": "SUPPORTED", "item_id": "JCAL-009", "judge": "SUPPORTED", "kind": "claim", "text": "空域 RT2（Route 2）的同时段容量为 1 架次。"}
+{"claim_id": "c5", "human": "SUPPORTED", "item_id": "JCAL-009", "judge": "SUPPORTED", "kind": "claim", "text": "空域 SAA（Small Area A）的同时段容量为 2 架次。"}
+{"claim_id": "c6", "human": "SUPPORTED", "item_id": "JCAL-009", "judge": "SUPPORTED", "kind": "claim", "text": "空域 SAB（Small Area B）的同时段容量为 2 架次。"}
+{"doc_id": "pg:airspaces:SAA", "human": true, "item_id": "JCAL-009", "judge": true, "kind": "usage"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-010", "judge": "SUPPORTED", "kind": "claim", "text": "第 14 周的课程中，missionB-2 被推迟到了下周。"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-010", "judge": "PARTIAL", "kind": "claim", "text": "原因是带飞教员当日已达日上限。"}
+{"doc_id": "epi:epi_8fff986cbc4fdff3e0880875", "human": true, "item_id": "JCAL-010", "judge": true, "kind": "usage"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-011", "judge": "SUPPORTED", "kind": "claim", "text": "根据规则，一个人同一时刻只能在一个架次上。"}
+{"claim_id": "c2", "human": "PARTIAL", "item_id": "JCAL-011", "judge": "PARTIAL", "kind": "claim", "text": "这是为了确保执行人能够专注于当前的课目并满足资质匹配与岗位互斥的要求。"}
+{"claim_id": "c4", "human": "SUPPORTED", "item_id": "JCAL-011", "judge": "SUPPORTED", "kind": "claim", "text": "- 约束4·资质匹配与岗位互斥（R0，预筛 + NoOverlap）明确规定：执行人须持该课目所属类别资质；"}
+{"claim_id": "c5", "human": "SUPPORTED", "item_id": "JCAL-011", "judge": "SUPPORTED", "kind": "claim", "text": "同一人同一时刻只能在一个架次上。"}
+{"claim_id": "c6", "human": "SUPPORTED", "item_id": "JCAL-011", "judge": "SUPPORTED", "kind": "claim", "text": "因此，一个人在同一时间只能参与一个架次的飞行任务。"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-012", "judge": "SUPPORTED", "kind": "claim", "text": "1. **约束1·时间一致性**（R0，结构性）：着陆时刻 = 起飞时刻 + 课目时长；"}
+{"claim_id": "c3", "human": "SUPPORTED", "item_id": "JCAL-012", "judge": "SUPPORTED", "kind": "claim", "text": "架次必须落在训练窗内且不跨日。"}
+{"claim_id": "c4", "human": "SUPPORTED", "item_id": "JCAL-012", "judge": "SUPPORTED", "kind": "claim", "text": "2. **约束7·飞机排期冲突与周转时间**（R0，析取）：同一架飞机的相邻架次之间须满足周转时间；"}
+{"claim_id": "c5", "human": "SUPPORTED", "item_id": "JCAL-012", "judge": "SUPPORTED", "kind": "claim", "text": "维护时段内不得排班。"}
+{"claim_id": "c6", "human": "SUPPORTED", "item_id": "JCAL-012", "judge": "SUPPORTED", "kind": "claim", "text": "3. **约束8·人员冲突与休息**（R0，析取 + 序）：同一人相邻架次间隔不少于 10 分钟；"}
+{"claim_id": "c7", "human": "SUPPORTED", "item_id": "JCAL-012", "judge": "SUPPORTED", "kind": "claim", "text": "连续 2 架次后需休息 30 分钟。"}
+{"claim_id": "c9", "human": "SUPPORTED", "item_id": "JCAL-012", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 2 周和第 10 周的修订都包括“间隔拉开一点”。"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-013", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 5 周选用 Tier 0 松弛，欠账 0 项"}
+{"claim_id": "c3", "human": "SUPPORTED", "item_id": "JCAL-013", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 17 周选用 Tier 1 松弛，欠账 3 项"}
+{"claim_id": "c4", "human": "SUPPORTED", "item_id": "JCAL-013", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 14 周选用 Tier 1 松弛，欠账 3 项"}
+{"claim_id": "c5", "human": "SUPPORTED", "item_id": "JCAL-013", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 15 周选用 Tier 1 松弛，欠账 1 项"}
+{"claim_id": "c6", "human": "SUPPORTED", "item_id": "JCAL-013", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 13 周选用 Tier 1 松弛，欠账 2 项"}
+{"doc_id": "epi:epi_3528747a8a01be7ccdcc4eb3", "human": true, "item_id": "JCAL-013", "judge": true, "kind": "usage"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-014", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 5 周用户提出 3 条修订：早一点起飞、换一架飞机、这天别安排了"}
+{"claim_id": "c3", "human": "SUPPORTED", "item_id": "JCAL-014", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 15 周用户提出 3 条修订：周末不排、带飞教员固定一个、先把阻塞项解开"}
+{"claim_id": "c4", "human": "SUPPORTED", "item_id": "JCAL-014", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 6 周用户提出 3 条修订：把两个架次合并看看、优先补落下的课、密度降一点"}
+{"claim_id": "c5", "human": "SUPPORTED", "item_id": "JCAL-014", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 1 周用户提出 3 条修订：这个架次取消、改到上午、把 AC73 换掉"}
+{"claim_id": "c6", "human": "SUPPORTED", "item_id": "JCAL-014", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 3 周用户提出 3 条修订：跑道换成 RWY-1、把周五腾出来、这一版别动了"}
+{"doc_id": "epi:epi_ffbe017f229dcf6416a6b17d", "human": true, "item_id": "JCAL-014", "judge": true, "kind": "usage"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-015", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 14 周用户提出 3 条修订：把两个架次合并看看、优先补落下的课、密度降一点"}
+{"claim_id": "c3", "human": "SUPPORTED", "item_id": "JCAL-015", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 15 周用户提出 3 条修订：周末不排、带飞教员固定一个、先把阻塞项解开"}
+{"claim_id": "c4", "human": "SUPPORTED", "item_id": "JCAL-015", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 1 周用户提出 3 条修订：这个架次取消、改到上午、把 AC73 换掉"}
+{"claim_id": "c5", "human": "SUPPORTED", "item_id": "JCAL-015", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 8 周用户提出 3 条修订：往后挪挪、别排周三、教员换成孙军"}
+{"claim_id": "c6", "human": "SUPPORTED", "item_id": "JCAL-015", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 6 周用户提出 3 条修订：把两个架次合并看看、优先补落下的课、密度降一点"}
+{"doc_id": "epi:epi_242c9e77015201d92bb935c0", "human": true, "item_id": "JCAL-015", "judge": true, "kind": "usage"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-016", "judge": "SUPPORTED", "kind": "claim", "text": "根据历史记录，在第3周选择了Tier 0松弛且没有欠账项目；"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-016", "judge": "SUPPORTED", "kind": "claim", "text": "而在其他几周（第11、12、13和18周）都选择了Tier 1松弛，并有不同程度的欠账。"}
+{"claim_id": "c3", "human": "PARTIAL", "item_id": "JCAL-016", "judge": "PARTIAL", "kind": "claim", "text": "因此，通常情况下你会选择Tier 1松弛。"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-017", "judge": "SUPPORTED", "kind": "claim", "text": "根据检索到的相关内容，最近几周的方案中都设置了松弛档 Tier 0。"}
+{"claim_id": "c3", "human": "SUPPORTED", "item_id": "JCAL-017", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 7 周和第 4 周方案由张主任批准，设置为松弛档 Tier 0。"}
+{"claim_id": "c4", "human": "SUPPORTED", "item_id": "JCAL-017", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 3 周方案由王参谋批准，设置为松弛档 Tier 0。"}
+{"claim_id": "c5", "human": "SUPPORTED", "item_id": "JCAL-017", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 8 周和第 5 周方案由李科长批准，同样设置了松弛档 Tier 0。"}
+{"claim_id": "c6", "human": "PARTIAL", "item_id": "JCAL-017", "judge": "PARTIAL", "kind": "claim", "text": "因此，你的松弛档偏好支持度是 Tier 0。"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-018", "judge": "SUPPORTED", "kind": "claim", "text": "罗磊（P05）身份为学员，可飞机型 JL-8；"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-018", "judge": "PARTIAL", "kind": "claim", "text": "资质：A类/单飞、B类/带飞、C类/带飞、F类/带飞。"}
+{"doc_id": "pg:persons:P05", "human": true, "item_id": "JCAL-018", "judge": true, "kind": "usage"}
+{"doc_id": "ent:person:P05", "human": true, "item_id": "JCAL-018", "judge": true, "kind": "usage"}
+{"claim_id": "c2", "human": "NOT_SUPPORTED", "item_id": "JCAL-019", "judge": "NOT_SUPPORTED", "kind": "claim", "text": "- 「飞机」在当前快照里查不到对应的aircraft"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-020", "judge": "SUPPORTED", "kind": "claim", "text": "- 约束14·任务唯一性（R0，线性 + 去重）：同一人员与同一课目子任务的组合，在满足频率要求后不得重复安排。"}
+{"claim_id": "c3", "human": "SUPPORTED", "item_id": "JCAL-020", "judge": "SUPPORTED", "kind": "claim", "text": "- 约束12·每日架次上限（R1，线性）：单人单日架次数、单机单日架次数不得超过上限。"}
+{"claim_id": "c4", "human": "SUPPORTED", "item_id": "JCAL-020", "judge": "SUPPORTED", "kind": "claim", "text": "- 约束10·每日飞行时长上限（R1，线性）：单人单日飞行时长不得超过上限。"}
+{"claim_id": "c5", "human": "SUPPORTED", "item_id": "JCAL-020", "judge": "SUPPORTED", "kind": "claim", "text": "- 约束11·每周架次上限（R1，线性）：单人单周架次数不得超过上限。"}
+{"claim_id": "c6", "human": "SUPPORTED", "item_id": "JCAL-020", "judge": "SUPPORTED", "kind": "claim", "text": "- 约束5·机型与机组编成（R0，预筛）：机组每人须持该机型资质；"}
+{"claim_id": "c7", "human": "SUPPORTED", "item_id": "JCAL-020", "judge": "SUPPORTED", "kind": "claim", "text": "机组人数不得超过座位数。"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-021", "judge": "SUPPORTED", "kind": "claim", "text": "张勇（P06）身份为学员，可飞机型 JL-8；"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-021", "judge": "SUPPORTED", "kind": "claim", "text": "资质：A类/单飞、B类/带飞、C类/带飞、F类/带飞。"}
+{"claim_id": "c3", "human": "SUPPORTED", "item_id": "JCAL-021", "judge": "SUPPORTED", "kind": "claim", "text": "missionF-1（编队飞行）属 F 类，时长 40 分钟，周期 16 周，频率每 7 天 1 次，带飞 是，空域 SAB，机型 JL-8、JL-9，先修 A类。"}
+{"doc_id": "pg:persons:P06", "human": true, "item_id": "JCAL-021", "judge": true, "kind": "usage"}
+{"doc_id": "pg:missions:missionF-1", "human": true, "item_id": "JCAL-021", "judge": true, "kind": "usage"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-022", "judge": "SUPPORTED", "kind": "claim", "text": "您常说的「往后挪挪」是指希望将某些任务的时间安排向后推迟。"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-022", "judge": "SUPPORTED", "kind": "claim", "text": "例如，在第16周和第8周，您都提出了类似的修订意见。"}
+{"claim_id": "c4", "human": "SUPPORTED", "item_id": "JCAL-022", "judge": "SUPPORTED", "kind": "claim", "text": "- 第16周：用户提出3条修订：“往后挪挪”、“别排周三”、“教员换成孙军”"}
+{"claim_id": "c5", "human": "SUPPORTED", "item_id": "JCAL-022", "judge": "SUPPORTED", "kind": "claim", "text": "- 第8周：用户提出3条修订：“往后挪挪”、“别排周三”、“教员换成孙军”"}
+{"claim_id": "c6", "human": "PARTIAL", "item_id": "JCAL-022", "judge": "SUPPORTED", "kind": "claim", "text": "这表明您希望将某些任务的时间安排向后推迟，同时避免在特定日期（如周三）进行。"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-023", "judge": "SUPPORTED", "kind": "claim", "text": "- missionG-1（特技飞行）属 G 类，时长 35 分钟，周期 20 周，频率每 14 天 1 次，带飞 是，空域 SAB，机型 JL-9，先修 A类、F类"}
+{"claim_id": "c3", "human": "SUPPORTED", "item_id": "JCAL-023", "judge": "SUPPORTED", "kind": "claim", "text": "- missionH-1（低空突防）属 H 类，时长 50 分钟，周期 20 周，频率每 14 天 1 次，带飞 是，空域 RT1，机型 JL-9，先修 B类"}
+{"claim_id": "c4", "human": "SUPPORTED", "item_id": "JCAL-023", "judge": "SUPPORTED", "kind": "claim", "text": "- missionD-1（轰炸与射击）属 D 类，时长 26 分钟，周期 16 周，频率每 7 天 1 次，带飞 是，空域 RNG，机型 JL-9，先修 B类、C类"}
+{"claim_id": "c5", "human": "SUPPORTED", "item_id": "JCAL-023", "judge": "SUPPORTED", "kind": "claim", "text": "- missionE-1（空战机动）属 E 类，时长 46 分钟，周期 16 周，频率每 7 天 1 次，带飞 是，空域 SAA，机型 JL-9，先修 C类"}
+{"claim_id": "c6", "human": "SUPPORTED", "item_id": "JCAL-023", "judge": "SUPPORTED", "kind": "claim", "text": "- missionE-2（空战机动）属 E 类，时长 69 分钟，周期 16 周，频率每 7 天 1 次，带飞 是，空域 SAA，机型 JL-9，先修 missionE-1"}
+{"doc_id": "ent:mission:missionG-1", "human": true, "item_id": "JCAL-023", "judge": true, "kind": "usage"}
+{"doc_id": "ent:mission:missionH-1", "human": true, "item_id": "JCAL-023", "judge": true, "kind": "usage"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-024", "judge": "SUPPORTED", "kind": "claim", "text": "您在第 15 周和第 7 周都提出了“先把阻塞项解开”这一说法，共使用了两次。"}
+{"claim_id": "c1", "human": "PARTIAL", "item_id": "JCAL-025", "judge": "NOT_SUPPORTED", "kind": "claim", "text": "根据检索到的内容，你的松弛偏好是偏向保守的。"}
+{"claim_id": "c3", "human": "SUPPORTED", "item_id": "JCAL-025", "judge": "PARTIAL", "kind": "claim", "text": "- 多数周（第 4、7、5、1 周）的松弛档设置为 Tier 0。"}
+{"claim_id": "c4", "human": "SUPPORTED", "item_id": "JCAL-025", "judge": "SUPPORTED", "kind": "claim", "text": "- 只有在第 10 周时，松弛档被设置为 Tier 1。"}
+{"claim_id": "c5", "human": "PARTIAL", "item_id": "JCAL-025", "judge": "NOT_SUPPORTED", "kind": "claim", "text": "因此，可以判断你的松弛偏好更倾向于保守。"}
+{"claim_id": "c1", "human": "PARTIAL", "item_id": "JCAL-026", "judge": "SUPPORTED", "kind": "claim", "text": "刘斌（P04）具备成熟飞行员身份，并且拥有 E 类单飞资质，可以执行 missionE-2（空战机动）。"}
+{"claim_id": "c2", "human": "PARTIAL", "item_id": "JCAL-026", "judge": "PARTIAL", "kind": "claim", "text": "因此，他现在能够排 missionE-2。"}
+{"doc_id": "pg:persons:P04", "human": true, "item_id": "JCAL-026", "judge": false, "kind": "usage"}
+{"doc_id": "pg:missions:missionE-2", "human": true, "item_id": "JCAL-026", "judge": false, "kind": "usage"}
+{"doc_id": "ent:mission:missionE-2", "human": true, "item_id": "JCAL-026", "judge": false, "kind": "usage"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-027", "judge": "SUPPORTED", "kind": "claim", "text": "missionC-2（仪表飞行）的时长是56分钟。"}
+{"doc_id": "pg:missions:missionC-2", "human": true, "item_id": "JCAL-027", "judge": true, "kind": "usage"}
+{"doc_id": "ent:mission:missionC-2", "human": true, "item_id": "JCAL-027", "judge": true, "kind": "usage"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-028", "judge": "SUPPORTED", "kind": "claim", "text": "刘斌的 C 类资质复训到期日是 2026-01-07。"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-028", "judge": "SUPPORTED", "kind": "claim", "text": "这意味着他的仪表等级将在该日期到期，需要进行复训以保持资质有效。"}
+{"doc_id": "pg:persons:P04", "human": true, "item_id": "JCAL-028", "judge": true, "kind": "usage"}
+{"doc_id": "pg:person_qualifications:P04:A", "human": false, "item_id": "JCAL-028", "judge": false, "kind": "usage"}
+{"doc_id": "pg:person_qualifications:P04:B", "human": false, "item_id": "JCAL-028", "judge": false, "kind": "usage"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-029", "judge": "SUPPORTED", "kind": "claim", "text": "AC27 的机型是 JL-8。"}
+{"doc_id": "pg:aircraft:AC27", "human": true, "item_id": "JCAL-029", "judge": true, "kind": "usage"}
+{"doc_id": "ent:aircraft:AC27", "human": true, "item_id": "JCAL-029", "judge": true, "kind": "usage"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-030", "judge": "SUPPORTED", "kind": "claim", "text": "陈伟（P07）身份为学员，可飞机型 JL-8；"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-030", "judge": "SUPPORTED", "kind": "claim", "text": "资质包括 C 类/带飞。"}
+{"claim_id": "c3", "human": "SUPPORTED", "item_id": "JCAL-030", "judge": "SUPPORTED", "kind": "claim", "text": "missionC-1（仪表飞行）属 C 类，时长 35 分钟，周期 16 周，频率每 7 天 1 次，带飞 是，空域 IFR，机型为 JL-8、JL-9，先修 A类。"}
+{"claim_id": "c4", "human": "PARTIAL", "item_id": "JCAL-030", "judge": "SUPPORTED", "kind": "claim", "text": "根据以上信息，陈伟具备排 missionC-1 的资质。"}
+{"doc_id": "pg:persons:P07", "human": true, "item_id": "JCAL-030", "judge": true, "kind": "usage"}
+{"doc_id": "pg:missions:missionC-1", "human": true, "item_id": "JCAL-030", "judge": true, "kind": "usage"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-031", "judge": "SUPPORTED", "kind": "claim", "text": "AC49 的机型是 JL-8。"}
+{"doc_id": "pg:aircraft:AC49", "human": true, "item_id": "JCAL-031", "judge": true, "kind": "usage"}
+{"doc_id": "ent:aircraft:AC49", "human": true, "item_id": "JCAL-031", "judge": true, "kind": "usage"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-032", "judge": "SUPPORTED", "kind": "claim", "text": "- A类/单飞"}
+{"claim_id": "c3", "human": "SUPPORTED", "item_id": "JCAL-032", "judge": "SUPPORTED", "kind": "claim", "text": "- B类/带飞"}
+{"claim_id": "c4", "human": "SUPPORTED", "item_id": "JCAL-032", "judge": "SUPPORTED", "kind": "claim", "text": "- C类/带飞"}
+{"claim_id": "c5", "human": "SUPPORTED", "item_id": "JCAL-032", "judge": "SUPPORTED", "kind": "claim", "text": "- F类/带飞"}
+{"claim_id": "c6", "human": "SUPPORTED", "item_id": "JCAL-032", "judge": "SUPPORTED", "kind": "claim", "text": "这些信息表明罗磊已经具备了上述所有类型的飞行资质。"}
+{"doc_id": "pg:persons:P05", "human": true, "item_id": "JCAL-032", "judge": true, "kind": "usage"}
+{"doc_id": "ent:person:P05", "human": true, "item_id": "JCAL-032", "judge": true, "kind": "usage"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-033", "judge": "SUPPORTED", "kind": "claim", "text": "张勇的身份为学员。"}
+{"doc_id": "pg:persons:P06", "human": true, "item_id": "JCAL-033", "judge": true, "kind": "usage"}
+{"doc_id": "ent:person:P06", "human": true, "item_id": "JCAL-033", "judge": true, "kind": "usage"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-034", "judge": "SUPPORTED", "kind": "claim", "text": "吴鹏（P03）的身份是教员，持有机型 JL-8 和 JL-9。"}
+{"doc_id": "pg:persons:P03", "human": true, "item_id": "JCAL-034", "judge": true, "kind": "usage"}
+{"doc_id": "pg:person_qualifications:P03:A", "human": true, "item_id": "JCAL-034", "judge": false, "kind": "usage"}
+{"doc_id": "pg:person_qualifications:P03:B", "human": true, "item_id": "JCAL-034", "judge": false, "kind": "usage"}
+{"doc_id": "pg:person_qualifications:P03:C", "human": true, "item_id": "JCAL-034", "judge": false, "kind": "usage"}
+{"doc_id": "pg:person_qualifications:P03:D", "human": true, "item_id": "JCAL-034", "judge": false, "kind": "usage"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-035", "judge": "SUPPORTED", "kind": "claim", "text": "何超（P08）身份为学员，可飞机型 JL-8；"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-035", "judge": "SUPPORTED", "kind": "claim", "text": "资质：A类/单飞、B类/带飞、C类/带飞、F类/带飞。"}
+{"claim_id": "c3", "human": "SUPPORTED", "item_id": "JCAL-035", "judge": "SUPPORTED", "kind": "claim", "text": "missionC-1（仪表飞行）属 C 类，时长 35 分钟，周期 16 周，频率每 7 天 1 次，带飞 是，空域 IFR，机型 JL-8、JL-9，先修 A类。"}
+{"claim_id": "c4", "human": "PARTIAL", "item_id": "JCAL-035", "judge": "SUPPORTED", "kind": "claim", "text": "根据以上信息，何超具备排 missionC-1 的资质。"}
+{"doc_id": "pg:persons:P08", "human": true, "item_id": "JCAL-035", "judge": true, "kind": "usage"}
+{"doc_id": "pg:missions:missionC-1", "human": true, "item_id": "JCAL-035", "judge": true, "kind": "usage"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-036", "judge": "SUPPORTED", "kind": "claim", "text": "第 13 周的方案是由张主任批准的。"}
+{"doc_id": "epi:epi_b4528d9fd75e25a79b72e248", "human": true, "item_id": "JCAL-036", "judge": true, "kind": "usage"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-037", "judge": "SUPPORTED", "kind": "claim", "text": "第 3 周一共排了 15 架次（包括 10 次带飞和 5 次单飞），有 6 条阻塞项。"}
+{"doc_id": "epi:epi_f59756792f31dd505f31cc30", "human": true, "item_id": "JCAL-037", "judge": true, "kind": "usage"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-038", "judge": "SUPPORTED", "kind": "claim", "text": "第 2 周选的松弛档是 Tier 0，欠账为 0 项。"}
+{"doc_id": "epi:epi_6d286e82e3e293ec1c71d869", "human": true, "item_id": "JCAL-038", "judge": true, "kind": "usage"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-039", "judge": "SUPPORTED", "kind": "claim", "text": "第 15 周用户驳回第一版的理由是两个架次的周转时间只留了 30 分钟。"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-039", "judge": "PARTIAL", "kind": "claim", "text": "其他周次的驳回理由主要是因为刘斌的复训与学员架次抢同一个空域。"}
+{"doc_id": "epi:epi_6a8130800495feccbf0cabed", "human": true, "item_id": "JCAL-039", "judge": true, "kind": "usage"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-040", "judge": "SUPPORTED", "kind": "claim", "text": "第 2 周的方案是由李科长批准的。"}
+{"doc_id": "epi:epi_ed6dd3f206ae328a7ccea12d", "human": true, "item_id": "JCAL-040", "judge": true, "kind": "usage"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-041", "judge": "SUPPORTED", "kind": "claim", "text": "第 14 周用户驳回第一版的理由是，刘斌的复训与学员架次抢同一个空域。"}
+{"doc_id": "epi:epi_3bb894ebd0969de1229ea9ee", "human": true, "item_id": "JCAL-041", "judge": true, "kind": "usage"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-042", "judge": "SUPPORTED", "kind": "claim", "text": "第 14 周一共排了 16 架次，其中包括 11 次带飞和 5 次单飞。"}
+{"doc_id": "epi:epi_c5bb895ec7deff1d6859efce", "human": true, "item_id": "JCAL-042", "judge": true, "kind": "usage"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-043", "judge": "SUPPORTED", "kind": "claim", "text": "第 10 周一共排了 12 架次，其中包括 7 次带飞和 5 次单飞。"}
+{"doc_id": "epi:epi_7a7947c1e1fc9f77fdac5f72", "human": true, "item_id": "JCAL-043", "judge": true, "kind": "usage"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-044", "judge": "SUPPORTED", "kind": "claim", "text": "第 4 周的方案是由张主任批准的。"}
+{"doc_id": "epi:epi_ea514feb26d652432f3129cc", "human": true, "item_id": "JCAL-044", "judge": true, "kind": "usage"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-045", "judge": "SUPPORTED", "kind": "claim", "text": "根据已有的记录，第 1 周的方案由张主任批准，并且采用了 Tier 0 松弛档，欠账项为 0。"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-045", "judge": "PARTIAL", "kind": "claim", "text": "这意味着在第 1 周时，安排是严格按照松弛档 Tier 0 进行的，没有遗留问题。"}
+{"claim_id": "c3", "human": "SUPPORTED", "item_id": "JCAL-045", "judge": "SUPPORTED", "kind": "claim", "text": "关于资源有效性与容量方面，同一空域同时存在的飞机架数不可超过该空域的 同时段容量。"}
+{"claim_id": "c5", "human": "SUPPORTED", "item_id": "JCAL-045", "judge": "SUPPORTED", "kind": "claim", "text": "- 空域 RT2 的同时段容量为 1 架次"}
+{"claim_id": "c6", "human": "SUPPORTED", "item_id": "JCAL-045", "judge": "SUPPORTED", "kind": "claim", "text": "- 空域 SAB 的同时段容量为 2 架次"}
+{"claim_id": "c7", "human": "SUPPORTED", "item_id": "JCAL-045", "judge": "PARTIAL", "kind": "claim", "text": "这些信息可以作为第 2 周安排时参考的基础，确保资源的有效利用和容量的合规性。"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-046", "judge": "SUPPORTED", "kind": "claim", "text": "单人单日的架次数和单机单日的架次数不得超过设定的上限。"}
+{"claim_id": "c3", "human": "SUPPORTED", "item_id": "JCAL-046", "judge": "PARTIAL", "kind": "claim", "text": "具体数值需要参照具体的规章制度来确定。"}
+{"claim_id": "c5", "human": "SUPPORTED", "item_id": "JCAL-046", "judge": "SUPPORTED", "kind": "claim", "text": "- 每日飞行时长也有一个上限。"}
+{"claim_id": "c6", "human": "SUPPORTED", "item_id": "JCAL-046", "judge": "SUPPORTED", "kind": "claim", "text": "- 单人单周内的总架次数也有限制。"}
+{"claim_id": "c7", "human": "SUPPORTED", "item_id": "JCAL-046", "judge": "SUPPORTED", "kind": "claim", "text": "- 同一跑道在任意 20 分钟滑动窗口内起飞次数不得超过 2 次，并且任意两架次起飞时刻间隔不少于 7 分钟。"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-047", "judge": "NOT_SUPPORTED", "kind": "claim", "text": "根据检索到的相关内容，没有直接提到目标函数三项权重的具体数值。"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-047", "judge": "NOT_SUPPORTED", "kind": "claim", "text": "因此无法从这些信息中得出您偏好的目标函数三项权重是多少。"}
+{"claim_id": "c4", "human": "SUPPORTED", "item_id": "JCAL-047", "judge": "SUPPORTED", "kind": "claim", "text": "- 第 3 周选用 Tier 0 松弛，欠账为零。"}
+{"claim_id": "c5", "human": "SUPPORTED", "item_id": "JCAL-047", "judge": "SUPPORTED", "kind": "claim", "text": "- 用户在第 18 周和第 2 周分别提出了类似的修订意见：何超少排一次、间隔拉开一点、IFR 那门课先停。"}
+{"claim_id": "c6", "human": "SUPPORTED", "item_id": "JCAL-047", "judge": "NOT_SUPPORTED", "kind": "claim", "text": "这些信息并未涉及目标函数权重的具体数值。"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-048", "judge": "SUPPORTED", "kind": "claim", "text": "- 空域 IFR、RNG、RT1 和 RT2 的同时段容量均为 1 架次。"}
+{"claim_id": "c3", "human": "SUPPORTED", "item_id": "JCAL-048", "judge": "SUPPORTED", "kind": "claim", "text": "- 空域 SAA 和 SAB 的同时段容量为 2 架次。"}
+{"claim_id": "c4", "human": "PARTIAL", "item_id": "JCAL-048", "judge": "SUPPORTED", "kind": "claim", "text": "因此，如果您希望选择一个能够容纳更多架次的空域，则偏好空域 SAA 或 SAB 更合适。"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-049", "judge": "SUPPORTED", "kind": "claim", "text": "根据之前的记录，您在第19周、第11周和第3周都提出了将跑道换成RWY-1的要求。"}
+{"claim_id": "c2", "human": "PARTIAL", "item_id": "JCAL-049", "judge": "PARTIAL", "kind": "claim", "text": "这表明您对跑道有偏好，倾向于使用RWY-1。"}
+{"claim_id": "c3", "human": "SUPPORTED", "item_id": "JCAL-049", "judge": "PARTIAL", "kind": "claim", "text": "其他几周没有提到关于跑道的具体要求。"}
+{"claim_id": "c1", "human": "SUPPORTED", "item_id": "JCAL-050", "judge": "SUPPORTED", "kind": "claim", "text": "根据之前的记录，第5周和第13周你都提出了希望“早一点起飞”的要求。"}
+{"claim_id": "c2", "human": "SUPPORTED", "item_id": "JCAL-050", "judge": "PARTIAL", "kind": "claim", "text": "因此，你可以考虑提前开始飞行时间以满足你的习惯。"}
+{"claim_id": "c3", "human": "SUPPORTED", "item_id": "JCAL-050", "judge": "SUPPORTED", "kind": "claim", "text": "不过具体的时间安排还需要符合训练窗的规定以及确保课目时长的完整性。"}

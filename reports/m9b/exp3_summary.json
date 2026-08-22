@@ -1,0 +1,419 @@
+{
+  "variants": {
+    "main": {
+      "variant": "main",
+      "n_total": 320,
+      "n_scored": 297,
+      "n_absent": 23,
+      "n_errors": 0,
+      "recall_at_5_overall": {
+        "point": 0.9595959595959596,
+        "low": 0.9307161358191252,
+        "high": 0.9767385782690416,
+        "n": 297
+      },
+      "recall_weighted": 0.9595959595959596,
+      "per_type": {
+        "episodic": {
+          "n_scored": 115,
+          "recall_at_5": {
+            "point": 1.0,
+            "low": 0.9676757685506868,
+            "high": 0.9999999999999999,
+            "n": 115
+          },
+          "target": 0.91
+        },
+        "procedural": {
+          "n_scored": 72,
+          "recall_at_5": {
+            "point": 1.0,
+            "low": 0.9493488274035422,
+            "high": 1.0,
+            "n": 72
+          },
+          "target": 0.88
+        },
+        "semantic": {
+          "n_scored": 110,
+          "recall_at_5": {
+            "point": 0.8909090909090909,
+            "low": 0.8189511686524213,
+            "high": 0.9364853910235593,
+            "n": 110
+          },
+          "target": 0.98
+        }
+      },
+      "mrr_at_10": 0.9298861632194966,
+      "timeliness": {
+        "point": 1.0,
+        "low": 0.8156818649911483,
+        "high": 1.0,
+        "n": 17
+      },
+      "false_recall": {
+        "hits": 22,
+        "n": 23
+      },
+      "decay_by_write_week": {
+        "1": {
+          "point": 1.0,
+          "low": 0.5655175352168251,
+          "high": 1.0,
+          "n": 5
+        },
+        "4": {
+          "point": 1.0,
+          "low": 0.5655175352168251,
+          "high": 1.0,
+          "n": 5
+        },
+        "8": {
+          "point": 1.0,
+          "low": 0.5655175352168251,
+          "high": 1.0,
+          "n": 5
+        },
+        "12": {
+          "point": 1.0,
+          "low": 0.5655175352168251,
+          "high": 1.0,
+          "n": 5
+        },
+        "16": {
+          "point": 1.0,
+          "low": 0.5655175352168251,
+          "high": 1.0,
+          "n": 5
+        },
+        "20": {
+          "point": 1.0,
+          "low": 0.5655175352168251,
+          "high": 1.0,
+          "n": 5
+        }
+      },
+      "targets": {
+        "overall": 0.92,
+        "mrr": 0.7,
+        "timeliness": 0.94,
+        "semantic": 0.98,
+        "episodic": 0.91,
+        "procedural": 0.88
+      }
+    },
+    "no_rewrite": {
+      "variant": "no_rewrite",
+      "n_total": 320,
+      "n_scored": 297,
+      "n_absent": 23,
+      "n_errors": 0,
+      "recall_at_5_overall": {
+        "point": 0.9292929292929293,
+        "low": 0.8943312434180608,
+        "high": 0.9532912917192378,
+        "n": 297
+      },
+      "recall_weighted": 0.9292929292929293,
+      "per_type": {
+        "episodic": {
+          "n_scored": 115,
+          "recall_at_5": {
+            "point": 0.991304347826087,
+            "low": 0.9523832736556862,
+            "high": 0.9984633510941191,
+            "n": 115
+          },
+          "target": 0.91
+        },
+        "procedural": {
+          "n_scored": 72,
+          "recall_at_5": {
+            "point": 1.0,
+            "low": 0.9493488274035422,
+            "high": 1.0,
+            "n": 72
+          },
+          "target": 0.88
+        },
+        "semantic": {
+          "n_scored": 110,
+          "recall_at_5": {
+            "point": 0.8181818181818182,
+            "low": 0.7357859471105165,
+            "high": 0.8791042758815609,
+            "n": 110
+          },
+          "target": 0.98
+        }
+      },
+      "mrr_at_10": 0.8737413820747153,
+      "timeliness": {
+        "point": 0.9411764705882353,
+        "low": 0.7301796936242461,
+        "high": 0.9895395990150025,
+        "n": 17
+      },
+      "false_recall": {
+        "hits": 22,
+        "n": 23
+      },
+      "decay_by_write_week": {
+        "1": {
+          "point": 1.0,
+          "low": 0.5655175352168251,
+          "high": 1.0,
+          "n": 5
+        },
+        "4": {
+          "point": 1.0,
+          "low": 0.5655175352168251,
+          "high": 1.0,
+          "n": 5
+        },
+        "8": {
+          "point": 1.0,
+          "low": 0.5655175352168251,
+          "high": 1.0,
+          "n": 5
+        },
+        "12": {
+          "point": 1.0,
+          "low": 0.5655175352168251,
+          "high": 1.0,
+          "n": 5
+        },
+        "16": {
+          "point": 1.0,
+          "low": 0.5655175352168251,
+          "high": 1.0,
+          "n": 5
+        },
+        "20": {
+          "point": 1.0,
+          "low": 0.5655175352168251,
+          "high": 1.0,
+          "n": 5
+        }
+      },
+      "targets": {
+        "overall": 0.92,
+        "mrr": 0.7,
+        "timeliness": 0.94,
+        "semantic": 0.98,
+        "episodic": 0.91,
+        "procedural": 0.88
+      },
+      "delta_vs_main": -0.030303030303030276
+    },
+    "no_structured": {
+      "variant": "no_structured",
+      "n_total": 320,
+      "n_scored": 297,
+      "n_absent": 23,
+      "n_errors": 0,
+      "recall_at_5_overall": {
+        "point": 0.9427609427609428,
+        "low": 0.9102555574818982,
+        "high": 0.9639590571891197,
+        "n": 297
+      },
+      "recall_weighted": 0.9427609427609428,
+      "per_type": {
+        "episodic": {
+          "n_scored": 115,
+          "recall_at_5": {
+            "point": 1.0,
+            "low": 0.9676757685506868,
+            "high": 0.9999999999999999,
+            "n": 115
+          },
+          "target": 0.91
+        },
+        "procedural": {
+          "n_scored": 72,
+          "recall_at_5": {
+            "point": 1.0,
+            "low": 0.9493488274035422,
+            "high": 1.0,
+            "n": 72
+          },
+          "target": 0.88
+        },
+        "semantic": {
+          "n_scored": 110,
+          "recall_at_5": {
+            "point": 0.8454545454545455,
+            "low": 0.7663816228679399,
+            "high": 0.9012134763806012,
+            "n": 110
+          },
+          "target": 0.98
+        }
+      },
+      "mrr_at_10": 0.8887205387205387,
+      "timeliness": {
+        "point": 1.0,
+        "low": 0.8156818649911483,
+        "high": 1.0,
+        "n": 17
+      },
+      "false_recall": {
+        "hits": 22,
+        "n": 23
+      },
+      "decay_by_write_week": {
+        "1": {
+          "point": 1.0,
+          "low": 0.5655175352168251,
+          "high": 1.0,
+          "n": 5
+        },
+        "4": {
+          "point": 1.0,
+          "low": 0.5655175352168251,
+          "high": 1.0,
+          "n": 5
+        },
+        "8": {
+          "point": 1.0,
+          "low": 0.5655175352168251,
+          "high": 1.0,
+          "n": 5
+        },
+        "12": {
+          "point": 1.0,
+          "low": 0.5655175352168251,
+          "high": 1.0,
+          "n": 5
+        },
+        "16": {
+          "point": 1.0,
+          "low": 0.5655175352168251,
+          "high": 1.0,
+          "n": 5
+        },
+        "20": {
+          "point": 1.0,
+          "low": 0.5655175352168251,
+          "high": 1.0,
+          "n": 5
+        }
+      },
+      "targets": {
+        "overall": 0.92,
+        "mrr": 0.7,
+        "timeliness": 0.94,
+        "semantic": 0.98,
+        "episodic": 0.91,
+        "procedural": 0.88
+      },
+      "delta_vs_main": -0.01683501683501676
+    },
+    "no_time_filter": {
+      "variant": "no_time_filter",
+      "n_total": 320,
+      "n_scored": 297,
+      "n_absent": 23,
+      "n_errors": 0,
+      "recall_at_5_overall": {
+        "point": 0.9562289562289562,
+        "low": 0.9265624583155866,
+        "high": 0.9742442358891504,
+        "n": 297
+      },
+      "recall_weighted": 0.9562289562289562,
+      "per_type": {
+        "episodic": {
+          "n_scored": 115,
+          "recall_at_5": {
+            "point": 1.0,
+            "low": 0.9676757685506868,
+            "high": 0.9999999999999999,
+            "n": 115
+          },
+          "target": 0.91
+        },
+        "procedural": {
+          "n_scored": 72,
+          "recall_at_5": {
+            "point": 0.9861111111111112,
+            "low": 0.9254339785252386,
+            "high": 0.9975440481170943,
+            "n": 72
+          },
+          "target": 0.88
+        },
+        "semantic": {
+          "n_scored": 110,
+          "recall_at_5": {
+            "point": 0.8909090909090909,
+            "low": 0.8189511686524213,
+            "high": 0.9364853910235593,
+            "n": 110
+          },
+          "target": 0.98
+        }
+      },
+      "mrr_at_10": 0.9232643899310566,
+      "timeliness": {
+        "point": 0.9411764705882353,
+        "low": 0.7301796936242461,
+        "high": 0.9895395990150025,
+        "n": 17
+      },
+      "false_recall": {
+        "hits": 23,
+        "n": 23
+      },
+      "decay_by_write_week": {
+        "1": {
+          "point": 1.0,
+          "low": 0.5655175352168251,
+          "high": 1.0,
+          "n": 5
+        },
+        "4": {
+          "point": 1.0,
+          "low": 0.5655175352168251,
+          "high": 1.0,
+          "n": 5
+        },
+        "8": {
+          "point": 1.0,
+          "low": 0.5655175352168251,
+          "high": 1.0,
+          "n": 5
+        },
+        "12": {
+          "point": 1.0,
+          "low": 0.5655175352168251,
+          "high": 1.0,
+          "n": 5
+        },
+        "16": {
+          "point": 1.0,
+          "low": 0.5655175352168251,
+          "high": 1.0,
+          "n": 5
+        },
+        "20": {
+          "point": 1.0,
+          "low": 0.5655175352168251,
+          "high": 1.0,
+          "n": 5
+        }
+      },
+      "targets": {
+        "overall": 0.92,
+        "mrr": 0.7,
+        "timeliness": 0.94,
+        "semantic": 0.98,
+        "episodic": 0.91,
+        "procedural": 0.88
+      },
+      "delta_vs_main": -0.0033670033670033517
+    }
+  }
+}
