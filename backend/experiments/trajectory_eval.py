@@ -66,6 +66,32 @@ def path_similarity(observed: Sequence[str], expected: Sequence[str]) -> float:
     return 2.0 * lcs_length(observed, expected) / total
 
 
+def _collapse_repeat_tools(path: Sequence[str]) -> list[str]:
+    """把**连续重复的同名工具**折叠成一次。
+
+    §12.6 判的是「走对了没有」，不是「查了几遍」。而实测里模型常对同一个工具
+    用不同参数多查几次 —— 例如问「何超能不能排 missionB-1」时，
+    期望一次 `prereq_cte`，模型对 P08 的几门课目各查一次：
+
+        期望: route → knowledge → tool:prereq_cte → END
+        实测: route → knowledge → tool:prereq_cte ×3 → END
+
+    **那是探索，不是走错路**（参数不同，不属于 `_dedup_calls` 折叠的重复调用），
+    却会让路径逐元素比对失败、整条判 0 分 —— 等于**用路径正确率去惩罚探索**，
+    而冗余程度已经由「冗余调用率」单独在管。业务方 2026-08-23 裁定：
+    同工具不同参数的额外调用纳入可接受。
+
+    只折叠**相邻**的同名工具：`A → A → B → A` 折成 `A → B → A`，
+    中间隔着别的步骤的那次 `A` 保留 —— 顺序信息不能丢。
+    """
+    out: list[str] = []
+    for node in path:
+        if out and node == out[-1] and node.startswith("tool:"):
+            continue
+        out.append(node)
+    return out
+
+
 def path_is_correct(
     observed: Sequence[str],
     expected: Sequence[str],
@@ -79,6 +105,8 @@ def path_is_correct(
     强工具、不调工具直接回答）。相似度高恰恰是这类错误危险的地方。
     """
     obs = list(observed)
+    # 禁止路径先判，且**用未折叠的原路径判** —— 折叠只用来宽容重复探索，
+    # 不能让它把一条禁止路径洗成可接受的。
     for bad in forbidden:
         if obs == list(bad):
             return False, "命中 forbidden_path"
@@ -87,6 +115,13 @@ def path_is_correct(
     for ok in acceptable:
         if obs == list(ok):
             return True, "命中 acceptable_path"
+
+    collapsed = _collapse_repeat_tools(obs)
+    if collapsed == list(expected):
+        return True, "折叠同工具的连续重复调用后与 expected_path 相同"
+    for ok in acceptable:
+        if collapsed == list(ok):
+            return True, "折叠同工具的连续重复调用后命中 acceptable_path"
     return False, "既非期望路径也不在可接受集合内"
 
 
@@ -133,8 +168,11 @@ class StepScore:
     #: 工具选对的前提下，参数完全正确的次数
     param_hits: int = 0
     param_denominator: int = 0
-    #: 该调却没调（**静默失效**，§12.6 最重要的一条）
-    missing: int = 0
+    #: 期望的必需步骤里没找到匹配调用的次数。
+    #: ⚠️ **这不是 §12.6 的「缺失调用率」** —— 它把「换了个工具去查」也算进来，
+    #: 而那属于**工具选择**错误、已由工具选择准确率在管。保留它作诊断，
+    #: 但不要拿它当缺失调用率报（见 `aggregate` 的 `answered_without_tools`）。
+    unmatched_required: int = 0
     #: 对结果无贡献的调用（重复查同一实体）
     redundant: int = 0
     observed_calls: int = 0
@@ -161,7 +199,7 @@ def score_steps(
         idx = next((i for i, (name, _) in enumerate(remaining) if name in alts), None)
         if idx is None:
             if not step.get("optional"):
-                score.missing += 1
+                score.unmatched_required += 1
             continue
         name, args = remaining.pop(idx)
         seen.append(_call_key(name, args))
@@ -214,7 +252,7 @@ class TrajectoryOutcome:
                 "tool_hits": self.steps.tool_hits,
                 "param_hits": self.steps.param_hits,
                 "param_denominator": self.steps.param_denominator,
-                "missing": self.steps.missing,
+                "unmatched_required": self.steps.unmatched_required,
                 "redundant": self.steps.redundant,
                 "observed_calls": self.steps.observed_calls,
             },
@@ -232,7 +270,18 @@ def aggregate(outcomes: Sequence[TrajectoryOutcome]) -> dict[str, Any]:
     tool_hits = sum(o.steps.tool_hits for o in ok)
     param_den = sum(o.steps.param_denominator for o in ok)
     param_hits = sum(o.steps.param_hits for o in ok)
-    missing = sum(o.steps.missing for o in ok)
+    unmatched = sum(o.steps.unmatched_required for o in ok)
+    # ★ §12.6 的缺失调用率 = 「**该调工具却直接回答（凭记忆编造）**的比例」。
+    #   判据是**一个工具都没调**，不是「没调到期望的那个」。
+    #
+    #   M9-B 起初按后者算，得 54.29%；按规格字面是 26.67%，差 27 个点。
+    #   查那 18 条明细，它们是两类完全不同的东西：
+    #     · 真·缺失 8 条 —— 实调 []，一个工具都没调；
+    #     · 换了工具 10 条 —— 例如期望 `sql_query`、实调
+    #       `bm25_search → vector_search → rrf_fuse → rerank`。它**查了**。
+    #   把第二类算进来等于**把同一个错误在工具选择准确率和缺失调用率里各算一遍**，
+    #   还记进了规格称为「最重要」的那一个。
+    answered_without_tools = sum(1 for o in ok if o.steps.observed_calls == 0)
     observed = sum(o.steps.observed_calls for o in ok)
     redundant = sum(o.steps.redundant for o in ok)
     trans = [o for o in ok if o.revision_translation_ok is not None]
@@ -245,7 +294,10 @@ def aggregate(outcomes: Sequence[TrajectoryOutcome]) -> dict[str, Any]:
         "tool_selection": {"hits": tool_hits, "n": req_steps},
         "param_accuracy": {"hits": param_hits, "n": param_den},
         "redundant_calls": {"hits": redundant, "n": observed},
-        "missing_calls": {"hits": missing, "n": req_steps},
+        # §12.6 口径：分母是**轨迹条数**，不是步骤数 —— 判的是「这次回答有没有查」。
+        "missing_calls": {"hits": answered_without_tools, "n": len(ok)},
+        #: 诊断用，不作门禁：期望的必需步骤里没匹配上的次数（含「换了工具」）。
+        "unmatched_required_steps": {"hits": unmatched, "n": req_steps},
         "path_correct": {"hits": sum(1 for o in ok if o.path_ok), "n": len(ok)},
         "invalid_loop": {"hits": sum(1 for o in ok if o.invalid_loop), "n": len(ok)},
         "revision_translation": {

@@ -150,3 +150,49 @@ def test_all_five_slot_kinds_are_covered() -> None:
         "week",
         "constraint_modifiers",
     }
+
+
+# ── 槽位形态清洗（M9-B 后续窗口）────────────────────────────────────
+def test_tool_call_expressions_are_not_slot_values() -> None:
+    """模型把工具调用当槽位值交出来时必须丢掉，**哪怕扫描器没有候选可用**。
+
+    `merge_slots` 的兼并只在扫描器抓到东西时生效；原话里压根没有周次表述时
+    （「何超现在能排 missionC-1 吗？」），垃圾值会一路走到消解层 →
+    `not_found` → 歧义 → 人工门禁，**knowledge 节点根本没机会运行**。
+    实测 30 条 query 轨迹里 7 条栽在这。
+    """
+    from backend.routing.classify import _looks_like_tool_call
+
+    assert _looks_like_tool_call("resolve_week(2026W03)")
+    assert _looks_like_tool_call("resolve_week('当前')('ISO')()()")
+    assert _looks_like_tool_call("resolve_person('何超')")
+
+
+def test_entity_labels_with_parentheses_are_kept() -> None:
+    """判据必须窄：实体标签本身就带括号，按「含括号」一刀切会删掉真槽位。"""
+    from backend.routing.classify import _looks_like_tool_call
+
+    assert not _looks_like_tool_call("JL-9(AC84)")
+    assert not _looks_like_tool_call("高超(P02)")
+    assert not _looks_like_tool_call("何超")
+    assert not _looks_like_tool_call("2026-W03")
+
+
+def test_merge_drops_junk_even_when_scanner_found_nothing() -> None:
+    from backend.routing.classify import _Slots, merge_slots
+
+    merged = merge_slots(
+        _Slots(),
+        _Slots(persons=["resolve_person('何超')"], week="resolve_week('当前')()"),
+    )
+    assert merged.persons == []
+    assert merged.week == ""
+
+
+def test_merge_keeps_model_value_when_it_is_a_real_surface() -> None:
+    """扫描器覆盖不到「下周」这类口语表述，模型那一路不能被误伤。"""
+    from backend.routing.classify import _Slots, merge_slots
+
+    merged = merge_slots(_Slots(), _Slots(week="下周", persons=["何超"]))
+    assert merged.week == "下周"
+    assert merged.persons == ["何超"]

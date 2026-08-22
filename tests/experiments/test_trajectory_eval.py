@@ -75,16 +75,83 @@ def test_list_params_compare_as_sets() -> None:
     assert params_match({"ids": ["b", "a"]}, {"ids": ["a", "b"]})
 
 
-def test_missing_call_is_counted() -> None:
-    """「该调工具却直接回答」—— §12.6 里最重要的一条，静默失效。"""
+def test_unmatched_required_step_is_counted() -> None:
+    """必需步骤没匹配上要计数 —— 但**这不是缺失调用率**，见下一条。"""
     score = score_steps([{"tool": "prereq_cte", "params": {}, "optional": False}], [])
-    assert score.missing == 1
+    assert score.unmatched_required == 1
 
 
-def test_optional_step_absence_is_not_missing() -> None:
+def test_optional_step_absence_is_not_unmatched() -> None:
     """数据集规则 B：信息已足够时省略可选步骤是可接受的。"""
     score = score_steps([{"tool": "sql_query", "params": {}, "optional": True}], [])
-    assert score.missing == 0
+    assert score.unmatched_required == 0
+
+
+def test_missing_calls_means_no_tool_at_all_not_wrong_tool() -> None:
+    """★ `Z-41` 的回归闸：**缺失调用率的判据是「一个工具都没调」**。
+
+    §12.6 的定义是「该调工具却**直接回答（凭记忆编造）**」。
+    「换了个工具去查」不是凭记忆编造 —— 那是工具选择错误，已由工具选择
+    准确率在管；算进缺失调用率等于**同一个错误记两遍**，还记进了规格称为
+    「最重要」的那一个（M9-B 实测两种算法差 27 个点：54.29% vs 26.67%）。
+    """
+    from backend.experiments.trajectory_eval import TrajectoryOutcome
+
+    wrong_tool = TrajectoryOutcome(item_id="A", flow="query")
+    wrong_tool.steps = score_steps(
+        [{"tool": "sql_query", "params": {}, "optional": False}],
+        [("bm25_search", {}), ("vector_search", {})],
+    )
+    silent = TrajectoryOutcome(item_id="B", flow="query")
+    silent.steps = score_steps([{"tool": "sql_query", "params": {}, "optional": False}], [])
+
+    agg = aggregate([wrong_tool, silent])
+    assert agg["missing_calls"] == {"hits": 1, "n": 2}, "只有「一个工具都没调」的那条算缺失"
+    assert agg["unmatched_required_steps"]["hits"] == 2, "两条的必需步骤都没匹配上（诊断量）"
+
+
+def test_repeated_same_tool_with_different_params_is_an_acceptable_path() -> None:
+    """★ `Z-41` 的回归闸：同工具不同参数的连续重复调用，折叠后再比。
+
+    实测模型对同一工具用不同参数多查几次是**探索**，不是走错路，
+    而逐元素比对会整条判 0 分 —— 等于用路径正确率惩罚探索。
+    """
+    ok, reason = path_is_correct(
+        ["route", "knowledge", "tool:prereq_cte", "tool:prereq_cte", "tool:prereq_cte", "END"],
+        ["route", "knowledge", "tool:prereq_cte", "END"],
+    )
+    assert ok is True
+    assert "折叠" in reason
+
+
+def test_collapsing_never_launders_a_forbidden_path() -> None:
+    """折叠只用来宽容重复探索，**不得把禁止路径洗成可接受**。"""
+    forbidden = [["route", "knowledge", "tool:sql_query", "tool:sql_query", "END"]]
+    ok, reason = path_is_correct(
+        ["route", "knowledge", "tool:sql_query", "tool:sql_query", "END"],
+        ["route", "knowledge", "tool:prereq_cte", "END"],
+        forbidden=forbidden,
+    )
+    assert ok is False
+    assert "forbidden" in reason
+
+
+def test_collapsing_only_merges_adjacent_repeats() -> None:
+    """`A → A → B → A` 折成 `A → B → A` —— 隔着别的步骤的那次不能丢，顺序信息要留住。"""
+    from backend.experiments.trajectory_eval import _collapse_repeat_tools
+
+    assert _collapse_repeat_tools(["tool:a", "tool:a", "tool:b", "tool:a"]) == [
+        "tool:a",
+        "tool:b",
+        "tool:a",
+    ]
+
+
+def test_collapsing_does_not_touch_non_tool_nodes() -> None:
+    """节点名不折叠 —— 连着两次 `solve` 是真的回环，不是重复探索。"""
+    from backend.experiments.trajectory_eval import _collapse_repeat_tools
+
+    assert _collapse_repeat_tools(["solve", "solve"]) == ["solve", "solve"]
 
 
 def test_alternatives_count_as_the_right_tool() -> None:

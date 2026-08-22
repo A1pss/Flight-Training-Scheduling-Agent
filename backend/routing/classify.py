@@ -178,6 +178,45 @@ def scan_slots(text: str, directory: EntityDirectory) -> _Slots:
     return slots
 
 
+def _looks_like_tool_call(surface: str) -> bool:
+    """这个「槽位值」其实是一句工具调用表达式吗。
+
+    槽位 surface 是**用户原话里的自然语言片段**（「何超」「下周」「2026-W03」），
+    永远不会是函数调用。而实测模型会把工具调用当成槽位值交出来：
+
+        week    = "resolve_week(2026W03)"
+        week    = "resolve_week('当前')('ISO')()()"
+        persons = ["resolve_person('何超')"]
+
+    `merge_slots` 只在**扫描器抓到了东西**时才能压住它。原话里压根没有周次
+    表述时（「何超现在能排 missionC-1 吗？」），扫描器没有候选可用，
+    垃圾值就一路走到消解层 → `not_found` → 歧义 → 人工门禁，
+    **knowledge 节点根本没机会运行**。M9-B 实测 30 条 query 轨迹里 7 条栽在这。
+
+    ⚠️ **判据必须窄**：只认「已知工具名 + 左括号」。实体标签本身就带括号
+    （`JL-9(AC84)`、`高超(P02)` 是名录里的合法写法），按「含括号」一刀切
+    会把真槽位也删掉。
+    """
+    head = surface.strip().split("(", 1)
+    return len(head) == 2 and head[0].strip() in _TOOL_NAME_PREFIXES
+
+
+#: 会被模型误当成槽位值交出来的工具名（route 与 planner 两行 ACL 的并集）。
+_TOOL_NAME_PREFIXES: Final[frozenset[str]] = frozenset(
+    {
+        "resolve_person",
+        "resolve_aircraft",
+        "resolve_week",
+        "estimate_scope",
+        "assess_disruption",
+        "propose_solve_intent",
+        "check_authority",
+        "ask_user",
+        "escalate",
+    }
+)
+
+
 def merge_slots(scanned: _Slots, proposed: _Slots) -> _Slots:
     """把确定性扫描结果与模型给的槽位**合并**，逐类以扫描结果优先。
 
@@ -211,11 +250,16 @@ def merge_slots(scanned: _Slots, proposed: _Slots) -> _Slots:
     所以两路互补：确定性的那部分不再被模型的自由发挥污染，模型的那部分
     继续负责扫描器抓不到的说法。
     """
+
+    def clean(values: list[str]) -> list[str]:
+        return [v for v in values if not _looks_like_tool_call(v)]
+
+    proposed_week = "" if _looks_like_tool_call(proposed.week) else proposed.week
     return _Slots(
-        persons=list(scanned.persons) if scanned.persons else list(proposed.persons),
-        aircraft=list(scanned.aircraft) if scanned.aircraft else list(proposed.aircraft),
-        missions=list(scanned.missions) if scanned.missions else list(proposed.missions),
-        week=scanned.week or proposed.week,
+        persons=list(scanned.persons) if scanned.persons else clean(proposed.persons),
+        aircraft=list(scanned.aircraft) if scanned.aircraft else clean(proposed.aircraft),
+        missions=list(scanned.missions) if scanned.missions else clean(proposed.missions),
+        week=scanned.week or proposed_week,
     )
 
 
