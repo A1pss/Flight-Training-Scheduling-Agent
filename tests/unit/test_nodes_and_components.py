@@ -208,7 +208,7 @@ def test_clarification_command_merges_questions_and_ambiguities() -> None:
     assert "「郝超」有多个可能" in cast(dict[str, Any], command.update)["explanation"]
 
 
-def test_route_below_threshold_asks(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_route_asks_when_nothing_was_resolved(monkeypatch: pytest.MonkeyPatch) -> None:
     import json
 
     from backend.core.config import Settings
@@ -229,7 +229,12 @@ def test_route_below_threshold_asks(monkeypatch: pytest.MonkeyPatch) -> None:
         settings=settings,
     )
     assert command.goto == "human_gate"
-    assert "置信度" in cast(dict[str, Any], command.update)["explanation"]
+    # 「看看这个」一个槽位都没解出来 → 先命中 `Z-44` 的**缺信息**分支（②a），
+    # 而不是置信度分支（②b）。两条都去人工门禁，理由不同：
+    # 一个是「你没说清楚」（确定性），一个是「我不确定」（概率）。
+    # 阈值分支的覆盖在 tests/experiments/test_nl_eval.py::
+    # test_llm_path_threshold_still_applies。
+    assert "周次" in cast(dict[str, Any], command.update)["explanation"]
 
 
 # ─────────────────────────────────────────────────────────────────────

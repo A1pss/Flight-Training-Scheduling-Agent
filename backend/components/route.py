@@ -124,7 +124,23 @@ def route_node(
             },
         )
 
-    # ② 置信度不足就问（只对 LLM / 降级路径生效）
+    # ②a 确定性地缺信息就问 —— **对规则路径同样生效**（`Z-44`）。
+    #     「给他排班」命中了排班规则、置信度按定义是 1.0，但指代不明、
+    #     一个槽位都没解出来。规则命中确定的是**意图**，不是**槽位**。
+    if decision.missing_required_info:
+        return Command(
+            goto="human_gate",
+            update={
+                **update,
+                "needs_human": True,
+                "explanation": (
+                    "这句话里没有可以确定的对象或周次 —— "
+                    "请补充要给谁排、排哪一周（例如「给何超排 2026-W02 的班」）。"
+                ),
+            },
+        )
+
+    # ②b 置信度不足就问（只对 LLM / 降级路径生效）
     if decision.below_threshold(cfg.CONFIDENCE_THRESHOLD):
         return Command(
             goto="human_gate",

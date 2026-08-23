@@ -55,23 +55,61 @@ FEATURE_NAMES: Final[tuple[str, ...]] = (
     "retries_norm",
     "is_hallucination",
     "is_malformed",
+    # ── 槽位消解质量（`Z-44` 新增）────────────────────────────────
+    # 前五项来自 Harness 的调用记账，它们描述「这次输出顺不顺」；
+    # 后三项描述「**这句话说清楚了没有**」—— 那才是「该不该问」的依据。
+    "no_slots_at_all",
+    "week_missing",
+    "has_ambiguity",
 )
 
 #: `retries` 的归一化分母（Harness 的重试上限是 2，v6 §7.7.1）。
 _MAX_RETRIES: Final[float] = 2.0
 
 #: 序列化格式版本。改了字段含义就要 +1，否则旧文件会被按新语义读。
-CALIBRATOR_FORMAT_VERSION: Final[int] = 1
+#: v2：`Z-44` 增加三项槽位消解质量特征。
+CALIBRATOR_FORMAT_VERSION: Final[int] = 2
 
 
 @dataclass(frozen=True)
 class CalibrationFeatures:
-    """一次调用的校准特征。四项全部**免费**——Harness 本来就在记。"""
+    """一次调用的校准特征。全部**免费**——Harness 与消解层本来就在记。
+
+    ## 为什么加了后三项（`Z-44`，M9-B 实测）
+
+    原先五项**全部来自 Harness 的调用记账**，描述的是「这次输出顺不顺」：
+    一致率、是否一次通过、重试几次、最差失败模式。实测下它们**没有区分度** ——
+    1080 条观测里 1075 条置信度恰为 1.0，LLM 路径 592/596 条 self-consistency
+    一致率为 1.0（三次采样几乎总给同一个意图）。于是阈值从 0 扫到 1，
+    误执行率只动 0.19 个点，**`below_threshold` 在阈值 1.0 时都不触发**；
+    同一原因让 ECE=0.0001「达标但无信息量」（可靠性图只有一个非空分箱）。
+
+    **根子在于问错了问题**：那五项问的是「模型答得顺不顺」，
+    而「该不该反问」取决于**这句话说清楚了没有**。后者在消解层是有信号的。
+
+    360 条实测的区分度（该反问 62 条 vs 该执行 283 条，命中率之差）：
+
+    | 候选特征 | 该反问 | 该执行 | 区分度 |
+    |---|---|---|---|
+    | **五类槽位全空** | 71.0% | 6.0% | **+65.0** |
+    | **周次为空** | 77.4% | 19.1% | **+58.3** |
+    | 走 LLM 路径 | 72.6% | 49.8% | +22.8 |
+    | 有歧义（原有） | 12.9% | 2.1% | +10.8 |
+
+    「走 LLM 路径」区分度不低，但**不能用**：它是路径而非语义，
+    等于让校准器学「凡是规则没命中的都可疑」，会把一整类正常请求打成低置信。
+    """
 
     agreement: float = 1.0
     first_pass: bool = True
     retries: int = 0
     worst_failure_mode: str = ""
+    #: 人员/飞机/课目/周次**一个都没解出来** —— 区分度最高的一项
+    no_slots_at_all: bool = False
+    #: 周次为空。缺周次按 S-14 本就该提问（`FTS-1004`）
+    week_missing: bool = False
+    #: 消解层报了歧义（「郝超」到底是谁）
+    has_ambiguity: bool = False
 
     @classmethod
     def from_output(
@@ -92,6 +130,11 @@ class CalibrationFeatures:
             min(self.retries / _MAX_RETRIES, 1.0),
             1.0 if self.worst_failure_mode == FailureMode.ENTITY_HALLUCINATION.value else 0.0,
             1.0 if self.worst_failure_mode == FailureMode.JSON_MALFORMED.value else 0.0,
+            # 三项均为「越像该反问越接近 1」，与前五项的方向相反 ——
+            # 逻辑回归自己会学出负系数，这里不做人工反号。
+            1.0 if self.no_slots_at_all else 0.0,
+            1.0 if self.week_missing else 0.0,
+            1.0 if self.has_ambiguity else 0.0,
         ]
 
 
@@ -251,6 +294,14 @@ def heuristic_confidence(features: CalibrationFeatures) -> float:
     `ConfidenceCalibrator.fit()` 一跑，这个函数就退出主路径。
     """
     score = _clamp(features.agreement)
+    # ★ 槽位说不清楚是最强的「该问」信号（`Z-44` 实测区分度 +65.0 / +58.3），
+    #   扣分幅度按区分度排序。未拟合期的回退口径，绝对值同样没有数据支撑。
+    if features.no_slots_at_all:
+        score -= 0.40
+    if features.week_missing:
+        score -= 0.25
+    if features.has_ambiguity:
+        score -= 0.20
     if not features.first_pass:
         score -= 0.10
     score -= 0.05 * min(features.retries, int(_MAX_RETRIES))

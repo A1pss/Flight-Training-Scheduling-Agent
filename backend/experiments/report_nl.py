@@ -142,6 +142,9 @@ def fit_calibrator(rows: Sequence[Mapping[str, Any]]) -> tuple[ConfidenceCalibra
                     first_pass=bool(feats.get("first_pass", True)),
                     retries=int(feats.get("retries", 0)),
                     worst_failure_mode=str(feats.get("worst_failure_mode", "")),
+                    no_slots_at_all=bool(feats.get("no_slots_at_all", False)),
+                    week_missing=bool(feats.get("week_missing", False)),
+                    has_ambiguity=bool(feats.get("has_ambiguity", False)),
                 ),
                 bool(r["observed_intent"] == r["expected_intent"]),
             )
