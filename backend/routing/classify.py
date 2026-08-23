@@ -48,7 +48,7 @@ from backend.routing.entities import (
     resolve_week,
     week_start_of,
 )
-from backend.routing.rules import match_rule, next_node_for
+from backend.routing.rules import SCHEDULING_INTENTS, match_rule, next_node_for
 from backend.schemas.common import ErrorItem
 from backend.schemas.intent import Intent, QueryRequest, SchedulingRequest
 
@@ -154,7 +154,22 @@ class IntentResult:
         读成「整条请求都确定」，等于把意图的确定性借给了槽位。
 
         判据只看**解出来了没有**，所以「给何超排班」（解出了人）不会被误伤。
+
+        ## ⚠️ 只对**排班类**意图生效（M9-B 实测收窄）
+
+        第一版对所有意图生效，实测把查询类打残了：实验五 30 条 query 轨迹里
+        **零工具轨迹从 5 条涨到 10 条**、缺失调用率 16.67% → 33.33%、
+        工具选择 65.71% → 42.86%。
+
+        原因是**查询类问题本来就常常不含任何槽位**：
+        「IFR Route 的容量是多少？」没有人名、机号、周次，
+        却完全不需要反问 —— 它要的是知识检索，不是排班参数。
+
+        **排班必须知道「给谁、哪一周」，查询不必。** 同一条判据对前者是对的、
+        对后者是错的，所以按意图收窄，而不是把判据调松。
         """
+        if self.intent not in SCHEDULING_INTENTS:
+            return False
         return bool(self.calibration_features.get("no_slots_at_all"))
 
 

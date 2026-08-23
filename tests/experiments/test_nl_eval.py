@@ -199,6 +199,26 @@ def test_merge_keeps_model_value_when_it_is_a_real_surface() -> None:
 
 
 # ── Z-44 置信信号重建 ────────────────────────────────────────────────
+def test_query_intent_with_no_slots_does_not_ask() -> None:
+    """★ 判据只对**排班类**生效。
+
+    查询类问题本来就常常不含任何槽位 —— 「IFR Route 的容量是多少？」
+    没有人名/机号/周次，却完全不需要反问。第一版对所有意图生效，实测把
+    查询类打残了：实验五零工具轨迹 5 → 10 条、缺失调用率 16.67% → 33.33%、
+    工具选择 65.71% → 42.86%。**排班必须知道「给谁、哪一周」，查询不必。**
+    """
+    from backend.routing.classify import IntentResult
+
+    q = IntentResult(
+        intent="query",
+        confidence=1.0,
+        source="rule",
+        next_node="knowledge",
+        calibration_features={"no_slots_at_all": True},
+    )
+    assert not q.missing_required_info
+
+
 def test_rule_hit_with_no_slots_must_still_ask() -> None:
     """★ `Z-44` 的回归闸：规则命中只确定了**意图**，不确定**槽位**。
 

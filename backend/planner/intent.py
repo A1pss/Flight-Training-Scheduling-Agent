@@ -44,6 +44,7 @@ from backend.harness import AgentOutput, AgentSpec, ContextBlock, Harness, struc
 from backend.planner.authority import authorized_tiers
 from backend.planner.scope import ScopeDecision, apply_scope_policy
 from backend.routing.entities import iso_week_of
+from backend.routing.modifiers import scan_modifiers
 from backend.schemas.intent import (
     ObjectiveWeights,
     QueryRequest,
@@ -348,6 +349,18 @@ def plan_solve_intent(
 
     if intent is None:
         intent = deterministic_intent(request)
+
+    # ★ 确定性修饰扫描兼并（`Z-45`）——与 `merge_slots` 对周次的处置同构。
+    #   模型抽修饰极不稳定（99 条里只抽到 8 条，且同一修饰换个前半句就抽不到），
+    #   而这些表述高度模式化（全集 84 种、7 类）。**可枚举的不交给概率模型。**
+    #   **兼并不是覆盖**：扫描器抓到的补进去，模型抽到的自由表述照样保留。
+    if isinstance(request, SchedulingRequest) and request.raw_text:
+        scanned = scan_modifiers(request.raw_text)
+        if scanned:
+            have = {c.kind for c in intent.incremental_constraints}
+            merged_constraints = [*intent.incremental_constraints]
+            merged_constraints.extend(c for c in scanned if c.kind not in have)
+            intent = intent.model_copy(update={"incremental_constraints": merged_constraints})
 
     # ① 影响面探测 + 自我降档
     scope = apply_scope_policy(intent, prev_plan, threshold=cfg.BLAST_RADIUS_THRESHOLD)
