@@ -214,7 +214,7 @@ def test_query_intent_with_no_slots_does_not_ask() -> None:
         confidence=1.0,
         source="rule",
         next_node="knowledge",
-        calibration_features={"no_slots_at_all": True},
+        calibration_features={"no_slots_at_all": True, "week_missing": True},
     )
     assert not q.missing_required_info
 
@@ -234,9 +234,9 @@ def test_rule_hit_with_no_slots_must_still_ask() -> None:
         confidence=1.0,
         source="rule",
         next_node="planner",
-        calibration_features={"no_slots_at_all": True},
+        calibration_features={"no_slots_at_all": True, "week_missing": True},
     )
-    assert vague.missing_required_info, "规则命中但一个槽位都没解出来 → 必须问"
+    assert vague.missing_required_info, "规则命中但周次没解出来 → 必须问"
     assert not vague.below_threshold(0.75), "但**不是**因为置信度低 —— 两个判据刻意分开"
 
 
@@ -250,7 +250,7 @@ def test_rule_hit_with_slots_is_not_blocked() -> None:
         confidence=1.0,
         source="rule",
         next_node="planner",
-        calibration_features={"no_slots_at_all": False},
+        calibration_features={"no_slots_at_all": False, "week_missing": False},
     )
     assert not clear.missing_required_info
     assert not clear.below_threshold(0.75)
@@ -266,7 +266,7 @@ def test_rule_path_confidence_stays_deterministic() -> None:
         confidence=1.0,
         source="rule",
         next_node="planner",
-        calibration_features={"no_slots_at_all": False},
+        calibration_features={"no_slots_at_all": False, "week_missing": False},
     )
     assert not clear.below_threshold(1.0)
     assert not clear.missing_required_info

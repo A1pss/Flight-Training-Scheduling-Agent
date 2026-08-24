@@ -124,18 +124,19 @@ def route_node(
             },
         )
 
-    # ②a 确定性地缺信息就问 —— **对规则路径同样生效**（`Z-44`）。
-    #     「给他排班」命中了排班规则、置信度按定义是 1.0，但指代不明、
-    #     一个槽位都没解出来。规则命中确定的是**意图**，不是**槽位**。
-    if decision.missing_required_info:
+    # ②a 确定性地缺周次就问 —— **对规则路径同样生效**（`Z-44`）。
+    #     判据必须合并完整图状态：结构化入口早已把周次写进 state 时，用户无需
+    #     在自然语言里再说一遍。未点名人员按既有规格解释为 ALL，不是缺失输入。
+    state_week_start = state_get(state, "week_start", "")
+    if decision.missing_required_info and not state_week_start:
         return Command(
             goto="human_gate",
             update={
                 **update,
                 "needs_human": True,
                 "explanation": (
-                    "这句话里没有可以确定的对象或周次 —— "
-                    "请补充要给谁排、排哪一周（例如「给何超排 2026-W02 的班」）。"
+                    "这句话里没有可以确定的排班周次 —— "
+                    "请补充要排哪一周（例如「排 2026-W02 的班」）。"
                 ),
             },
         )

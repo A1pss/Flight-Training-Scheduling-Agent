@@ -138,6 +138,40 @@ def test_route_sends_scheduling_intent_to_planner() -> None:
     assert update["week_start"] == "2026-01-05"
 
 
+def test_route_uses_week_already_present_in_state() -> None:
+    """结构化入口已给周次时，自然语言无需重复；这是 CI 主链路的回归闸。"""
+    command = route_node(
+        state(
+            week_start="2026-01-05",
+            messages=[{"role": "user", "content": "给所有人排班"}],
+        ),
+        directory=directory(),
+        today=TODAY,
+    )
+    assert command.goto == "planner"
+
+
+def test_route_asks_for_week_when_state_and_text_both_lack_it() -> None:
+    command = route_node(
+        state(messages=[{"role": "user", "content": "给所有人排班"}]),
+        directory=directory(),
+        today=TODAY,
+    )
+    assert command.goto == "human_gate"
+    assert "周次" in cast(dict[str, Any], command.update)["explanation"]
+
+
+def test_route_asks_for_week_even_when_a_person_was_resolved() -> None:
+    """点名人员不能掩盖必需周次缺失。"""
+    command = route_node(
+        state(messages=[{"role": "user", "content": "给孙军排班"}]),
+        directory=directory(),
+        today=TODAY,
+    )
+    assert command.goto == "human_gate"
+    assert "周次" in cast(dict[str, Any], command.update)["explanation"]
+
+
 def test_route_asks_when_the_name_is_ambiguous() -> None:
     """歧义反问走**二级路径**：槽位抽取由 LLM 给原文表述，消解由字典说了算。
 

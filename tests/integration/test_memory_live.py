@@ -69,7 +69,10 @@ def session(snapshot: str) -> Session:
     """每个用例一个干净的记忆表 —— 本文件写记忆，用例之间不许互相看见。"""
     with session_scope() as s:
         s.execute(delete(ProceduralMemory))
-        s.execute(delete(EpisodicMemory).where(EpisodicMemory.session_id.startswith("m5-")))
+        # `distill()` 按生产语义扫描整张情景记忆表；只清本模块的 `m5-` session
+        # 会把先前实验留下的其他 session 也计入支持度，导致测试依赖环境外状态。
+        # 删除发生在本用例事务内，yield 后 rollback，不会清掉开发库的真实数据。
+        s.execute(delete(EpisodicMemory))
         s.flush()
         yield s
         s.rollback()

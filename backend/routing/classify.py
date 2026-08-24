@@ -139,7 +139,7 @@ class IntentResult:
 
     @property
     def missing_required_info(self) -> bool:
-        """**一个槽位都没解出来** —— 确定性地缺信息，必须反问。
+        """请求文本里缺少排班周次 —— 确定性地缺信息，必须反问。
 
         与阈值互不干扰，**对规则路径同样生效**。
 
@@ -150,10 +150,12 @@ class IntentResult:
         而且阈值取任何值都碰不到它们。
 
         典型的是「给他排班」「排个班」「生成训练计划」：**规则命中的是
-        「这是一次排班请求」，不是「该给谁、排哪一周」**。把 `confidence=1.0`
+        「这是一次排班请求」，不是「排哪一周」**。把 `confidence=1.0`
         读成「整条请求都确定」，等于把意图的确定性借给了槽位。
 
-        判据只看**解出来了没有**，所以「给何超排班」（解出了人）不会被误伤。
+        未点名人员按既有规格解释为 ``ALL``，不是缺失输入；真正会阻断排班的
+        必需输入只有周次。这里只描述**请求文本**是否缺周次，图状态里已有的
+        ``state["week_start"]`` 由 route 节点合并判断。
 
         ## ⚠️ 只对**排班类**意图生效（M9-B 实测收窄）
 
@@ -165,12 +167,12 @@ class IntentResult:
         「IFR Route 的容量是多少？」没有人名、机号、周次，
         却完全不需要反问 —— 它要的是知识检索，不是排班参数。
 
-        **排班必须知道「给谁、哪一周」，查询不必。** 同一条判据对前者是对的、
+        **排班必须知道「哪一周」，查询不必。** 同一条判据对前者是对的、
         对后者是错的，所以按意图收窄，而不是把判据调松。
         """
         if self.intent not in SCHEDULING_INTENTS:
             return False
-        return bool(self.calibration_features.get("no_slots_at_all"))
+        return bool(self.calibration_features.get("week_missing"))
 
 
 @dataclass
