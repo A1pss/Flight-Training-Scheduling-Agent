@@ -46,7 +46,8 @@ def test_feature_vector_shape_and_order() -> None:
         worst_failure_mode="",
     )
     assert len(features.vector()) == len(FEATURE_NAMES)
-    assert features.vector() == [1.0, 1.0, 0.0, 0.0, 0.0]
+    # `Z-44` 把特征从 5 项扩到 8 项（后三项是槽位消解质量）。
+    assert features.vector() == [1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
 
 def test_hallucination_gets_its_own_dimension() -> None:

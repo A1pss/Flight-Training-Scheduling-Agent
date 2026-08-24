@@ -281,7 +281,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"[{i:3d}/{len(items)}] {item_id:14s} {outcome.flow:11s} "
             f"path={'✅' if outcome.path_ok else '❌'} sim={outcome.path_similarity:.2f} "
             f"tools={outcome.steps.tool_hits}/{outcome.steps.expected_steps} "
-            f"缺={outcome.steps.missing} 冗={outcome.steps.redundant} "
+            f"未匹配={outcome.steps.unmatched_required} 冗={outcome.steps.redundant} "
+            f"零工具={'Y' if outcome.steps.observed_calls == 0 else 'n'} "
             f"| {(time.monotonic() - started) / 60:.1f}min"
             + (f" ⚠️{outcome.error[:50]}" if outcome.error else ""),
             flush=True,

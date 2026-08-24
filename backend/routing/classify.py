@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date
 from typing import Any, Final, Literal
 
@@ -48,7 +48,7 @@ from backend.routing.entities import (
     resolve_week,
     week_start_of,
 )
-from backend.routing.rules import match_rule, next_node_for
+from backend.routing.rules import SCHEDULING_INTENTS, match_rule, next_node_for
 from backend.schemas.common import ErrorItem
 from backend.schemas.intent import Intent, QueryRequest, SchedulingRequest
 
@@ -129,9 +129,50 @@ class IntentResult:
         """v6 §7.5：`d.source == "llm" and d.confidence < CONFIDENCE_THRESHOLD`。
 
         **只对 LLM 兜底路径生效**。规则命中的 `confidence=1.0` 是确定性事实，
-        不该被一个未拟合的阈值挡下来。
+        不该被一个未拟合的阈值挡下来。**这一条口径没有变。**
+
+        ⚠️ 「缺信息该不该问」是**另一件事**，见 :attr:`missing_required_info` ——
+        两者刻意分开：一个问「模型有多自信」（概率），一个问「用户说清楚了没有」
+        （确定性）。混成一个方法会让 v6 §7.5 这句话失去意义。
         """
         return self.source != "rule" and self.confidence < threshold
+
+    @property
+    def missing_required_info(self) -> bool:
+        """请求文本里缺少排班周次 —— 确定性地缺信息，必须反问。
+
+        与阈值互不干扰，**对规则路径同样生效**。
+
+        ## 为什么需要它（`Z-44`，M9-B 实测）
+
+        期望反问的 62 条里 **17 条走规则路径**，其中 **16 条被直接执行** ——
+        占全量 1080 的 **4.4%**，**单这一项就超过原 ≤4% 的目标**，
+        而且阈值取任何值都碰不到它们。
+
+        典型的是「给他排班」「排个班」「生成训练计划」：**规则命中的是
+        「这是一次排班请求」，不是「排哪一周」**。把 `confidence=1.0`
+        读成「整条请求都确定」，等于把意图的确定性借给了槽位。
+
+        未点名人员按既有规格解释为 ``ALL``，不是缺失输入；真正会阻断排班的
+        必需输入只有周次。这里只描述**请求文本**是否缺周次，图状态里已有的
+        ``state["week_start"]`` 由 route 节点合并判断。
+
+        ## ⚠️ 只对**排班类**意图生效（M9-B 实测收窄）
+
+        第一版对所有意图生效，实测把查询类打残了：实验五 30 条 query 轨迹里
+        **零工具轨迹从 5 条涨到 10 条**、缺失调用率 16.67% → 33.33%、
+        工具选择 65.71% → 42.86%。
+
+        原因是**查询类问题本来就常常不含任何槽位**：
+        「IFR Route 的容量是多少？」没有人名、机号、周次，
+        却完全不需要反问 —— 它要的是知识检索，不是排班参数。
+
+        **排班必须知道「哪一周」，查询不必。** 同一条判据对前者是对的、
+        对后者是错的，所以按意图收窄，而不是把判据调松。
+        """
+        if self.intent not in SCHEDULING_INTENTS:
+            return False
+        return bool(self.calibration_features.get("week_missing"))
 
 
 @dataclass
@@ -178,6 +219,45 @@ def scan_slots(text: str, directory: EntityDirectory) -> _Slots:
     return slots
 
 
+def _looks_like_tool_call(surface: str) -> bool:
+    """这个「槽位值」其实是一句工具调用表达式吗。
+
+    槽位 surface 是**用户原话里的自然语言片段**（「何超」「下周」「2026-W03」），
+    永远不会是函数调用。而实测模型会把工具调用当成槽位值交出来：
+
+        week    = "resolve_week(2026W03)"
+        week    = "resolve_week('当前')('ISO')()()"
+        persons = ["resolve_person('何超')"]
+
+    `merge_slots` 只在**扫描器抓到了东西**时才能压住它。原话里压根没有周次
+    表述时（「何超现在能排 missionC-1 吗？」），扫描器没有候选可用，
+    垃圾值就一路走到消解层 → `not_found` → 歧义 → 人工门禁，
+    **knowledge 节点根本没机会运行**。M9-B 实测 30 条 query 轨迹里 7 条栽在这。
+
+    ⚠️ **判据必须窄**：只认「已知工具名 + 左括号」。实体标签本身就带括号
+    （`JL-9(AC84)`、`高超(P02)` 是名录里的合法写法），按「含括号」一刀切
+    会把真槽位也删掉。
+    """
+    head = surface.strip().split("(", 1)
+    return len(head) == 2 and head[0].strip() in _TOOL_NAME_PREFIXES
+
+
+#: 会被模型误当成槽位值交出来的工具名（route 与 planner 两行 ACL 的并集）。
+_TOOL_NAME_PREFIXES: Final[frozenset[str]] = frozenset(
+    {
+        "resolve_person",
+        "resolve_aircraft",
+        "resolve_week",
+        "estimate_scope",
+        "assess_disruption",
+        "propose_solve_intent",
+        "check_authority",
+        "ask_user",
+        "escalate",
+    }
+)
+
+
 def merge_slots(scanned: _Slots, proposed: _Slots) -> _Slots:
     """把确定性扫描结果与模型给的槽位**合并**，逐类以扫描结果优先。
 
@@ -211,11 +291,16 @@ def merge_slots(scanned: _Slots, proposed: _Slots) -> _Slots:
     所以两路互补：确定性的那部分不再被模型的自由发挥污染，模型的那部分
     继续负责扫描器抓不到的说法。
     """
+
+    def clean(values: list[str]) -> list[str]:
+        return [v for v in values if not _looks_like_tool_call(v)]
+
+    proposed_week = "" if _looks_like_tool_call(proposed.week) else proposed.week
     return _Slots(
-        persons=list(scanned.persons) if scanned.persons else list(proposed.persons),
-        aircraft=list(scanned.aircraft) if scanned.aircraft else list(proposed.aircraft),
-        missions=list(scanned.missions) if scanned.missions else list(proposed.missions),
-        week=scanned.week or proposed.week,
+        persons=list(scanned.persons) if scanned.persons else clean(proposed.persons),
+        aircraft=list(scanned.aircraft) if scanned.aircraft else clean(proposed.aircraft),
+        missions=list(scanned.missions) if scanned.missions else clean(proposed.missions),
+        week=scanned.week or proposed_week,
     )
 
 
@@ -367,12 +452,21 @@ def classify_intent(
     hit = match_rule(stripped) if stripped else None
     if hit is not None:
         resolutions = _resolve_slots(scan_slots(stripped, directory), directory, today=today)
+        # 规则路径同样记槽位消解质量：`below_threshold` 要用它做**确定性**的
+        # 「一个槽位都没解出来就必须问」判据（`Z-44`）。置信度仍是 1.0 ——
+        # 规则命中的意图是确定的，这一点没变。
+        rule_features = _with_slot_quality(CalibrationFeatures(), resolutions)
         return _finish(
             hit,
             confidence=1.0,
             source="rule",
             raw_text=stripped,
             resolutions=resolutions,
+            calibration_features={
+                "no_slots_at_all": rule_features.no_slots_at_all,
+                "week_missing": rule_features.week_missing,
+                "has_ambiguity": rule_features.has_ambiguity,
+            },
         )
 
     # ── 二级：LLM 兜底 ────────────────────────────────────────────────
@@ -408,6 +502,9 @@ def classify_intent(
     #   就会一路走到歧义与反问。
     merged = merge_slots(scan_slots(stripped, directory), slots)
     resolutions = _resolve_slots(merged, directory, today=today)
+    # ★ 槽位消解质量进校准特征（`Z-44`）—— 「该不该反问」取决于**这句话说清楚
+    #   了没有**，而不是「模型答得顺不顺」。前者在这里才有信号。
+    features = _with_slot_quality(features, resolutions)
     return _finish(
         intent,
         confidence=cal.predict(features),
@@ -421,7 +518,28 @@ def classify_intent(
             "first_pass": features.first_pass,
             "retries": features.retries,
             "worst_failure_mode": features.worst_failure_mode,
+            # `Z-44` 的三项槽位消解质量 —— 不记就没法从日志重新拟合校准器
+            "no_slots_at_all": features.no_slots_at_all,
+            "week_missing": features.week_missing,
+            "has_ambiguity": features.has_ambiguity,
         },
+    )
+
+
+def _with_slot_quality(
+    features: CalibrationFeatures, resolutions: Sequence[Resolution]
+) -> CalibrationFeatures:
+    """把消解结果的质量补进校准特征（`Z-44`）。
+
+    判据都取「**解出来了没有**」而不是「模型说了没有」：模型报了一个
+    `resolve_week(...)` 却消解不了，等价于没说。
+    """
+    resolved = [r for r in resolutions if r.resolved]
+    return replace(
+        features,
+        no_slots_at_all=not resolved,
+        week_missing=not any(r.kind == "week" and r.resolved for r in resolutions),
+        has_ambiguity=any(r.ambiguous for r in resolutions),
     )
 
 

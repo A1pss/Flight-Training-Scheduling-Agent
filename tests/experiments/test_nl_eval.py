@@ -150,3 +150,143 @@ def test_all_five_slot_kinds_are_covered() -> None:
         "week",
         "constraint_modifiers",
     }
+
+
+# ── 槽位形态清洗（M9-B 后续窗口）────────────────────────────────────
+def test_tool_call_expressions_are_not_slot_values() -> None:
+    """模型把工具调用当槽位值交出来时必须丢掉，**哪怕扫描器没有候选可用**。
+
+    `merge_slots` 的兼并只在扫描器抓到东西时生效；原话里压根没有周次表述时
+    （「何超现在能排 missionC-1 吗？」），垃圾值会一路走到消解层 →
+    `not_found` → 歧义 → 人工门禁，**knowledge 节点根本没机会运行**。
+    实测 30 条 query 轨迹里 7 条栽在这。
+    """
+    from backend.routing.classify import _looks_like_tool_call
+
+    assert _looks_like_tool_call("resolve_week(2026W03)")
+    assert _looks_like_tool_call("resolve_week('当前')('ISO')()()")
+    assert _looks_like_tool_call("resolve_person('何超')")
+
+
+def test_entity_labels_with_parentheses_are_kept() -> None:
+    """判据必须窄：实体标签本身就带括号，按「含括号」一刀切会删掉真槽位。"""
+    from backend.routing.classify import _looks_like_tool_call
+
+    assert not _looks_like_tool_call("JL-9(AC84)")
+    assert not _looks_like_tool_call("高超(P02)")
+    assert not _looks_like_tool_call("何超")
+    assert not _looks_like_tool_call("2026-W03")
+
+
+def test_merge_drops_junk_even_when_scanner_found_nothing() -> None:
+    from backend.routing.classify import _Slots, merge_slots
+
+    merged = merge_slots(
+        _Slots(),
+        _Slots(persons=["resolve_person('何超')"], week="resolve_week('当前')()"),
+    )
+    assert merged.persons == []
+    assert merged.week == ""
+
+
+def test_merge_keeps_model_value_when_it_is_a_real_surface() -> None:
+    """扫描器覆盖不到「下周」这类口语表述，模型那一路不能被误伤。"""
+    from backend.routing.classify import _Slots, merge_slots
+
+    merged = merge_slots(_Slots(), _Slots(week="下周", persons=["何超"]))
+    assert merged.week == "下周"
+    assert merged.persons == ["何超"]
+
+
+# ── Z-44 置信信号重建 ────────────────────────────────────────────────
+def test_query_intent_with_no_slots_does_not_ask() -> None:
+    """★ 判据只对**排班类**生效。
+
+    查询类问题本来就常常不含任何槽位 —— 「IFR Route 的容量是多少？」
+    没有人名/机号/周次，却完全不需要反问。第一版对所有意图生效，实测把
+    查询类打残了：实验五零工具轨迹 5 → 10 条、缺失调用率 16.67% → 33.33%、
+    工具选择 65.71% → 42.86%。**排班必须知道「给谁、哪一周」，查询不必。**
+    """
+    from backend.routing.classify import IntentResult
+
+    q = IntentResult(
+        intent="query",
+        confidence=1.0,
+        source="rule",
+        next_node="knowledge",
+        calibration_features={"no_slots_at_all": True, "week_missing": True},
+    )
+    assert not q.missing_required_info
+
+
+def test_rule_hit_with_no_slots_must_still_ask() -> None:
+    """★ `Z-44` 的回归闸：规则命中只确定了**意图**，不确定**槽位**。
+
+    「给他排班」命中排班规则、`confidence=1.0`，但指代不明、一个槽位都没解出来。
+    M9-B 实测：期望反问的 62 条里 17 条走规则路径，其中 **16 条被直接执行**，
+    占全量 1080 的 4.4% —— **单这一项就超过原 ≤4% 的目标**，且阈值取任何值
+    都碰不到它们（`below_threshold` 原本对规则路径不生效）。
+    """
+    from backend.routing.classify import IntentResult
+
+    vague = IntentResult(
+        intent="schedule",
+        confidence=1.0,
+        source="rule",
+        next_node="planner",
+        calibration_features={"no_slots_at_all": True, "week_missing": True},
+    )
+    assert vague.missing_required_info, "规则命中但周次没解出来 → 必须问"
+    assert not vague.below_threshold(0.75), "但**不是**因为置信度低 —— 两个判据刻意分开"
+
+
+def test_rule_hit_with_slots_is_not_blocked() -> None:
+    """「给何超排班」解出了人 —— 不能被误伤。粒度是**有没有解出槽位**，
+    不是「走没走规则路径」。"""
+    from backend.routing.classify import IntentResult
+
+    clear = IntentResult(
+        intent="schedule",
+        confidence=1.0,
+        source="rule",
+        next_node="planner",
+        calibration_features={"no_slots_at_all": False, "week_missing": False},
+    )
+    assert not clear.missing_required_info
+    assert not clear.below_threshold(0.75)
+
+
+def test_rule_path_confidence_stays_deterministic() -> None:
+    """新判据是**确定性**的，不引入概率 —— 规则路径的置信度仍是 1.0，
+    阈值再高也不该因为「不自信」而挡它（挡它的理由是缺信息）。"""
+    from backend.routing.classify import IntentResult
+
+    clear = IntentResult(
+        intent="schedule",
+        confidence=1.0,
+        source="rule",
+        next_node="planner",
+        calibration_features={"no_slots_at_all": False, "week_missing": False},
+    )
+    assert not clear.below_threshold(1.0)
+    assert not clear.missing_required_info
+
+
+def test_llm_path_threshold_still_applies() -> None:
+    """v6 §7.5 原式那半句必须保留。"""
+    from backend.routing.classify import IntentResult
+
+    unsure = IntentResult(intent="schedule", confidence=0.35, source="llm", next_node="planner")
+    assert unsure.below_threshold(0.75)
+    assert not unsure.below_threshold(0.30)
+
+
+def test_slot_quality_features_have_real_spread() -> None:
+    """`Z-44` 的动机：原五项特征没有区分度（1075/1080 恒为 1.0）。
+    新特征必须真的会变，否则等于换了个名字的常数。"""
+    from backend.planner.calibration import CalibrationFeatures, heuristic_confidence
+
+    clear = CalibrationFeatures()
+    vague = CalibrationFeatures(no_slots_at_all=True, week_missing=True)
+    assert heuristic_confidence(clear) == 1.0
+    assert heuristic_confidence(vague) < 0.5, "说不清楚的请求要显著低于说得清的"

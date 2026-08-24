@@ -183,12 +183,40 @@ class ToolCallValidator:
 
     # ── 分类 ─────────────────────────────────────────────────────────
     def _classify(self, spec: ToolSpec, exc: ValidationError) -> ValidationFailure:
-        """取**第一条**错误做归因。
+        """取**第一条**错误做归因；**缺必填字段是唯一的例外，一次全列**。
 
-        为什么只取第一条：回灌给模型的信息越聚焦纠正率越高，一次甩十条错误
+        为什么默认只取第一条：回灌给模型的信息越聚焦纠正率越高，一次甩十条错误
         它多半只改第一条还改错。剩下的错误在下一轮重试里自然会再暴露。
+
+        ## 为什么「缺必填字段」要破这个例（M9-B 实测）
+
+        「下一轮重试里自然会再暴露」这句话有个前提：**重试轮数够用**。
+        而 §7.7.1 把重试写死为 ≤2 次（共 3 次尝试），于是「每轮补一个字段」
+        最多补得动 3 个 —— `SolveIntent` 的必填字段比这多。
+
+        实测 Planner 第二轮的三次尝试：
+        `intent` 类型错 → 缺 `intent.scope_persons` → 缺 `intent.freeze_policy`
+        → 重试用尽、`FTS-4002` 降级。**模型每轮都在正确地修上一条，
+        只是永远修不完。**
+
+        缺字段与原理由针对的情形不同：十条**异质**错误互相干扰，而一张
+        **缺什么补什么**的清单不会 —— 它们不冲突，模型一次补齐即可。
+        所以只在「全部错误都是缺必填字段」时合并成一条，其余一律照旧聚焦。
         """
-        error = exc.errors()[0]
+        errors = exc.errors()
+        missing = [e for e in errors if str(e["type"]) == "missing"]
+        if len(missing) > 1 and len(missing) == len(errors):
+            paths = [".".join(str(p) for p in e["loc"]) for e in missing]
+            return ValidationFailure(
+                mode=FailureMode.MISSING_FIELD,
+                tool=spec.name,
+                field_path=paths[0],
+                expected="同时补齐这些必填字段：" + "、".join(paths),
+                actual="（缺失）",
+                message=f"缺 {len(paths)} 个必填字段：" + "、".join(paths),
+            )
+
+        error = errors[0]
         path = ".".join(str(p) for p in error["loc"])
         err_type = str(error["type"])
         entity_fields = dict(iter_entity_fields(spec.params_model))

@@ -110,8 +110,22 @@ class IncrementalConstraint(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     kind: RevisionKind
-    targets: list[str] = Field(min_length=1, description="sortie_id / person_id / aircraft_id")
-    params: dict[str, Any] = Field(default_factory=dict)
+    targets: list[str] = Field(
+        min_length=1,
+        description=(
+            "受这条约束影响的对象：sortie_id / person_id / aircraft_id。"
+            '**针对全体时填 ["ALL"]** —— 例如「周三不要安排飞行」是对整周所有人的限制。'
+        ),
+    )
+    params: dict[str, Any] = Field(
+        default_factory=dict,
+        description=(
+            '该约束的取值。FORBID 填 {"weekday": "周三"}；'
+            'REDUCE_DENSITY 填 {"max_per_day": 3}；'
+            'SHIFT_WINDOW 填 {"start": "08:00"}；'
+            "PIN_* 填对应的 id。说不出取值就留空。"
+        ),
+    )
     origin_utterance: str = Field(min_length=1, description="★ 原始语句，供撤销与审计")
     round_no: int = Field(ge=1, description="★ 第几轮修订")
 
@@ -127,7 +141,21 @@ class SolveIntent(BaseModel):
     freeze_reason: str = Field(min_length=1, description="为何选这一档，写进 Sheet 4")
     objective_weights: ObjectiveWeights
     pre_authorized_tiers: list[int] = Field(default_factory=list)
-    incremental_constraints: list[IncrementalConstraint] = Field(default_factory=list)
+    incremental_constraints: list[IncrementalConstraint] = Field(
+        default_factory=list,
+        description=(
+            "★ 用户话里的**约束修饰**，逐条翻译成结构化约束。"
+            "首轮请求同样要填 —— 不是只有多轮修订才有。"
+            "常见对应："
+            "「周三不要安排飞行」→ FORBID；"
+            "「每天最多排 3 个架次」→ REDUCE_DENSITY；"
+            "「早上 8 点以后再飞」→ SHIFT_WINDOW；"
+            "「固定用 AC84」→ PIN_RESOURCE；"
+            "「排在周四」→ PIN_TIME；"
+            "「走 RWY-1」→ PIN_RUNWAY。"
+            "没有修饰就留空列表，**不要编**。"
+        ),
+    )
     estimated_blast_radius: int = Field(ge=0, description="预计受影响架次数")
     open_questions: list[str] = Field(default_factory=list)
 
