@@ -18,6 +18,12 @@ def items() -> list[TrajectoryItem]:
     return [row for row in rows if isinstance(row, TrajectoryItem)]
 
 
+def test_approved_fixture_hash_is_frozen() -> None:
+    """优化期间不得通过改期望路径或可选步骤移动实验五的量尺。"""
+    manifest, _rows = load_eval_dataset("trajectory_100", require_approved=True)
+    assert manifest.sha256 == "8d9f29c9378201f004c0c4130eb5defc0ee065d3db8b16db2e3b920c156da3af"
+
+
 def test_committed_file_matches_builder(items: list[TrajectoryItem]) -> None:
     built = [TrajectoryItem.model_validate(row) for row in trajectory_catalog.build_full()]
     assert [i.model_dump() for i in items] == [b.model_dump() for b in built]

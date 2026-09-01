@@ -71,12 +71,24 @@ _DENSITY: Final[re.Pattern[str]] = re.compile(
     r"(?:每天|一天|每日)[^，。；、]{0,4}?最多[^，。；、]{0,4}?(\d+|一|两|三|四|五)\s*(?:个)?架次"
 )
 #: 「只用 AC10 和 AC27」/「用AC84」—— 指定机队。
-_PIN_AIRCRAFT: Final[re.Pattern[str]] = re.compile(r"(?:只)?用\s*((?:AC\d+[、和，,\s]*)+)")
-#: 「JL-8 的架次都走 RWY-2」。
-_PIN_RUNWAY: Final[re.Pattern[str]] = re.compile(r"(RWY-\d+)")
+#:
+#: 前面的单字负向词也必须排除：旧表达式会从「别用 AC73」里的「用」重新起配，
+#: 把禁用 AC73 翻成只用 AC73。这里宁可漏掉一种自由表述交给 Planner，也不能
+#: 产生方向相反的求解输入。
+_PIN_AIRCRAFT: Final[re.Pattern[str]] = re.compile(
+    r"(?<!别)(?<!不)(?<!要)(?<!止)(?<!免)(?:只)?用\s*((?:AC\d+[、和，,\s]*)+)"
+)
+#: 「JL-8 的架次都走 RWY-2」。只出现跑道编号不代表指定跑道：
+#: 「RWY-2 关闭」是禁用，不能翻成 PIN_RUNWAY。
+_PIN_RUNWAY: Final[re.Pattern[str]] = re.compile(
+    r"(?:都|全部)?(?:改)?(?:走|排(?:到|在)?|使用)\s*(RWY-\d+)"
+)
 #: 「都安排在上午」/「都排在 08:00 之后」/「早上 8 点以后」。
 _SHIFT_MORNING: Final[re.Pattern[str]] = re.compile(r"都?(?:安排|排)?在?上午")
-_PIN_AFTER_TIME: Final[re.Pattern[str]] = re.compile(r"(\d{1,2})[:：](\d{2})\s*(?:之后|以后|后)")
+_PIN_AFTER_TIME: Final[re.Pattern[str]] = re.compile(
+    r"(\d{1,2})[:：](\d{2})\s*(?:之后|以后|后)"
+    r"(?![^，。；、]{0,4}(?:不飞|别飞|停飞|不排))"
+)
 
 _CN_NUM: Final[dict[str, int]] = {"一": 1, "两": 2, "三": 3, "四": 4, "五": 5}
 

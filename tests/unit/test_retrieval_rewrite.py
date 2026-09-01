@@ -106,6 +106,75 @@ def test_no_history_means_no_anaphora() -> None:
     assert resolve_anaphora("他能飞吗", []) == ()
 
 
+def test_pronoun_in_same_utterance_uses_the_single_explicit_person() -> None:
+    harness = FakeHarness(
+        responses=[
+            text_output(
+                "knowledge",
+                json.dumps(
+                    {
+                        "person_surfaces": ["何超", "他"],
+                        "aircraft_surfaces": ["JL-9"],
+                        "sub_queries": ["何超是学员吗", "他能飞 JL-9 吗"],
+                        "semantic_query": "何超的身份与 JL-9 机型资质",
+                    },
+                    ensure_ascii=False,
+                ),
+            )
+        ]
+    )
+    outcome = rewrite_query(
+        "何超是学员吗？他能飞 JL-9 吗？",
+        directory=directory(),
+        today=TODAY,
+        harness=harness,
+    )
+    assert [entity.entity_id for entity in outcome.query.resolved_entities] == ["P08"]
+    assert outcome.query.ambiguities == []
+
+
+def test_unbound_pronoun_still_requires_clarification() -> None:
+    harness = FakeHarness(
+        responses=[
+            text_output(
+                "knowledge",
+                json.dumps(
+                    {
+                        "person_surfaces": ["他"],
+                        "sub_queries": ["他能飞吗"],
+                        "semantic_query": "他能飞吗",
+                    },
+                    ensure_ascii=False,
+                ),
+            )
+        ]
+    )
+    outcome = rewrite_query("他能飞吗", directory=directory(), today=TODAY, harness=harness)
+    assert outcome.query.needs_clarification
+    assert any("指代不明确" in item for item in outcome.query.ambiguities)
+
+
+def test_llm_entity_surface_must_come_from_the_user_text() -> None:
+    """模型编出的 AC01 不是用户原话表述，不能制造假歧义。"""
+    harness = FakeHarness(
+        responses=[
+            text_output(
+                "knowledge",
+                json.dumps(
+                    {
+                        "aircraft_surfaces": ["AC01"],
+                        "sub_queries": ["SAB 的容量"],
+                        "semantic_query": "SAB 的容量",
+                    },
+                    ensure_ascii=False,
+                ),
+            )
+        ]
+    )
+    outcome = rewrite_query("SAB 的容量是多少", directory=directory(), today=TODAY, harness=harness)
+    assert outcome.query.ambiguities == []
+
+
 # ─────────────────────────────────────────────────────────────────────
 # 表述扫描与消解
 # ─────────────────────────────────────────────────────────────────────

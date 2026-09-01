@@ -288,6 +288,44 @@ def test_llm_fallback_entity_goes_through_resolver_not_model(
     assert d.ambiguities[0]["surface"] == "赵六"
 
 
+def test_query_drops_model_invented_slots_before_knowledge(
+    dir_: EntityDirectory, settings: Settings
+) -> None:
+    """查询槽位不是路由门禁；模型编的非原文实体不得挡住 Knowledge。"""
+    payload = json.dumps(
+        {"intent": "query", "aircraft": ["AC01"], "week": "ask_user"},
+        ensure_ascii=False,
+    )
+    harness = FakeHarness(responses=[text_output("route", payload)])
+    decision = classify_intent(
+        "SAB 的容量是多少？绑了哪些课目？",
+        directory=dir_,
+        today=TODAY,
+        harness=harness,
+        settings=settings,
+    )
+    assert decision.intent == "query"
+    assert decision.next_node == "knowledge"
+    assert decision.ambiguities == ()
+    assert decision.confidence == 1.0
+
+
+def test_slotless_query_does_not_receive_scheduling_confidence_penalty(
+    dir_: EntityDirectory, settings: Settings
+) -> None:
+    payload = json.dumps({"intent": "query"}, ensure_ascii=False)
+    harness = FakeHarness(responses=[text_output("route", payload)])
+    decision = classify_intent(
+        "第 12 周批准的方案用了哪一档松弛？",
+        directory=dir_,
+        today=TODAY,
+        harness=harness,
+        settings=settings,
+    )
+    assert decision.confidence == 1.0
+    assert not decision.below_threshold(settings.CONFIDENCE_THRESHOLD)
+
+
 def test_out_of_range_intent_falls_back_to_unknown(
     dir_: EntityDirectory, settings: Settings
 ) -> None:

@@ -58,9 +58,27 @@ def test_pin_aircraft_collects_every_id() -> None:
     assert got[0].params == {"aircraft": ["AC10", "AC27"]}
 
 
+@pytest.mark.parametrize("text", ["别用 AC73", "不要用 AC73", "避免用 AC73", "禁止用 AC73"])
+def test_pin_aircraft_never_reverses_a_negative_instruction(text: str) -> None:
+    """禁用不是指定使用；宁可留给 Planner，也不能生成方向相反的求解输入。"""
+    assert scan_modifiers(text) == []
+
+
 def test_pin_runway_and_time() -> None:
     assert kinds("JL-8 的架次都走 RWY-2") == ["PIN_RUNWAY"]
     assert kinds("都排在 08:00 之后") == ["PIN_TIME"]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "RWY-2 下周三关闭，重新排一版",
+        "本周每天 12:00 之后不飞，重排一版",
+    ],
+)
+def test_pin_scanners_never_reverse_a_closure(text: str) -> None:
+    """关闭跑道/时段是禁用，不得因出现编号或“之后”而翻成固定使用。"""
+    assert not {"PIN_RUNWAY", "PIN_TIME"} & set(kinds(text))
 
 
 def test_shift_window_morning() -> None:
