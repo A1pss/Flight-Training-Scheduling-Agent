@@ -20,8 +20,8 @@
     "sha256": "d53b65943e43b45d20767bd581b34c238314088b9e26f77df3e7591f27651561"
   },
   "knowledge/system": {
-    "prompt_version": "v1",
-    "sha256": "b55e3efbdca8262cc80e7789fe9dac03ff75a52ebf7c1026bbb50873026aac1b"
+    "prompt_version": "v2",
+    "sha256": "3bd7d097259b502afb6b14b029e1a93538376fbe361fbe3ae02d094ebbb8b095"
   },
   "planner/system": {
     "prompt_version": "v1",

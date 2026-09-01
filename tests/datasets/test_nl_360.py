@@ -24,6 +24,12 @@ def items() -> list[NLItem]:
     return [row for row in rows if isinstance(row, NLItem)]
 
 
+def test_approved_fixture_hash_is_frozen() -> None:
+    """优化期间不得通过改标注移动实验一的量尺。"""
+    manifest, _rows = load_eval_dataset("nl_360", require_approved=True)
+    assert manifest.sha256 == "20b105c23a78ec348424d7b6b350e8cb55f4f9c8038286373e0a48a8a5345ae1"
+
+
 def test_committed_file_matches_builder(items: list[NLItem]) -> None:
     """仓库里的数据必须与构造代码的输出逐字节一致。
 

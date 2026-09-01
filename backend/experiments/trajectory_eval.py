@@ -192,18 +192,23 @@ def score_steps(
     seen: list[tuple[str, str]] = []
 
     for step in expected:
-        if not step.get("optional"):
+        required = not step.get("optional")
+        if required:
             score.required_steps += 1
         tool = str(step["tool"])
         alts = {str(a) for a in (step.get("alternatives") or [])} | {tool}
         idx = next((i for i, (name, _) in enumerate(remaining) if name in alts), None)
         if idx is None:
-            if not step.get("optional"):
+            if required:
                 score.unmatched_required += 1
             continue
         name, args = remaining.pop(idx)
         seen.append(_call_key(name, args))
-        score.tool_hits += 1
+        # 工具选择准确率只衡量「该调工具的步骤」（必需步骤）。可选步骤命中
+        # 可以进入参数诊断，但不能只进分子、不进分母；否则命中数甚至可能大于
+        # required_steps，量具会把多查可选信息误报成工具选择能力提升。
+        if required:
+            score.tool_hits += 1
         score.param_denominator += 1
         if params_match(args, step.get("params") or {}):
             score.param_hits += 1
@@ -281,7 +286,11 @@ def aggregate(outcomes: Sequence[TrajectoryOutcome]) -> dict[str, Any]:
     #       `bm25_search → vector_search → rrf_fuse → rerank`。它**查了**。
     #   把第二类算进来等于**把同一个错误在工具选择准确率和缺失调用率里各算一遍**，
     #   还记进了规格称为「最重要」的那一个。
-    answered_without_tools = sum(1 for o in ok if o.steps.observed_calls == 0)
+    # 只有存在必需工具步骤的轨迹才属于「该调工具」的适用集合。数据集中有两条
+    # 合法的零工具路径（诊断直接进人工门禁、修订在门禁拒绝）；把它们放进分母
+    # 或分子都会让一套完美实现也平白产生缺失调用。
+    missing_eligible = [o for o in ok if o.steps.required_steps > 0]
+    answered_without_tools = sum(1 for o in missing_eligible if o.steps.observed_calls == 0)
     observed = sum(o.steps.observed_calls for o in ok)
     redundant = sum(o.steps.redundant for o in ok)
     trans = [o for o in ok if o.revision_translation_ok is not None]
@@ -294,8 +303,9 @@ def aggregate(outcomes: Sequence[TrajectoryOutcome]) -> dict[str, Any]:
         "tool_selection": {"hits": tool_hits, "n": req_steps},
         "param_accuracy": {"hits": param_hits, "n": param_den},
         "redundant_calls": {"hits": redundant, "n": observed},
-        # §12.6 口径：分母是**轨迹条数**，不是步骤数 —— 判的是「这次回答有没有查」。
-        "missing_calls": {"hits": answered_without_tools, "n": len(ok)},
+        # §12.6 口径：分母是**应调用工具的轨迹条数**，不是步骤数 —— 判的是
+        # 「这次本应查工具的回答有没有查」。
+        "missing_calls": {"hits": answered_without_tools, "n": len(missing_eligible)},
         #: 诊断用，不作门禁：期望的必需步骤里没匹配上的次数（含「换了工具」）。
         "unmatched_required_steps": {"hits": unmatched, "n": req_steps},
         "path_correct": {"hits": sum(1 for o in ok if o.path_ok), "n": len(ok)},

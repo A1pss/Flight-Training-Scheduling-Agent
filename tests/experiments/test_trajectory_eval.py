@@ -87,6 +87,20 @@ def test_optional_step_absence_is_not_unmatched() -> None:
     assert score.unmatched_required == 0
 
 
+def test_optional_step_hit_does_not_inflate_tool_selection() -> None:
+    """可选步骤不属于「该调工具」，命中时也不能只加分子、不加分母。"""
+    score = score_steps(
+        [
+            {"tool": "sql_query", "params": {}, "optional": False},
+            {"tool": "memory.search", "params": {}, "optional": True},
+        ],
+        [("sql_query", {}), ("memory.search", {})],
+    )
+    assert score.required_steps == 1
+    assert score.tool_hits == 1
+    assert score.param_denominator == 2, "可选调用仍可进入参数准确率这个诊断量"
+
+
 def test_missing_calls_means_no_tool_at_all_not_wrong_tool() -> None:
     """★ `Z-41` 的回归闸：**缺失调用率的判据是「一个工具都没调」**。
 
@@ -108,6 +122,53 @@ def test_missing_calls_means_no_tool_at_all_not_wrong_tool() -> None:
     agg = aggregate([wrong_tool, silent])
     assert agg["missing_calls"] == {"hits": 1, "n": 2}, "只有「一个工具都没调」的那条算缺失"
     assert agg["unmatched_required_steps"]["hits"] == 2, "两条的必需步骤都没匹配上（诊断量）"
+
+
+def test_legitimate_zero_tool_path_is_outside_missing_call_denominator() -> None:
+    """没有必需工具步骤的合法路径不属于「该调工具却直接回答」。"""
+    from backend.experiments.trajectory_eval import TrajectoryOutcome
+
+    no_tool_expected = TrajectoryOutcome(item_id="A", flow="revision")
+    needs_tool = TrajectoryOutcome(item_id="B", flow="query")
+    needs_tool.steps = score_steps(
+        [{"tool": "sql_query", "params": {}, "optional": False}],
+        [],
+    )
+
+    agg = aggregate([no_tool_expected, needs_tool])
+    assert agg["missing_calls"] == {"hits": 1, "n": 1}
+
+
+def test_trajectory_metric_contract_snapshot() -> None:
+    """固定输入必须产生固定聚合值，优化生产逻辑时量具不得随之漂移。"""
+    from backend.experiments.trajectory_eval import TrajectoryOutcome
+
+    correct = TrajectoryOutcome(item_id="A", flow="query", path_ok=True)
+    correct.steps = score_steps(
+        [
+            {"tool": "sql_query", "params": {"limit": 5}, "optional": False},
+            {"tool": "memory.search", "params": {}, "optional": True},
+        ],
+        [("sql_query", {"limit": 5}), ("memory.search", {})],
+    )
+    wrong_tool = TrajectoryOutcome(item_id="B", flow="query", path_ok=False)
+    wrong_tool.steps = score_steps(
+        [{"tool": "sql_query", "params": {}, "optional": False}],
+        [("bm25_search", {})],
+    )
+    silent = TrajectoryOutcome(item_id="C", flow="query", path_ok=False)
+    silent.steps = score_steps(
+        [{"tool": "sql_query", "params": {}, "optional": False}],
+        [],
+    )
+    zero_tool_expected = TrajectoryOutcome(item_id="D", flow="revision", path_ok=True)
+
+    agg = aggregate([correct, wrong_tool, silent, zero_tool_expected])
+    assert agg["tool_selection"] == {"hits": 1, "n": 3}
+    assert agg["param_accuracy"] == {"hits": 2, "n": 2}
+    assert agg["missing_calls"] == {"hits": 1, "n": 3}
+    assert agg["unmatched_required_steps"] == {"hits": 2, "n": 3}
+    assert agg["path_correct"] == {"hits": 2, "n": 4}
 
 
 def test_repeated_same_tool_with_different_params_is_an_acceptable_path() -> None:

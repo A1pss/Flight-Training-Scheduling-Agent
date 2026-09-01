@@ -237,7 +237,10 @@ class SqlQueryParams(_Params):
 
 class PrereqCteParams(_Params):
     person_id: str = entity_field("person", "学员编号")
-    mission_id: str = entity_field("mission", "课目编号")
+    mission_id: str = entity_field(
+        "mission",
+        "课目编号（必须是 mission... 形态；JL-8/JL-9 是机型，不是课目）",
+    )
 
 
 class VectorSearchParams(_Params):

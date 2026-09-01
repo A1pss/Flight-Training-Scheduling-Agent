@@ -283,7 +283,11 @@ def rewrite_query(
                     ("aircraft", "aircraft_surfaces"),
                     ("mission", "mission_surfaces"),
                 ):
-                    surfaces[kind].extend(str(s) for s in payload.get(key, []) if str(s).strip())
+                    surfaces[kind].extend(
+                        str(s).strip()
+                        for s in payload.get(key, [])
+                        if str(s).strip() and str(s).strip() in original
+                    )
                 sub_queries.extend(str(s) for s in payload.get("sub_queries", []) if str(s).strip())
                 semantic_query = str(payload.get("semantic_query", "")).strip()
         except FTSError as exc:
@@ -297,8 +301,22 @@ def rewrite_query(
                 surfaces[kind].append(item)
 
     # ── 实体消解：字典匹配 + 编辑距离，并列即歧义 ────────────────────
+    # 术语先对齐，实体消解才能识别「IFR Route」是空域术语而不是一门查不到的
+    # 课目。原实现把术语对齐放在实体消解之后，模型一旦把它圈进 mission_surfaces，
+    # 就先制造 not_found 歧义，后面的正确术语结果也救不回来。
+    matches, term_ambiguities = terms.align(
+        original,
+        known_mission_classes=known_mission_classes,
+        known_runways=known_runways,
+        known_airspaces=known_airspaces,
+    )
+
     entities: list[EntityRef] = []
     ambiguities: list[str] = []
+    ambiguities.extend(term_ambiguities)
+    term_surfaces = {match.surface for match in matches}
+    aircraft_types = {label for label in directory.aircraft.values() if label}
+    pronouns_seen: list[str] = []
     resolvers = {
         "person": resolve_person,
         "aircraft": resolve_aircraft,
@@ -306,6 +324,15 @@ def rewrite_query(
     }
     for kind in ("person", "aircraft", "mission"):
         for surface in surfaces[kind]:
+            if surface in _ANAPHORA:
+                pronouns_seen.append(surface)
+                continue
+            if surface in term_surfaces:
+                continue
+            if kind == "aircraft" and surface in aircraft_types:
+                # `JL-9` 是机型，不是 AC84 / AC95 二选一。它留在原查询里供
+                # BM25/向量召回，不应被实体解析器误报成两架飞机之间的歧义。
+                continue
             resolution = resolvers[kind](surface, directory)
             _absorb(resolution, entities, ambiguities)
 
@@ -328,17 +355,19 @@ def rewrite_query(
             )
             notes.append(f"指代消解：接上一轮的 {previous.entity_id}（{previous.surface}）")
 
+    # 同一句里的「何超……他……」由已经明确的唯一实体承接；只有既没有同句
+    # 唯一实体、也没有上一轮唯一实体时才是真歧义。LLM 圈出代词不等于圈出一个
+    # 新实体，更不能把它直接送进姓名字典得到 not_found。
+    for pronoun in pronouns_seen:
+        wanted = _anaphora_kinds(pronoun)
+        candidates = [entity for entity in entities if entity.kind in wanted]
+        if len(candidates) != 1:
+            note = f"「{pronoun}」指代不明确，请补充具体对象"
+            if note not in ambiguities:
+                ambiguities.append(note)
+
     # ── 时间归一 ────────────────────────────────────────────────────
     timerange, iso_week = normalize_time(original, today=today)
-
-    # ── 术语对齐 ────────────────────────────────────────────────────
-    matches, term_ambiguities = terms.align(
-        original,
-        known_mission_classes=known_mission_classes,
-        known_runways=known_runways,
-        known_airspaces=known_airspaces,
-    )
-    ambiguities.extend(term_ambiguities)
 
     keyword_terms = _keywords(entities, matches, iso_week)
     if not sub_queries:
@@ -388,6 +417,17 @@ def _absorb(resolution: Resolution, entities: list[EntityRef], ambiguities: list
         note = f"「{resolution.surface}」在当前快照里查不到对应的{resolution.kind}"
     if note not in ambiguities:
         ambiguities.append(note)
+
+
+def _anaphora_kinds(surface: str) -> set[str]:
+    """代词可能指向的实体类别；只返回类别，不在这里选择具体实体。"""
+    if surface in {"他", "她", "他们", "这个人", "那个人"}:
+        return {"person"}
+    if surface in {"那个课目", "这个课目", "那门课", "这门课"}:
+        return {"mission"}
+    if surface in {"那架", "这架", "那架飞机", "这架飞机"}:
+        return {"aircraft"}
+    return {"mission", "aircraft"}
 
 
 def _keywords(

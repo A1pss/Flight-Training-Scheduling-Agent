@@ -502,9 +502,21 @@ def classify_intent(
     #   就会一路走到歧义与反问。
     merged = merge_slots(scan_slots(stripped, directory), slots)
     resolutions = _resolve_slots(merged, directory, today=today)
+    if intent == "query":
+        # 查询的实体消解会在 Knowledge 改写层按原问题再做一次；route 这里只保留
+        # 「确实来自用户原文、且已经确定解析」的提示。模型编出的 `AC01`、
+        # `missionI-1`、`current` 既不该变成槽位，也不该制造歧义把查询挡在
+        # Knowledge 之前。真正写在原文里的未知/歧义实体仍会由 Knowledge 按
+        # §6.5.3 的同一套字典规则反问，不会被静默忽略。
+        resolutions = tuple(r for r in resolutions if r.resolved and r.surface.strip() in stripped)
     # ★ 槽位消解质量进校准特征（`Z-44`）—— 「该不该反问」取决于**这句话说清楚
     #   了没有**，而不是「模型答得顺不顺」。前者在这里才有信号。
     features = _with_slot_quality(features, resolutions)
+    if intent == "query":
+        # `no_slots_at_all` / `week_missing` 是排班请求的缺输入信号，不是查询质量
+        # 信号。查询可以合法地没有人、机、课目和周次（例如问空域容量）；继续
+        # 扣分会让 Z-44 经由 below_threshold 绕回去误伤查询类。
+        features = replace(features, no_slots_at_all=False, week_missing=False)
     return _finish(
         intent,
         confidence=cal.predict(features),

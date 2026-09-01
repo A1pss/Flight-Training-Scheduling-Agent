@@ -20,6 +20,7 @@ from backend.experiments.report_nl import (
     intent_accuracy,
     misexecution,
     slot_f1,
+    summarize,
     threshold_sweep,
 )
 from backend.llm.replay import ReplayProvider
@@ -166,3 +167,35 @@ def test_calibrator_fits_when_features_are_present() -> None:
     assert calibrator.fitted
     assert 0.0 <= ece <= 1.0
     assert sum(b.count for b in bins) == len(rows)
+
+
+def test_nl_metric_contract_snapshot(tmp_path: Path) -> None:
+    """固定观测必须产生固定指标；生产优化不得顺手改变实验一算法。"""
+    rows = [
+        _row(item_id="A"),
+        _row(
+            item_id="B",
+            expected_action="ask_clarify",
+            source="llm",
+            confidence=0.4,
+        ),
+        _row(item_id="C", expected_action="ask_clarify"),
+        _row(
+            item_id="D",
+            expected_intent="query",
+            expected_action="answer",
+            observed_intent="schedule",
+        ),
+    ]
+    path = tmp_path / "observations.jsonl"
+    path.write_text(
+        "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows),
+        encoding="utf-8",
+    )
+
+    summary = summarize(path, "main", 0.75)
+    assert summary["completion"]["point"] == pytest.approx(0.5)
+    assert summary["intent_accuracy"]["point"] == pytest.approx(0.75)
+    assert summary["misexecution"]["count"] == 1
+    assert summary["misexecution"]["over_all"]["point"] == pytest.approx(0.25)
+    assert summary["misexecution"]["over_unclear"]["point"] == pytest.approx(0.5)
