@@ -18,6 +18,7 @@ from typing import Any
 import pytest
 
 from backend.harness import ACL_MATRIX, DEFAULT_REGISTRY, ToolRegistry
+from backend.harness.tools import ProposeSolveIntentParams
 from backend.planner.intent import PLANNER_TOOLS
 from backend.planner.tools import planner_tool_handlers, route_tool_handlers
 from backend.routing.classify import ROUTE_AGENT
@@ -54,6 +55,28 @@ def handlers() -> dict[str, Any]:
 def test_every_planner_tool_has_a_handler(handlers: dict[str, Any]) -> None:
     """`AgentSpec` 暴露什么，就得有什么 handler —— 漏一个真机就抛。"""
     assert set(PLANNER_TOOLS) <= set(handlers)
+
+
+def test_propose_intent_repairs_only_unambiguous_wrapper_field_misplacement() -> None:
+    parsed = ProposeSolveIntentParams.model_validate(
+        {
+            "iso_week": "2026W02",
+            "rationale": "平衡推进与扰动",
+            "freeze_reason": "无既有计划，取中性冻结档",
+            "estimated_blast_radius": 14,
+            "intent": {
+                "scope_persons": "ALL",
+                "scope_missions": "ALL",
+                "freeze_policy": "BALANCED",
+                "objective_weights": {"progress": 1.0, "disruption": 0.3, "balance": 0.2},
+                "pre_authorized_tiers": [],
+                "incremental_constraints": [],
+            },
+        }
+    )
+
+    assert parsed.intent.freeze_reason == "无既有计划，取中性冻结档"
+    assert parsed.intent.estimated_blast_radius == 14
 
 
 def test_every_route_tool_has_a_handler() -> None:

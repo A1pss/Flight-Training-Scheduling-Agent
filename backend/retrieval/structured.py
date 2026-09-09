@@ -62,13 +62,16 @@ from backend.schemas.retrieval import Citation
 # ─────────────────────────────────────────────────────────────────────
 #
 # **这里刻意不用 LLM。** 路 A 的承诺是「权威、可精确匹配」；用模型判问题类型
-# 会把一条本该确定的通道变成概率通道，而它恰恰是 §12.4 语义类 ≥98% 的依靠。
+# 会把一条本该确定的通道变成概率通道，而它恰恰是 §12.4 语义类 ≥89% 的依靠。
 # 认不出类型不是错误 —— 那种问题本来就该由路 B/C 的语义召回来答。
 
 _PATTERNS: Final[tuple[tuple[str, re.Pattern[str]], ...]] = (
     ("qualification_expiry", re.compile(r"到期|复训|有效期|失效|过期")),
     ("qualification_list", re.compile(r"资质|等级|持有|能飞哪些|会飞什么|什么水平")),
-    ("eligibility", re.compile(r"能不能|能否|可不可以|可以.*吗|排得上|飞不飞得|准不准")),
+    (
+        "eligibility",
+        re.compile(r"能不能|能否|能排.*吗|可不可以|可以.*吗|排得上|飞不飞得|准不准"),
+    ),
     ("crew_requirement", re.compile(r"需要教员|要教员|带飞|单飞|要不要人带|机组")),
     ("aircraft_type", re.compile(r"机型|什么飞机|哪种飞机|型号|是什么机")),
     ("maintenance", re.compile(r"维护|定检|检修|保养")),

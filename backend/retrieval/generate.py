@@ -8,8 +8,8 @@
 `structured.FactAnswer` —— 那是确定性代码按规格算出来的，带 `table` + `pk`
 的引用。LLM 拿到的是**已核实的结构化事实**，任务只有措辞。
 
-这不是不信任模型，是口径问题：§12.4 给语义类的目标是 **≥98%**，并注明
-「走 SQL 精确通道，**不依赖模型**」。若答案内容由 14B 生成，那个 98% 就成了
+这不是不信任模型，是口径问题：§12.4 给语义类的目标是 **≥89%**，并注明
+「走 SQL 精确通道，**不依赖模型**」。若答案内容由 14B 生成，那个 89% 就成了
 模型当天发挥的函数，而 §12.4 明说这一路是「把加权值拉过交付线的结构性依靠」。
 
 **核验不过就退回事实直出**（`fallback` 分支）。少一点文采，好过一句查无实据的话。
@@ -217,6 +217,17 @@ def answer(
         )
 
     baseline = compose_facts(result)
+    # 布尔判定是路 A 已经按规格算出的最终事实。这里若再让生成模型改写，数字/实体
+    # 核验无法识别「不能」被改成「可以」这种极性翻转（TRJ-KNW-006 的真实失效形态）。
+    # 因此带 verdict 的答案直接呈现结构化结论；LLM 仍可为非判定型事实组织措辞。
+    if any(fact.verdict is not None for fact in result.answers):
+        return GroundedAnswer(
+            text=baseline,
+            report=verify(baseline, index),
+            citations=index.citations,
+            facts=result.answers,
+            notes=("布尔判定由结构化事实直接呈现，避免生成层翻转结论",),
+        )
     if harness is None:
         return GroundedAnswer(
             text=baseline,

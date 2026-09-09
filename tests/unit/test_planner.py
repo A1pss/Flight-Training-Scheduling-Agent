@@ -24,14 +24,16 @@ from backend.planner import (
     estimate_scope,
     few_shot_block,
     plan_solve_intent,
+    recommended_planner_tools,
+    required_planner_tools,
     required_role_for,
     rule_translate,
     translate_revision,
 )
 from backend.planner.authority import normalize_role
-from backend.planner.intent import _planner_blocks, target_week_of
+from backend.planner.intent import _brief, _planner_blocks, target_week_of
 from backend.planner.revision import FEW_SHOT, REVISION_KINDS, for_solver, to_solver_params
-from backend.routing.entities import iso_week_of, week_start_of
+from backend.routing.entities import EntityDirectory, iso_week_of, week_start_of
 from backend.schemas.intent import (
     ConstraintSpec,
     IncrementalConstraint,
@@ -256,6 +258,185 @@ def test_plan_solve_intent_consumes_propose_tool(settings: Settings) -> None:
     assert decision.next_node == "compile_spec"
 
 
+def test_reschedule_preflight_keeps_only_final_proposal_as_llm_contract(settings: Settings) -> None:
+    proposed = intent(scope_persons=["P08"])
+    harness = FakeHarness(
+        responses=[
+            tool_output(
+                "planner",
+                [("propose_solve_intent", {"intent": proposed.model_dump(mode="json")})],
+            )
+        ]
+    )
+    request = SchedulingRequest(
+        kind="reschedule",
+        raw_text="何超本周请假，重新排班",
+        persons=["P08"],
+    )
+
+    plan_solve_intent(
+        request,
+        user_role="scheduler",
+        harness=harness,
+        settings=settings,
+        week_start=BASELINE_WEEK,
+    )
+
+    agent, blocks = harness.calls[0]
+    assert agent.required_tools == ("propose_solve_intent",)
+    assert agent.tools == ("ask_user", "escalate", "propose_solve_intent")
+    assert [call.name for call in harness.deterministic_calls] == [
+        "resolve_person",
+        "assess_disruption",
+    ]
+    rendered = "\n".join(block.content for block in blocks)
+    assert "assess_disruption" in rendered
+    assert "系统预检" in rendered
+
+
+def test_recommended_reschedule_order_assesses_before_proposal() -> None:
+    request = SchedulingRequest(
+        kind="reschedule",
+        raw_text="何超本周请假，重新排班",
+        persons=["P08"],
+        iso_week="2026W02",
+    )
+    tools = recommended_planner_tools(request)
+    assert tools.index("assess_disruption") < tools.index("propose_solve_intent")
+    assert "translate_revision" not in tools
+    assert "resolve_week" not in tools
+    assert required_planner_tools(request) == ("propose_solve_intent",)
+
+
+def test_preflight_feedback_serialization_is_independent_of_mapping_insertion_order() -> None:
+    """录制 JSON 的排序不能改变随后重放的 Planner 请求指纹。"""
+    live_order = {"resolved": True, "entity_id": "P08", "confidence": 1.0}
+    replay_order = {"confidence": 1.0, "entity_id": "P08", "resolved": True}
+
+    assert _brief(live_order) == _brief(replay_order)
+
+
+def test_explicit_request_scope_overrides_model_guess(settings: Settings) -> None:
+    proposed = intent(scope_persons="ALL", scope_missions="ALL")
+    harness = FakeHarness(
+        responses=[
+            tool_output(
+                "planner",
+                [("propose_solve_intent", {"intent": proposed.model_dump(mode="json")})],
+            )
+        ]
+    )
+    request = SchedulingRequest(
+        kind="schedule",
+        raw_text="给何超排 missionC-1",
+        persons=["P08"],
+        missions=["missionC-1"],
+    )
+
+    decision = plan_solve_intent(
+        request,
+        user_role="scheduler",
+        harness=harness,
+        settings=settings,
+    )
+
+    assert decision.intent.scope_persons == ["P08"]
+    assert decision.intent.scope_missions == ["missionC-1"]
+
+
+def test_group_scope_expands_from_snapshot_identities(settings: Settings) -> None:
+    proposed = intent(scope_persons="ALL", scope_missions="ALL")
+    harness = FakeHarness(
+        responses=[
+            tool_output(
+                "planner",
+                [("propose_solve_intent", {"intent": proposed.model_dump(mode="json")})],
+            )
+        ]
+    )
+    snapshot_directory = EntityDirectory(
+        persons=directory().persons,
+        person_identities={
+            "P01": "教员",
+            "P02": "教员",
+            "P03": "教员",
+            "P04": "成熟飞行员",
+            "P05": "学员",
+            "P06": "学员",
+            "P07": "学员",
+            "P08": "学员",
+        },
+        aircraft=directory().aircraft,
+        missions=directory().missions,
+    )
+    request = SchedulingRequest(kind="schedule", raw_text="本周给学员们排班", iso_week="2026W02")
+    decision = plan_solve_intent(
+        request,
+        user_role="scheduler",
+        harness=harness,
+        settings=settings,
+        directory=snapshot_directory,
+    )
+
+    assert decision.intent.scope_persons == ["P05", "P06", "P07", "P08"]
+
+    instructor_request = SchedulingRequest(
+        kind="schedule", raw_text="本周给全体教员排班", iso_week="2026W02"
+    )
+    instructor_decision = plan_solve_intent(
+        instructor_request,
+        user_role="scheduler",
+        harness=harness,
+        settings=settings,
+        directory=snapshot_directory,
+    )
+    assert instructor_decision.intent.scope_persons == ["P01", "P02", "P03"]
+
+
+def test_deterministic_modifier_replaces_same_kind_with_empty_model_params(
+    settings: Settings,
+) -> None:
+    malformed = IncrementalConstraint(
+        kind="FORBID",
+        targets=["ALL"],
+        params={"aircraft_id": ["AC10", "AC27"]},
+        origin_utterance="本周只用 AC10 和 AC27 给陈伟排班",
+        round_no=1,
+    )
+    proposed = intent(
+        scope_persons=["P07"],
+        incremental_constraints=[malformed],
+    )
+    harness = FakeHarness(
+        responses=[
+            tool_output(
+                "planner",
+                [("propose_solve_intent", {"intent": proposed.model_dump(mode="json")})],
+            )
+        ]
+    )
+    request = SchedulingRequest(
+        kind="schedule",
+        raw_text="本周只用 AC10 和 AC27 给陈伟排班",
+        persons=["P07"],
+        aircraft=["AC10", "AC27"],
+        iso_week="2026W02",
+    )
+
+    decision = plan_solve_intent(
+        request,
+        user_role="scheduler",
+        harness=harness,
+        settings=settings,
+    )
+
+    assert len(decision.intent.incremental_constraints) == 1
+    fixed = decision.intent.incremental_constraints[0]
+    assert fixed.kind == "PIN_RESOURCE"
+    assert fixed.targets == ["ALL"]
+    assert fixed.params == {"aircraft_ids": ["AC10", "AC27"]}
+
+
 def test_ask_user_becomes_an_open_question_and_routes_back(settings: Settings) -> None:
     harness = FakeHarness(
         responses=[
@@ -460,6 +641,62 @@ def test_solver_params_translate_day_to_index() -> None:
     assert wire == {"day_index": 4}
 
 
+def test_solver_params_preserve_weekday_and_density_cap() -> None:
+    forbid = IncrementalConstraint(
+        kind="FORBID",
+        targets=["ALL"],
+        params={"weekday": "周三", "mission": "missionC-2", "aircraft_id": "AC27"},
+        origin_utterance="周三不排 missionC-2 的 AC27",
+        round_no=1,
+    )
+    density = IncrementalConstraint(
+        kind="REDUCE_DENSITY",
+        targets=["P06"],
+        params={"max_per_day": 1},
+        origin_utterance="张勇一天最多飞一次",
+        round_no=1,
+    )
+
+    assert to_solver_params(forbid, window_start=time(6, 0), horizon_minutes=720) == {
+        "day_index": 2,
+        "mission": "missionC-2",
+        "aircraft_id": "AC27",
+    }
+    assert to_solver_params(density, window_start=time(6, 0), horizon_minutes=720) == {
+        "max_takeoffs_per_day": 1
+    }
+
+
+def test_solver_params_preserve_day_scoped_closed_runway() -> None:
+    closed = IncrementalConstraint(
+        kind="FORBID",
+        targets=["ALL"],
+        params={"weekday": "周三", "runway_id": "RWY-2"},
+        origin_utterance="RWY-2 下周三关闭",
+        round_no=1,
+    )
+    assert to_solver_params(closed, window_start=time(6, 0), horizon_minutes=720) == {
+        "day_index": 2,
+        "runway_id": "RWY-2",
+    }
+
+
+def test_solver_params_preserve_forbid_scope_filters() -> None:
+    forbid = IncrementalConstraint(
+        kind="FORBID",
+        targets=["P08"],
+        params={"day": "周五", "mission_id": "missionC-2", "aircraft_ids": ["AC27", "AC34"]},
+        origin_utterance="何超周五不排 missionC-2，且不使用 AC27/AC34",
+        round_no=1,
+    )
+
+    assert to_solver_params(forbid, window_start=time(6, 0), horizon_minutes=720) == {
+        "day_index": 4,
+        "mission": "missionC-2",
+        "aircraft_ids": ["AC27", "AC34"],
+    }
+
+
 def test_solver_params_translate_clock_to_minutes() -> None:
     c = IncrementalConstraint(
         kind="SHIFT_WINDOW",
@@ -548,6 +785,21 @@ def test_llm_translation_path(settings: Settings) -> None:
     assert result.source == "llm"
     assert result.constraint.targets == ["P08"]
     assert result.constraint.round_no == 2
+
+
+def test_density_shape_mismatch_is_repaired_to_reduce_density(settings: Settings) -> None:
+    payload = json.dumps(
+        {"kind": "FORBID", "targets": ["张勇"], "params": {"day": "ALL", "max_occurrences": 1}}
+    )
+    result = translate_revision(
+        "本周张勇一天最多飞一次",
+        round_no=1,
+        harness=FakeHarness(responses=[text_output("planner", payload)]),
+        directory=directory(),
+    )
+
+    assert result.constraint.kind == "REDUCE_DENSITY"
+    assert result.constraint.params == {"max_per_day": 1}
 
 
 def test_llm_degradation_falls_back_to_rules(settings: Settings) -> None:

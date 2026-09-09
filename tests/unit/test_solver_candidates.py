@@ -26,6 +26,7 @@ from backend.solver.candidates import (
     enumerate_candidates,
     frequency_deadline,
     min_hitting_count,
+    recurrent_day_sets,
     sliding_windows,
 )
 from backend.solver.data import ScenarioOverrides
@@ -281,6 +282,35 @@ def test_frequency_deadline_uses_d4_general_formula() -> None:
         freq_days=7, week_start=week, last_done=week - timedelta(days=9), semantics=sem
     )
     assert (deadline, is_debt) == (0, True)
+
+
+def test_s11_overdue_window_is_due_on_monday_instead_of_skipped() -> None:
+    """S-11：首个复训窗口已在上周到期时，本周第 0 天必须补飞。"""
+    week = date(2026, 1, 19)
+    assert recurrent_day_sets(
+        since=date(2026, 1, 8),
+        last_done=None,
+        week_start=week,
+        week_end=week + timedelta(days=6),
+        window_days=7,
+        semantics=get_semantics(),
+    ) == (tuple(range(7)), (0,))
+
+
+def test_s11_future_start_does_not_bind_partial_window() -> None:
+    """基准周周四才进入复训周期，未形成完整 7 天窗，本周不强制。"""
+    week = date(2026, 1, 5)
+    assert (
+        recurrent_day_sets(
+            since=date(2026, 1, 8),
+            last_done=None,
+            week_start=week,
+            week_end=week + timedelta(days=6),
+            window_days=7,
+            semantics=get_semantics(),
+        )
+        == ()
+    )
 
 
 def test_min_hitting_count_matches_debt_required() -> None:

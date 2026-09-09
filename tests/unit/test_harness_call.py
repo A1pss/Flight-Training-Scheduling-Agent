@@ -15,7 +15,7 @@ from backend.core.errors import ArchitecturalBanError, ToolPermissionDeniedError
 from backend.harness.budget import BudgetLedger, BudgetLimits
 from backend.harness.context import ContextBlock
 from backend.harness.harness import constrained_schema, extract_tool_calls
-from backend.harness.types import AgentSpec, FailureMode
+from backend.harness.types import AgentSpec, FailureMode, ValidatedCall
 from backend.llm.mock import text_response, tool_response
 from backend.llm.types import LLMResponse, RawToolCall
 from tests.fixtures.harness_fixtures import build_harness, harness_settings
@@ -81,6 +81,23 @@ def test_multiple_tool_calls_in_one_turn() -> None:
     assert harness.usage().tool_calls == 2
 
 
+def test_deterministic_preflight_uses_the_same_acl_budget_cache_and_recorder() -> None:
+    """工作流确定的前置工具不发 LLM，但不能绕开 Harness 的任何护栏。"""
+    harness, provider, handlers = build_harness([])
+
+    results = harness.execute_deterministic_tools(
+        "planner",
+        [ValidatedCall(name="resolve_person", arguments={"surface": "何超"})],
+    )
+
+    assert results[0].value == {"person_id": "P08", "surface": "何超"}
+    assert provider.call_count == 0
+    assert handlers["resolve_person"].calls == 1
+    assert harness.usage().tool_calls == 1
+    tool_events = [event for event in harness.recorder.events if event.kind == "tool"]
+    assert tool_events[0].component == "planner"
+
+
 # ─── 契约失败 → 回灌 → 重试 ─────────────────────────────────────────
 
 
@@ -96,6 +113,30 @@ def test_retry_after_contract_failure() -> None:
     assert out.first_pass is False
     assert out.llm_calls == 2
     assert [f.mode for a in out.attempts for f in a.failures] == [FailureMode.MISSING_FIELD]
+
+
+def test_required_closing_tool_is_enforced_before_partial_calls_execute() -> None:
+    first = tool_response("resolve_person", {"surface": "何超"})
+    second = LLMResponse(
+        tool_calls=(
+            RawToolCall(name="resolve_person", arguments={"surface": "何超"}),
+            RawToolCall(name="resolve_week", arguments={"surface": "本周"}),
+        )
+    )
+    spec = AgentSpec(
+        name="route",
+        tools=("resolve_person", "resolve_week"),
+        required_tools=("resolve_week",),
+    )
+    harness, _, handlers = build_harness([first, second])
+
+    out = harness.call(spec)
+
+    assert out.llm_calls == 2
+    assert out.attempts[0].failures[0].mode is FailureMode.MISSING_FIELD
+    assert [call.name for call in out.calls] == ["resolve_person", "resolve_week"]
+    assert handlers["resolve_person"].calls == 1
+    assert handlers["resolve_week"].calls == 1
 
 
 def test_feedback_carries_field_expected_actual() -> None:
@@ -236,7 +277,7 @@ def test_budget_break_between_tool_calls_keeps_completed_work() -> None:
 
 def test_probe_uses_the_independent_pool() -> None:
     harness, _, _ = build_harness(
-        [tool_response("probe_solve", {"iso_week": "2026W02", "relaxations": ["R1"]})]
+        [tool_response("probe_solve", {"iso_week": "2026W02", "relaxations": ["TIER_1"]})]
     )
     out = harness.call(DIAGNOSIS)
     assert out.results[0].ok is True

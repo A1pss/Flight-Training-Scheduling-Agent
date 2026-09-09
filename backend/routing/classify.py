@@ -258,7 +258,7 @@ _TOOL_NAME_PREFIXES: Final[frozenset[str]] = frozenset(
 )
 
 
-def merge_slots(scanned: _Slots, proposed: _Slots) -> _Slots:
+def merge_slots(scanned: _Slots, proposed: _Slots, *, raw_text: str | None = None) -> _Slots:
     """把确定性扫描结果与模型给的槽位**合并**，逐类以扫描结果优先。
 
     ## 这个函数为什么存在（M9-B 实测定位）
@@ -293,9 +293,18 @@ def merge_slots(scanned: _Slots, proposed: _Slots) -> _Slots:
     """
 
     def clean(values: list[str]) -> list[str]:
-        return [v for v in values if not _looks_like_tool_call(v)]
+        return [
+            v
+            for v in values
+            if not _looks_like_tool_call(v) and (raw_text is None or v.strip() in raw_text)
+        ]
 
-    proposed_week = "" if _looks_like_tool_call(proposed.week) else proposed.week
+    proposed_week = (
+        ""
+        if _looks_like_tool_call(proposed.week)
+        or (raw_text is not None and proposed.week.strip() not in raw_text)
+        else proposed.week
+    )
     return _Slots(
         persons=list(scanned.persons) if scanned.persons else clean(proposed.persons),
         aircraft=list(scanned.aircraft) if scanned.aircraft else clean(proposed.aircraft),
@@ -500,7 +509,14 @@ def classify_intent(
     # ★ 二级路径同样要过确定性扫描器，再与模型给的槽位兼并（见 `merge_slots`）。
     #   原先这里直接用 `slots`，模型把 surface 写成 `resolve_week(2026-W03)`
     #   就会一路走到歧义与反问。
-    merged = merge_slots(scan_slots(stripped, directory), slots)
+    merged = merge_slots(
+        scan_slots(stripped, directory),
+        slots,
+        # 查询会在 Knowledge 改写层再次做实体消解；这里只允许用户原文里
+        # 确实出现的提示，避免模型幻觉槽位挡住知识查询。排班类则需要保留
+        # LLM 从口语别称中抽出的 surface，再交给确定性目录消解。
+        raw_text=stripped if intent == "query" else None,
+    )
     resolutions = _resolve_slots(merged, directory, today=today)
     if intent == "query":
         # 查询的实体消解会在 Knowledge 改写层按原问题再做一次；route 这里只保留

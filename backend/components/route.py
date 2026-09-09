@@ -28,6 +28,8 @@ def route(state: FTSState) -> Command:
 
 from __future__ import annotations
 
+import re
+from dataclasses import replace
 from datetime import date
 from typing import Any
 
@@ -44,6 +46,10 @@ from backend.routing.classify import IntentResult, classify_intent
 from backend.routing.entities import EntityDirectory, week_start_of
 from backend.routing.rules import INTENT_HANDOFF
 from backend.schemas.intent import SchedulingRequest, SolveIntent
+
+_DISRUPTION_WORDS = re.compile(
+    r"请假|休假|出差|不可用|送修|维修|定检|关闭|关了|容量|训练窗|改成|调开"
+)
 
 
 def clarification_command(state: FTSState) -> Command[str]:
@@ -96,6 +102,7 @@ def route_node(
         calibrator=calibrator,
         settings=cfg,
     )
+    decision = _promote_existing_plan_change(state, decision, text)
 
     update: dict[str, Any] = {
         "intent": decision.intent,
@@ -191,6 +198,24 @@ def _decision_payload(decision: IntentResult) -> dict[str, Any]:
         "ambiguities": len(decision.ambiguities),
         "next_node": decision.next_node,
     }
+
+
+def _promote_existing_plan_change(
+    state: FTSState,
+    decision: IntentResult,
+    text: str,
+) -> IntentResult:
+    """已有方案上的资源/人员扰动按重排处理，不让二级路由误落新排班。"""
+    if (
+        decision.intent != "schedule"
+        or state_get(state, "solution", None) is None
+        or _DISRUPTION_WORDS.search(text) is None
+    ):
+        return decision
+    request = decision.request
+    if isinstance(request, SchedulingRequest):
+        request = request.model_copy(update={"kind": "reschedule"})
+    return replace(decision, intent="reschedule", request=request, next_node="planner")
 
 
 def _week_start(decision: IntentResult) -> str | None:

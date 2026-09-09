@@ -34,25 +34,36 @@ def planner_node(state: FTSState) -> Command:
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Any, Final
 
 from backend.core.config import Settings, get_settings
 from backend.core.errors import FTSError
-from backend.harness import AgentOutput, AgentSpec, ContextBlock, Harness, structured_summary
+from backend.harness import (
+    AgentOutput,
+    AgentSpec,
+    ContextBlock,
+    Harness,
+    ToolResult,
+    ValidatedCall,
+    structured_summary,
+)
 from backend.planner.authority import authorized_tiers
+from backend.planner.revision import for_solver
 from backend.planner.scope import ScopeDecision, apply_scope_policy
-from backend.routing.entities import iso_week_of
+from backend.routing.entities import EntityDirectory, iso_week_of
 from backend.routing.modifiers import scan_modifiers
 from backend.schemas.intent import (
+    IncrementalConstraint,
     ObjectiveWeights,
     QueryRequest,
     SchedulingRequest,
     SolveIntent,
     UserRole,
 )
-from backend.schemas.plan import SchedulePlan
+from backend.schemas.plan import TRAINING_WINDOW_END, TRAINING_WINDOW_START, SchedulePlan
 
 #: Planner 在主流程里暴露给模型的工具（必须是 ACL 行的子集，少给可以多给不行）
 PLANNER_TOOLS: Final[tuple[str, ...]] = (
@@ -61,13 +72,21 @@ PLANNER_TOOLS: Final[tuple[str, ...]] = (
     "resolve_week",
     "estimate_scope",
     "assess_disruption",
+    "translate_revision",
     "propose_solve_intent",
     "check_authority",
     "ask_user",
     "escalate",
 )
 
-PLANNER_AGENT: Final[AgentSpec] = AgentSpec(name="planner", tools=PLANNER_TOOLS)
+PLANNER_AGENT: Final[AgentSpec] = AgentSpec(
+    name="planner",
+    tools=PLANNER_TOOLS,
+    required_tools=("propose_solve_intent",),
+)
+
+_WEEK_SURFACE = re.compile(r"\d{4}-?W\d{1,2}|本周|这周|下周|上周|下一周|上一周")
+_GROUP_SCOPE = re.compile(r"所有人|全体|学员们|全体学员|全体教员|教员们")
 
 #: 三项目标权重的中性默认值（R3 偏好档，怎么调都不影响可行性）
 NEUTRAL_WEIGHTS: Final[ObjectiveWeights] = ObjectiveWeights(
@@ -196,6 +215,151 @@ def _planner_blocks(
     return blocks
 
 
+def recommended_planner_tools(
+    request: SchedulingRequest | QueryRequest | None,
+) -> tuple[str, ...]:
+    """按请求形状给出 Planner 的建议工具顺序。
+
+    这些工具用于补证与影响面判断，但不是 Harness 的“全有或全无”契约。
+    把它们全部塞进 ``AgentSpec.required_tools`` 会让一个辅助调用缺席时，连同
+    已经正确生成的 ``propose_solve_intent`` 一起丢弃；M9-B 完整轨迹里这正是
+    多条 Schedule/Reschedule 变成“零工具”的直接原因。
+
+    真正不可缺的只有收口工具 ``propose_solve_intent``。用户已经由上游消解的
+    人员/课目范围会在 :func:`_complete_explicit_scope` 再做确定性合并，因此
+    辅助工具少一次不会让模型凭空扩大求解范围。
+    """
+    if not isinstance(request, SchedulingRequest):
+        return ("propose_solve_intent",)
+    recommended: list[str] = []
+    if request.persons:
+        recommended.append("resolve_person")
+    if request.aircraft:
+        recommended.append("resolve_aircraft")
+    if (
+        request.kind == "schedule"
+        and _WEEK_SURFACE.search(request.raw_text)
+        and _GROUP_SCOPE.search(request.raw_text)
+    ):
+        recommended.append("resolve_week")
+    # 首轮排班中的显式限制需要翻译成增量约束；重排则先评估既有方案受影响面，
+    # 修饰本身由下方确定性扫描兼并，避免把 ``translate_revision`` 错排到
+    # ``assess_disruption`` 之前。
+    if request.kind == "schedule" and scan_modifiers(request.raw_text):
+        recommended.append("translate_revision")
+    if _GROUP_SCOPE.search(request.raw_text):
+        recommended.append("estimate_scope")
+    if request.kind == "reschedule":
+        recommended.append("assess_disruption")
+    recommended.append("propose_solve_intent")
+    return tuple(dict.fromkeys(recommended))
+
+
+def required_planner_tools(
+    request: SchedulingRequest | QueryRequest | None,  # noqa: ARG001 - 保留统一调用签名
+) -> tuple[str, ...]:
+    """Planner 唯一的强制收口契约。
+
+    实体消解、范围估算和扰动评估是建议调用；只有结构化提案缺席时，本轮才是
+    真正的半成品，必须由 Harness 回灌重试。
+    """
+    return ("propose_solve_intent",)
+
+
+def _reschedule_preflight_calls(
+    request: SchedulingRequest | QueryRequest | None,
+    *,
+    week_start: date | str | None,
+    prev_plan: SchedulePlan | None,
+) -> tuple[ValidatedCall, ...]:
+    """构造重排的确定性前置检查。
+
+    ``SchedulingRequest`` 已由 Route 消解出实体编号，重排也天然已有“先知道受
+    影响对象、再决定冻结档”的固定因果顺序。实体确认与影响面评估因此不是让
+    模型自由探索的工具选择，而是编译 ``SolveIntent`` 前的输入核验。
+
+    仅在目标周已知时运行；缺周次仍由既有的“缺输入即提问”链路处理，绝不默认
+    一个周次。
+    """
+    if not isinstance(request, SchedulingRequest) or request.kind != "reschedule":
+        return ()
+    iso_week = target_week_of(request, week_start)
+    if not iso_week:
+        return ()
+    calls: list[ValidatedCall] = []
+    calls.extend(
+        ValidatedCall(name="resolve_person", arguments={"surface": person})
+        for person in request.persons
+    )
+    calls.extend(
+        ValidatedCall(name="resolve_aircraft", arguments={"surface": aircraft})
+        for aircraft in request.aircraft
+    )
+    calls.append(
+        ValidatedCall(
+            name="assess_disruption",
+            arguments={
+                "iso_week": iso_week,
+                "baseline_plan_id": prev_plan.plan_id if prev_plan is not None else "",
+                "changed_persons": list(request.persons),
+                "changed_aircraft": list(request.aircraft),
+            },
+        )
+    )
+    return tuple(calls)
+
+
+def _preflight_feedback_block(
+    calls: tuple[ValidatedCall, ...], results: tuple[ToolResult, ...]
+) -> ContextBlock:
+    """把确定性预检结果作为 Planner 的证据，不再要求模型重复查询。"""
+    lines: list[str] = []
+    for call, result in zip(calls, results, strict=True):
+        outcome = _brief(result.value) if result.ok else f"失败：{result.error}"
+        lines.append(f"- {call.name}({_brief(call.arguments)}) → {outcome}")
+    return ContextBlock(
+        kind="evidence",
+        role="user",
+        label="reschedule_preflight",
+        content=(
+            "以下重排前置核验已由系统确定性完成，请直接依据结果作答：\n"
+            + "\n".join(lines)
+            + "\n\n现在调用 `propose_solve_intent` 给出求解意图；信息仍不足时调用 `ask_user`。"
+        ),
+    )
+
+
+def _complete_explicit_scope(
+    intent: SolveIntent,
+    request: SchedulingRequest | QueryRequest | None,
+    directory: EntityDirectory | None = None,
+) -> SolveIntent:
+    """让上游已经消解的显式范围覆盖模型的猜测。
+
+    Planner 仍决定冻结档与目标权重；但用户点名的人员/课目不是偏好，而是求解
+    输入的明确边界。模型把 ``[P08, P05]`` 写成 ``ALL``、人名或别的编号时，
+    不能把错误继续带进 ``compile_spec``。
+    """
+    if not isinstance(request, SchedulingRequest):
+        return intent
+    updates: dict[str, Any] = {}
+    if request.persons:
+        updates["scope_persons"] = list(request.persons)
+    elif directory is not None and directory.person_identities:
+        raw = request.raw_text
+        if re.search(r"全体教员|教员们", raw):
+            updates["scope_persons"] = sorted(
+                pid for pid, identity in directory.person_identities.items() if identity == "教员"
+            )
+        elif re.search(r"全体学员|学员们", raw):
+            updates["scope_persons"] = sorted(
+                pid for pid, identity in directory.person_identities.items() if identity == "学员"
+            )
+    if request.missions:
+        updates["scope_missions"] = list(request.missions)
+    return intent.model_copy(update=updates) if updates else intent
+
+
 def _intent_from_calls(output: Any) -> tuple[SolveIntent | None, list[str]]:
     """从工具调用里取出 `SolveIntent` 与追问。
 
@@ -281,7 +445,9 @@ def _tool_feedback_block(output: AgentOutput) -> ContextBlock:
 def _brief(value: Any, limit: int = 160) -> str:
     """把工具入参/返回压成一行，超长截断 —— 回灌的是结论不是明细。"""
     text = (
-        json.dumps(value, ensure_ascii=False, default=str) if not isinstance(value, str) else value
+        json.dumps(value, ensure_ascii=False, sort_keys=True, default=str)
+        if not isinstance(value, str)
+        else value
     )
     return text if len(text) <= limit else text[: limit - 1] + "…"
 
@@ -294,16 +460,14 @@ def plan_solve_intent(
     harness: Harness | None = None,
     settings: Settings | None = None,
     week_start: date | str | None = None,
+    directory: EntityDirectory | None = None,
 ) -> PlannerDecision:
     """v6 §7.3.3 的三步，完整落地。
 
     Planner 节点**在一次请求内只执行一次**，不自主循环、不自主选择下一跳。
 
-    ⚠️ **「只执行一次」说的是节点，不是 LLM 轮次。** 节点内部允许最多
-    `PLANNER_MAX_TURNS`（= 2）轮：第一轮模型往往先调消解类工具
-    （`resolve_week` / `estimate_scope` / `resolve_person`），第二轮才据其结果
-    提议 `SolveIntent` —— 这正是 v6 §12.6 标注的期望路径。**轮数由代码写死、
-    模型无权决定要不要再来一轮**，所以它仍不是自主循环。
+    节点内部的 LLM 调用轮数同样固定为 ``PLANNER_MAX_TURNS``（当前为 1，Z-43）。
+    实体消解、影响面评估与提案可以放在同一次响应中；Planner 不自主循环。
 
     `week_start` 是黑板上已有的周次（`state["week_start"]`），作为目标周的
     第三级来源交给 :func:`target_week_of` —— 不给它，Planner 就看不到那个周次，
@@ -318,9 +482,48 @@ def plan_solve_intent(
 
     if harness is not None:
         blocks = _planner_blocks(request, prev_plan, user_role=user_role, week_start=week_start)
+        required_tools = required_planner_tools(request)
+        recommended_tools = recommended_planner_tools(request)
+        preflight_calls = _reschedule_preflight_calls(
+            request,
+            week_start=week_start,
+            prev_plan=prev_plan,
+        )
+        blocks.append(
+            ContextBlock(
+                kind="summary",
+                content=structured_summary(
+                    "本轮工具契约",
+                    {
+                        "必须调用": list(required_tools),
+                        "建议顺序": list(recommended_tools),
+                        "规则": (
+                            "重排的实体确认与影响面评估由系统预检；"
+                            "模型必须以 propose_solve_intent 收口"
+                            if preflight_calls
+                            else "辅助工具按需调用；必须以 propose_solve_intent 收口"
+                        ),
+                    },
+                ),
+            )
+        )
         try:
+            planner_agent = PLANNER_AGENT.model_copy(update={"required_tools": required_tools})
+            if preflight_calls:
+                preflight_results = harness.execute_deterministic_tools("planner", preflight_calls)
+                blocks.append(_preflight_feedback_block(preflight_calls, preflight_results))
+                # 预检已经留下可审计的真实工具轨迹；不再让模型重复调用同一批
+                # 工具，收窄为“提案或追问”可避免一次响应里重复探索污染路径。
+                planner_agent = planner_agent.model_copy(
+                    update={
+                        "tools": ("ask_user", "escalate", "propose_solve_intent"),
+                    }
+                )
             for turn in range(1, PLANNER_MAX_TURNS + 1):
-                output = harness.call(PLANNER_AGENT, blocks)
+                output = harness.call(
+                    planner_agent,
+                    blocks,
+                )
                 llm_calls += output.llm_calls
                 if output.degraded:
                     degraded = True
@@ -350,6 +553,8 @@ def plan_solve_intent(
     if intent is None:
         intent = deterministic_intent(request)
 
+    intent = _complete_explicit_scope(intent, request, directory)
+
     # ★ 确定性修饰扫描兼并（`Z-45`）——与 `merge_slots` 对周次的处置同构。
     #   模型抽修饰极不稳定（99 条里只抽到 8 条，且同一修饰换个前半句就抽不到），
     #   而这些表述高度模式化（全集 84 种、7 类）。**可枚举的不交给概率模型。**
@@ -357,9 +562,39 @@ def plan_solve_intent(
     if isinstance(request, SchedulingRequest) and request.raw_text:
         scanned = scan_modifiers(request.raw_text)
         if scanned:
-            have = {c.kind for c in intent.incremental_constraints}
-            merged_constraints = [*intent.incremental_constraints]
-            merged_constraints.extend(c for c in scanned if c.kind not in have)
+            # 扫描器命中的模式化表达是该 kind 的权威翻译。模型有时能猜到
+            # ``PIN_RESOURCE`` 这个 kind，却把 params 留空；若只按 kind 去重，
+            # 正确的 AC10/AC27 集合会被空参数挡掉，求解侧最终禁掉全部候选。
+            # 未被扫描器覆盖的自由表述仍完整保留。
+            scanned_kinds = {c.kind for c in scanned}
+            scanned_surfaces = [c.origin_utterance.strip() for c in scanned]
+
+            def scanner_covers(candidate: IncrementalConstraint) -> bool:
+                origin = candidate.origin_utterance.strip()
+                return any(
+                    surface and (surface in origin or origin in surface)
+                    for surface in scanned_surfaces
+                )
+
+            merged_constraints = [
+                c
+                for c in intent.incremental_constraints
+                if c.kind not in scanned_kinds and not scanner_covers(c)
+            ]
+
+            def solver_ready(constraint: IncrementalConstraint) -> IncrementalConstraint:
+                return for_solver(
+                    constraint,
+                    window_start=TRAINING_WINDOW_START,
+                    horizon_minutes=(
+                        TRAINING_WINDOW_END.hour * 60
+                        + TRAINING_WINDOW_END.minute
+                        - TRAINING_WINDOW_START.hour * 60
+                        - TRAINING_WINDOW_START.minute
+                    ),
+                )
+
+            merged_constraints.extend(solver_ready(constraint) for constraint in scanned)
             intent = intent.model_copy(update={"incremental_constraints": merged_constraints})
 
     # ① 影响面探测 + 自我降档
@@ -416,4 +651,6 @@ __all__ = [
     "PlannerDecision",
     "deterministic_intent",
     "plan_solve_intent",
+    "recommended_planner_tools",
+    "required_planner_tools",
 ]

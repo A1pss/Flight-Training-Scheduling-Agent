@@ -25,7 +25,7 @@ from __future__ import annotations
 import re
 from typing import Any, Final, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from backend.harness.types import ToolSpec
 from backend.schemas.common import EntityKind
@@ -141,6 +141,26 @@ class ProposeSolveIntentParams(_Params):
     iso_week: str = entity_field("week", "目标周")
     intent: SolveIntent
     rationale: str = Field(min_length=1, description="选这套参数的理由，进 Sheet 4")
+
+    @model_validator(mode="before")
+    @classmethod
+    def repair_unambiguous_wrapper_fields(cls, value: Any) -> Any:
+        """归一化模型偶发的两项单层错位，不补造缺失业务值。
+
+        真机实测中模型能给出完整 ``SolveIntent``，但会把
+        ``freeze_reason`` / ``estimated_blast_radius`` 放在工具顶层。两项都只在
+        ``intent`` 中有唯一合法落点，因此可以无歧义搬回；其它未知字段仍由
+        ``extra=forbid`` 拒绝，真正缺失的值也继续触发契约重试。
+        """
+        if not isinstance(value, dict) or not isinstance(value.get("intent"), dict):
+            return value
+        repaired = dict(value)
+        intent = dict(repaired["intent"])
+        for field in ("freeze_reason", "estimated_blast_radius"):
+            if field in repaired and field not in intent:
+                intent[field] = repaired.pop(field)
+        repaired["intent"] = intent
+        return repaired
 
 
 class TranslateRevisionParams(_Params):
@@ -316,7 +336,8 @@ class ProbeSolveParams(_Params):
 
     iso_week: str = entity_field("week", "目标周")
     relaxations: list[str] = Field(
-        default_factory=list, description="试探性放开的松弛项 ID（v6 §3.9.1）"
+        default_factory=list,
+        description="规范松弛档位 ID，只能是 TIER_1、TIER_2 或 TIER_3；留空默认为 TIER_1",
     )
     time_limit_s: float = Field(default=30.0, gt=0, le=30.0, description="单次探针上限（§3.9.2）")
 

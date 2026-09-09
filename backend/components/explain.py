@@ -20,6 +20,10 @@
 `FactIndex` 不含任何推断值。模型写「利用率约七成」这种话时，`七成` 不是数字
 也不在事实表里，那句就该被判不支持——而这正是我们要它被判出来的。
 
+求解墙钟虽然是实测值，但它不是「同输入 → 同结果」的确定量，不能进入 LLM
+请求：否则同一方案重放时只因机器负载不同就会得到不同请求指纹。墙钟仍保留在
+`SolverStats`、trace 与实验报告里，只从生成上下文和生成层数字白名单中排除。
+
 ## 重写循环的边界
 
 `EXPLAIN_MAX_REWRITES` 默认 1（v6 §7.6：`explain 生成 + 核验` 2~3 次调用，
@@ -144,8 +148,6 @@ def build_fact_index(
         note(stats.num_candidates, "候选数")
         note(stats.num_variables, "变量数")
         note(stats.num_constraints, "约束数")
-        note(round(stats.wall_time_ms / 1000, 1), "墙钟秒")
-        note(int(stats.wall_time_ms), "墙钟毫秒")
         citations.append(
             Citation(source_kind="structured", source_id=f"solver:{plan.plan_id}", snippet="")
         )

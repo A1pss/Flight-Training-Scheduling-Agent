@@ -157,6 +157,7 @@ class EntityDirectory:
     """
 
     persons: Mapping[str, str] = field(default_factory=dict)
+    person_identities: Mapping[str, str] = field(default_factory=dict)
     aircraft: Mapping[str, str] = field(default_factory=dict)
     missions: Mapping[str, str] = field(default_factory=dict)
     #: 别名 → 编号。业务方给某人起的小名、机队的旧编号都放这里，精确匹配一档生效
@@ -429,12 +430,11 @@ def directory_from_session(session: Any, snapshot_id: str) -> EntityDirectory:
 
     from backend.models.entities import Aircraft, Mission, Person
 
-    persons = {
-        row.person_id: row.name
-        for row in session.execute(
-            select(Person).where(Person.snapshot_id == snapshot_id)
-        ).scalars()
-    }
+    person_rows = list(
+        session.execute(select(Person).where(Person.snapshot_id == snapshot_id)).scalars()
+    )
+    persons = {row.person_id: row.name for row in person_rows}
+    person_identities = {row.person_id: row.identity for row in person_rows}
     aircraft = {
         row.aircraft_id: row.aircraft_type
         for row in session.execute(
@@ -447,7 +447,12 @@ def directory_from_session(session: Any, snapshot_id: str) -> EntityDirectory:
             select(Mission).where(Mission.snapshot_id == snapshot_id)
         ).scalars()
     }
-    return EntityDirectory(persons=persons, aircraft=aircraft, missions=missions)
+    return EntityDirectory(
+        persons=persons,
+        person_identities=person_identities,
+        aircraft=aircraft,
+        missions=missions,
+    )
 
 
 def collect_ambiguities(resolutions: Iterable[Resolution]) -> list[dict[str, Any]]:

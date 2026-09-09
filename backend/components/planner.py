@@ -23,16 +23,18 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any, cast
 
 from langgraph.types import Command
 
 from backend.core.config import Settings, get_settings
 from backend.core.errors import ErrorCode, FTSError
-from backend.graph.events import emit, error
+from backend.graph.events import emit, emit_all, error
 from backend.graph.state import FTSState, model_get, model_list, user_utterance
 from backend.graph.state import get as state_get
 from backend.harness import Harness
+from backend.planner.authority import ROLE_LABELS, check_authority
 from backend.planner.intent import plan_solve_intent
 from backend.planner.revision import (
     RevisionStack,
@@ -52,6 +54,15 @@ from backend.schemas.intent import (
     UserRole,
 )
 from backend.schemas.plan import SchedulePlan
+
+_RELAXATION_REQUEST = re.compile(r"(?:放宽|忽略|取消|跳过|不管).{0,12}(?:约束|规则)\s*(\d+)")
+_RULE_TO_RELAXATION_TIER = {
+    3: 2,
+    10: 3,
+    11: 3,
+    12: 3,
+    13: 1,
+}
 
 
 def planner_node(
@@ -76,7 +87,7 @@ def planner_node(
             window_start=window_start,
             horizon_minutes=horizon_minutes,
         )
-    return _first_round(state, harness=harness, settings=settings)
+    return _first_round(state, harness=harness, settings=settings, directory=directory)
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -87,6 +98,7 @@ def _first_round(
     *,
     harness: Harness | None,
     settings: Settings | None,
+    directory: EntityDirectory | None,
 ) -> Command[str]:
     cfg = settings or get_settings()
     decision = plan_solve_intent(
@@ -95,6 +107,7 @@ def _first_round(
         prev_plan=model_get(state, "solution", SchedulePlan),
         harness=harness,
         settings=cfg,
+        directory=directory,
         # ★ 黑板上已有的周次要交给 Planner。不传的话，「用户没说周次、但周次
         #   早就在 state 里」这种常见情形会让它看到「（未指定）」并追问一遍，
         #   而那会污染 §12.2 的误执行率与反问阈值（见 reports/M7_收工报告.md §6）。
@@ -154,6 +167,11 @@ def _revision_round(
     stack = RevisionStack.from_state(model_list(state, "revision_stack", IncrementalConstraint))
     utterance = _revision_utterance(state)
 
+    relaxation = _requested_relaxation(utterance)
+    if relaxation is not None:
+        rule_id, tier = relaxation
+        return _relaxation_requires_approval(state, utterance=utterance, rule_id=rule_id, tier=tier)
+
     # ★ 用户发起的 undo（v6 §7.3.4 第 2 条）：弹栈后**照常走完整 solve → validate**。
     #   撤销不是「把上一版方案取回来」，是「去掉那条约束再解一次」——
     #   前者会在快照变了的时候给出一版早已失效的方案。
@@ -186,8 +204,26 @@ def _revision_round(
                     suggestions=exc.suggestions,
                     retryable=True,
                 ),
-                "trace_events": emit(
-                    state, "planner", "negotiation", {"utterance": utterance, "translated": False}
+                "trace_events": emit_all(
+                    state,
+                    [
+                        (
+                            "planner",
+                            "tool_call",
+                            {
+                                "tool": "translate_revision",
+                                "arguments": _revision_tool_args(
+                                    state, utterance=utterance, round_no=stack.round_no
+                                ),
+                                "result": {"translated": False, "error": exc.message},
+                            },
+                        ),
+                        (
+                            "planner",
+                            "negotiation",
+                            {"utterance": utterance, "translated": False},
+                        ),
+                    ],
                 ),
             },
         )
@@ -215,21 +251,41 @@ def _revision_round(
         "revision_echo": echo,
         "pending_revision": True,
         "needs_human": True,
-        "trace_events": emit(
+        "trace_events": emit_all(
             state,
-            "planner",
-            "negotiation",
-            {
-                "utterance": utterance,
-                "kind": human.kind,
-                "targets": list(human.targets),
-                "human_params": human.params,
-                "solver_params": wire.params,
-                "round_no": human.round_no,
-                "source": translation.source,
-                "warnings": list(translation.warnings),
-                "llm_calls": translation.llm_calls,
-            },
+            [
+                (
+                    "planner",
+                    "tool_call",
+                    {
+                        "tool": "translate_revision",
+                        "arguments": _revision_tool_args(
+                            state, utterance=utterance, round_no=human.round_no
+                        ),
+                        "result": {
+                            "kind": human.kind,
+                            "targets": list(human.targets),
+                            "params": human.params,
+                            "source": translation.source,
+                        },
+                    },
+                ),
+                (
+                    "planner",
+                    "negotiation",
+                    {
+                        "utterance": utterance,
+                        "kind": human.kind,
+                        "targets": list(human.targets),
+                        "human_params": human.params,
+                        "solver_params": wire.params,
+                        "round_no": human.round_no,
+                        "source": translation.source,
+                        "warnings": list(translation.warnings),
+                        "llm_calls": translation.llm_calls,
+                    },
+                ),
+            ],
         ),
     }
     if updated_spec is not None:
@@ -238,6 +294,148 @@ def _revision_round(
     #   顺序是规格要求的（§7.3.4 第 4 条「用户确认后才重解」），不是可选项 ——
     #   先解再问等于「翻译错了也已经排了一版」，而修订翻译恰恰是高风险的语义映射。
     return Command(goto="human_gate", update=update)
+
+
+def _requested_relaxation(utterance: str) -> tuple[int, int | None] | None:
+    """识别“直接放宽规则”请求；它不是六种架次修订之一。
+
+    返回 ``(rule_id, tier)``。``tier=None`` 表示 R0 规则，任何角色都无权放宽。
+    这里只识别明确写出规则号的请求，不猜用户说的“那条限制”是哪一条。
+    """
+    match = _RELAXATION_REQUEST.search(utterance)
+    if match is None:
+        return None
+    rule_id = int(match.group(1))
+    return rule_id, _RULE_TO_RELAXATION_TIER.get(rule_id)
+
+
+def _relaxation_requires_approval(
+    state: FTSState,
+    *,
+    utterance: str,
+    rule_id: int,
+    tier: int | None,
+) -> Command[str]:
+    """阻断把规则放宽伪装成架次修订，并交给明确授权流程。
+
+    修订翻译只产出六种 ``IncrementalConstraint``；松弛档由诊断/授权链处理。
+    两者混用会让模型把“放宽约束11”翻译成 ``PIN_TIME`` 之类无关约束，随后
+    在用户不知情的情况下进入求解。这里不改栈、不改 ``constraint_spec``。
+    """
+    role = str(state_get(state, "user_role", "scheduler"))
+    round_no = RevisionStack.from_state(
+        model_list(state, "revision_stack", IncrementalConstraint)
+    ).round_no
+    translation_args = _revision_tool_args(state, utterance=utterance, round_no=round_no)
+    if tier is None:
+        explanation = (
+            f"约束{rule_id}属于不可放宽的 R0 硬约束，任何角色都不能通过修订绕过。"
+            "请改为调整人员、资源或时间范围。"
+        )
+        authority_payload: dict[str, Any] = {
+            "rule_id": rule_id,
+            "requested_tier": None,
+            "granted": False,
+            "reason": "R0 规则不进入松弛授权表",
+        }
+        trace_items: list[tuple[str, Any, dict[str, Any]]] = [
+            (
+                "planner",
+                "tool_call",
+                {
+                    "tool": "translate_revision",
+                    "arguments": translation_args,
+                    "result": {
+                        "translated": False,
+                        "request_kind": "rule_relaxation",
+                        "rule_id": rule_id,
+                        "requested_tier": None,
+                    },
+                },
+            )
+        ]
+    else:
+        authority = check_authority(tier, role)
+        authority_args = {
+            "actor_role": ROLE_LABELS[authority.actor_role],
+            "requested_tier": tier,
+        }
+        question = (
+            f"放宽约束{rule_id} 属于 Tier{tier}，需要"
+            f"{ROLE_LABELS[authority.required_role]}授权，是否请训练主任确认？"
+        )
+        ask_args = {
+            "question": question,
+            "resolution": "answer",
+            "options": ["请训练主任确认", f"不放宽约束{rule_id}"],
+        }
+        explanation = (
+            f"您要求放宽约束{rule_id}，这属于 Tier{tier} 松弛，不是架次修订。"
+            f"{authority.reason}。{question}当前方案和修订栈均未改变。"
+        )
+        authority_payload = {
+            "rule_id": rule_id,
+            "requested_tier": tier,
+            "granted": authority.granted,
+            "required_role": authority.required_role,
+            "actor_role": authority.actor_role,
+            "reason": authority.reason,
+        }
+        trace_items = [
+            (
+                "planner",
+                "tool_call",
+                {
+                    "tool": "translate_revision",
+                    "arguments": translation_args,
+                    "result": {
+                        "translated": False,
+                        "request_kind": "rule_relaxation",
+                        "rule_id": rule_id,
+                        "requested_tier": tier,
+                    },
+                },
+            ),
+            (
+                "planner",
+                "tool_call",
+                {
+                    "tool": "check_authority",
+                    "arguments": authority_args,
+                    "result": authority_payload,
+                },
+            ),
+            (
+                "planner",
+                "tool_call",
+                {
+                    "tool": "ask_user",
+                    "arguments": ask_args,
+                    "result": {"recorded": True, "question": question},
+                },
+            ),
+        ]
+    trace_items.append(
+        (
+            "planner",
+            "negotiation",
+            {
+                "utterance": utterance,
+                "translated": False,
+                "action": "relaxation_authority_gate",
+                "authority": authority_payload,
+            },
+        )
+    )
+    return Command(
+        goto="human_gate",
+        update={
+            "needs_human": True,
+            "pending_revision": False,
+            "explanation": explanation,
+            "trace_events": emit_all(state, trace_items),
+        },
+    )
 
 
 def _cancel_pending_revision(state: FTSState) -> Command[str]:
@@ -305,19 +503,41 @@ def _undo_round(
         "revision_echo": undo_echo(popped, stack),
         "pending_revision": bool(popped),
         "needs_human": True,
-        "trace_events": emit(
+        "trace_events": emit_all(
             state,
-            "planner",
-            "negotiation",
-            {
-                "utterance": utterance,
-                "action": "undo",
-                "requested": times,
-                "undone": len(popped),
-                "dropped_rounds": sorted(dropped_rounds),
-                "remaining": len(stack.items),
-                "version_no": stack.version_no(),
-            },
+            [
+                (
+                    "planner",
+                    "tool_call",
+                    {
+                        "tool": "translate_revision",
+                        "arguments": _revision_tool_args(
+                            state,
+                            utterance=utterance,
+                            round_no=(max(dropped_rounds) if dropped_rounds else stack.round_no),
+                        ),
+                        "result": {
+                            "action": "undo",
+                            "requested": times,
+                            "undone": len(popped),
+                            "dropped_rounds": sorted(dropped_rounds),
+                        },
+                    },
+                ),
+                (
+                    "planner",
+                    "negotiation",
+                    {
+                        "utterance": utterance,
+                        "action": "undo",
+                        "requested": times,
+                        "undone": len(popped),
+                        "dropped_rounds": sorted(dropped_rounds),
+                        "remaining": len(stack.items),
+                        "version_no": stack.version_no(),
+                    },
+                ),
+            ],
         ),
     }
     if spec is not None:
@@ -349,6 +569,21 @@ def _revision_utterance(state: FTSState) -> str:
     decision = model_get(state, "human_decision", HumanDecision)
     comment = getattr(decision, "comment", "") or ""
     return comment.strip() or user_utterance(state)
+
+
+def _revision_tool_args(state: FTSState, *, utterance: str, round_no: int) -> dict[str, Any]:
+    """从本轮真实黑板状态构造修订审计参数，不读取实验期望值。"""
+    plan = model_get(state, "solution", SchedulePlan)
+    spec = model_get(state, "constraint_spec", ConstraintSpec)
+    if plan is not None:
+        iso_week = plan.iso_week
+    elif spec is not None:
+        iso = spec.week_start.isocalendar()
+        iso_week = f"{iso.year}W{iso.week:02d}"
+    else:
+        week_start = state_get(state, "week_start", "")
+        iso_week = str(week_start)
+    return {"utterance": utterance, "round_no": round_no, "iso_week": iso_week}
 
 
 def _echo_with_warnings(echo: str, warnings: tuple[str, ...]) -> str:

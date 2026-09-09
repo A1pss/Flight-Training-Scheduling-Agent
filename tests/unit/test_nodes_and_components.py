@@ -13,6 +13,7 @@ from typing import Any, cast
 import pytest
 
 from backend.components.explain import (
+    _facts_block,
     build_fact_index,
     fallback_text,
     rewrite_hint,
@@ -21,17 +22,20 @@ from backend.components.explain import (
     verify_claim,
     verify_claims,
 )
-from backend.components.planner import apply_intent_tier, rollback_revision
+from backend.components.planner import apply_intent_tier, planner_node, rollback_revision
 from backend.components.route import clarification_command, route_node
 from backend.graph.state import FTSState, initial_state, user_utterance
 from backend.graph.state import get as state_get
+from backend.llm.provider import request_fingerprint
+from backend.llm.types import LLMRequest
 from backend.nodes import DETERMINISTIC_NODE_NAMES
 from backend.nodes.human_gate import DECISION_ROUTES, gate_payload, parse_decision
 from backend.nodes.resume_guard import StalenessVerdict, change_dates, plan_entity_ids
-from backend.nodes.validate import inject_nogoods
+from backend.nodes.validate import inject_nogoods, validation_context_for_scope
 from backend.schemas.common import HumanDecision
 from backend.schemas.intent import IncrementalConstraint, ObjectiveWeights, SolveIntent
 from backend.schemas.validation import CheckResult, ValidationReport, Violation
+from backend.validator import ValidationContext
 from tests.fixtures.graph_fixtures import (
     FakeHarness,
     all_green_report,
@@ -315,6 +319,43 @@ def test_nogood_is_a_no_op_when_there_is_nothing_to_forbid() -> None:
     assert inject_nogoods(spec(), empty, p, round_no=2).incremental_constraints == []
 
 
+def test_partial_plan_projects_only_c03_c13_obligations() -> None:
+    from backend.core.ruleset import get_ruleset, get_semantics
+
+    marker = object()
+    ctx = ValidationContext(
+        week_start=date(2026, 1, 5),
+        persons={"P01": marker, "P05": marker, "P06": marker},  # type: ignore[dict-item]
+        aircraft={"AC10": marker},  # type: ignore[dict-item]
+        missions={"missionA-1": marker, "missionC-1": marker},  # type: ignore[dict-item]
+        airspaces={"IFR": marker},  # type: ignore[dict-item]
+        runways={"RWY-1": marker},  # type: ignore[dict-item]
+        progress={
+            ("P05", "missionA-1"): marker,  # type: ignore[dict-item]
+            ("P06", "missionA-1"): marker,  # type: ignore[dict-item]
+            ("P06", "missionC-1"): marker,  # type: ignore[dict-item]
+        },
+        ruleset=get_ruleset(),
+        semantics=get_semantics(),
+        snapshot_id="snap_test",
+    )
+    partial_spec = spec().model_copy(
+        update={"scope_persons": ["P06"], "scope_missions": ["missionC-1"]}
+    )
+    projected = validation_context_for_scope(
+        ctx,
+        partial_spec,
+        plan([sortie("S000001")]),
+    )
+
+    assert set(projected.persons) == {"P01", "P06"}  # 作用域人员 + 实际带飞机组
+    assert set(projected.missions) == {"missionC-1"}
+    assert set(projected.progress) == {("P06", "missionC-1")}
+    assert projected.aircraft is ctx.aircraft
+    assert projected.airspaces is ctx.airspaces
+    assert projected.runways is ctx.runways
+
+
 # ─────────────────────────────────────────────────────────────────────
 # human_gate
 # ─────────────────────────────────────────────────────────────────────
@@ -449,6 +490,86 @@ def test_apply_intent_tier_takes_the_highest_authorized() -> None:
     assert apply_intent_tier(intent) == 2
 
 
+def test_revision_rule_relaxation_uses_tier3_authority_gate() -> None:
+    original_spec = spec()
+    command = planner_node(
+        state(
+            revision_round=1,
+            user_role="scheduler",
+            human_decision=HumanDecision(
+                decision="REVISE",
+                user_id="u1",
+                role="scheduler",
+                comment="这次直接放宽约束11 的周上限",
+            ),
+            constraint_spec=original_spec,
+            solution=plan([sortie("S000001")]),
+        )
+    )
+
+    assert command.goto == "human_gate"
+    update = cast(dict[str, Any], command.update)
+    assert update["pending_revision"] is False
+    assert "Tier3" in update["explanation"]
+    assert "训练主任" in update["explanation"]
+    assert "当前方案和修订栈均未改变" in update["explanation"]
+    assert "constraint_spec" not in update
+    events = update["trace_events"]
+    assert [event.kind for event in events] == [
+        "tool_call",
+        "tool_call",
+        "tool_call",
+        "negotiation",
+    ]
+    assert [event.seq for event in events] == [0, 1, 2, 3]
+    assert [event.payload.get("tool") for event in events[:3]] == [
+        "translate_revision",
+        "check_authority",
+        "ask_user",
+    ]
+    assert events[0].payload["arguments"] == {
+        "utterance": "这次直接放宽约束11 的周上限",
+        "round_no": 1,
+        "iso_week": "2026W02",
+    }
+    assert events[1].payload["arguments"] == {
+        "actor_role": "排班员",
+        "requested_tier": 3,
+    }
+    assert events[2].payload["arguments"] == {
+        "question": "放宽约束11 属于 Tier3，需要训练主任授权，是否请训练主任确认？",
+        "resolution": "answer",
+        "options": ["请训练主任确认", "不放宽约束11"],
+    }
+    event = events[-1]
+    assert event.payload["action"] == "relaxation_authority_gate"
+    assert event.payload["authority"]["requested_tier"] == 3
+    assert event.payload["authority"]["granted"] is False
+
+
+def test_revision_cannot_authorize_r0_rule_relaxation() -> None:
+    command = planner_node(
+        state(
+            revision_round=1,
+            user_role="admin",
+            human_decision=HumanDecision(
+                decision="REVISE",
+                user_id="u1",
+                role="admin",
+                comment="忽略约束8，直接重排",
+            ),
+            constraint_spec=spec(),
+            solution=plan([sortie("S000001")]),
+        )
+    )
+
+    assert command.goto == "human_gate"
+    update = cast(dict[str, Any], command.update)
+    assert "任何角色都不能" in update["explanation"]
+    assert update["trace_events"][-1].payload["authority"]["requested_tier"] is None
+    assert "constraint_spec" not in update
+
+
 # ─────────────────────────────────────────────────────────────────────
 # explain 的确定性核验器
 # ─────────────────────────────────────────────────────────────────────
@@ -474,6 +595,22 @@ def test_fact_index_counts_only_what_it_can_count() -> None:
     assert index.supports_number("14")  # 已校验规则条数
     assert index.supports_entity("AC27")
     assert not index.supports_entity("AC99")
+
+
+def test_explain_request_ignores_runtime_solver_wall_time() -> None:
+    """同一方案只因机器快慢不同，不得让严格 record/replay 的请求指纹漂移。"""
+    p = sample_plan()
+    validation = all_green_report()
+    fast = stats().model_copy(update={"wall_time_ms": 5.0})
+    slow = stats().model_copy(update={"wall_time_ms": 23_508.0})
+    fast_facts = _facts_block(p, build_fact_index(p, validation, fast), validation)
+    slow_facts = _facts_block(p, build_fact_index(p, validation, slow), validation)
+
+    assert "墙钟" not in fast_facts
+    assert fast_facts == slow_facts
+    assert request_fingerprint(
+        LLMRequest(messages=[{"role": "user", "content": fast_facts}])
+    ) == request_fingerprint(LLMRequest(messages=[{"role": "user", "content": slow_facts}]))
 
 
 def test_split_claims_drops_empty_sentences() -> None:

@@ -53,6 +53,18 @@ from tests.datasets.tool_params import params_for
 W03 = "2026W03"
 W02 = "2026W02"
 
+FULL_INGEST_TOOLS: tuple[str, ...] = (
+    "classify_doc",
+    "parse_personnel",
+    "classify_doc",
+    "parse_aircraft",
+    "classify_doc",
+    "parse_missions",
+    "classify_doc",
+    "parse_rules",
+    "diff_snapshot",
+)
+
 #: 排班链路的固定尾巴（v6 §7.5：`explain → resume_guard → human_gate → commit_plan`）
 TAIL: tuple[str, ...] = ("explain", "resume_guard", "human_gate", "commit_plan", "END")
 
@@ -320,6 +332,18 @@ def diagnosis_samples() -> list[dict[str, Any]]:
             "`rank_relaxations` 判错 —— v6 §3.9.1 要求**每条松弛提案必经探针实证验证**，"
             "没验过的提案根本不许呈现。",
             acceptable=(
+                [
+                    "route",
+                    "planner",
+                    "compile_spec",
+                    "solve",
+                    "diagnosis",
+                    "tool:min_conflict_set",
+                    "tool:probe_solve",
+                    "tool:rank_relaxations",
+                    "human_gate",
+                    "END",
+                ],
                 [
                     "route",
                     "planner",
@@ -921,8 +945,11 @@ def workflow_samples() -> list[dict[str, Any]]:
                 "ingest.prepare",
                 "tool:classify_doc",
                 "tool:parse_personnel",
+                "tool:classify_doc",
                 "tool:parse_aircraft",
+                "tool:classify_doc",
                 "tool:parse_missions",
+                "tool:classify_doc",
                 "tool:parse_rules",
                 "tool:diff_snapshot",
                 "ingest.gate",
@@ -938,8 +965,11 @@ def workflow_samples() -> list[dict[str, Any]]:
                     "ingest.prepare",
                     "tool:classify_doc",
                     "tool:parse_rules",
+                    "tool:classify_doc",
                     "tool:parse_personnel",
+                    "tool:classify_doc",
                     "tool:parse_aircraft",
+                    "tool:classify_doc",
                     "tool:parse_missions",
                     "tool:diff_snapshot",
                     "ingest.gate",
@@ -951,8 +981,11 @@ def workflow_samples() -> list[dict[str, Any]]:
                     "ingest.prepare",
                     "tool:classify_doc",
                     "tool:parse_personnel",
+                    "tool:classify_doc",
                     "tool:parse_aircraft",
+                    "tool:classify_doc",
                     "tool:parse_missions",
+                    "tool:classify_doc",
                     "tool:parse_rules",
                     "tool:diff_snapshot",
                     "ingest.commit",
@@ -971,21 +1004,24 @@ def workflow_samples() -> list[dict[str, Any]]:
                     "parse_personnel",
                     params_for("parse_personnel"),
                 ),
+                _step(3, "extract", "classify_doc", params_for("classify_doc")),
                 _step(
-                    3,
+                    4,
                     "extract",
                     "parse_aircraft",
                     params_for("parse_aircraft"),
                 ),
+                _step(5, "extract", "classify_doc", params_for("classify_doc")),
                 _step(
-                    4,
+                    6,
                     "extract",
                     "parse_missions",
                     params_for("parse_missions"),
                 ),
-                _step(5, "extract", "parse_rules", params_for("parse_rules")),
+                _step(7, "extract", "classify_doc", params_for("classify_doc")),
+                _step(8, "extract", "parse_rules", params_for("parse_rules")),
                 _step(
-                    6,
+                    9,
                     "extract",
                     "diff_snapshot",
                     params_for("diff_snapshot"),
@@ -1278,12 +1314,11 @@ DIAGNOSIS_CASES: tuple[tuple[str, str, str, int, bool, str], ...] = (
     ),
     (
         "I1",
-        "两名教员整周不可用、第三名只上半天",
+        "三名教员整周不可用 + 训练窗压到 06:00-09:00",
         W02,
         2,
         True,
-        "★ 边界样本：M2-A 实测「两名教员不可用」其实**可行**（单教员周上限 12 > 需求 9），"
-        "所以这条要靠第三名的半天限制才真正逼到不可行",
+        "§12.3 I1 第 4 变体：教员岗归零后再收紧训练窗，仍保持同族单调不可行",
     ),
     (
         "I2",
@@ -1303,21 +1338,21 @@ DIAGNOSIS_CASES: tuple[tuple[str, str, str, int, bool, str], ...] = (
     ),
     (
         "I2",
-        "五架 JL-8 维护、AC10 每天只开两小时",
+        "六架 JL-8 全部整周维护 + 一名教员整周不可用",
         W02,
         3,
         False,
-        "★ 不是「全停」而是「几乎全停」，探针要多探几轮才能排除 Tier 1/Tier 2",
+        "§12.3 I2 第 5 变体：学员机队全停后再收紧教员容量，探针排除 Tier 1/Tier 2",
     ),
     ("I3", "IFR Route 整周容量降为 0", W02, 2, True, "C 类本周顺延、欠账记入下周；归因 C06/C13"),
     ("I3", "IFR 与 RT2 同时关闭", W03, 2, True, "两个容量为 1 的空域同时关，B-1 与 C 类一起顺延"),
     (
         "I3",
-        "六个空域容量全部降为 1",
+        "承载 C 类课目的空域关闭 + 全部空域整周容量降为 0",
         W02,
         3,
-        True,
-        "★ 不是关闭而是**压容量**，SAA/SAB 从 2 降到 1；这类扰动最容易被误判为可行",
+        False,
+        "§12.3 I3 第 6 变体：全部空域容量归零后 R2 只能得到 0 架次，升级人工",
     ),
     ("I3", "SAB 容量降为 0", W03, 1, True, "SAB 绑 A-2/F-1/G-1，关掉它直接压 A 类每周必飞"),
     (
@@ -1328,47 +1363,61 @@ DIAGNOSIS_CASES: tuple[tuple[str, str, str, int, bool, str], ...] = (
         True,
         "30 分钟窗装不下任何 B/C/F 类课目（35~69 分钟），最小冲突集含 C01_window",
     ),
-    ("I4", "训练窗压缩至 06:00-07:00", W03, 2, True, "60 分钟窗只装得下短课目，边界比上一条松一档"),
-    ("I4", "每天只开 06:00-06:20，且 AC73 定检", W02, 2, True, "时间窗 + 机队双重收紧"),
     (
         "I4",
-        "训练窗按天递减（周一 8 小时到周日 30 分钟）",
+        "训练窗压缩至 06:00-06:25",
+        W03,
+        2,
+        False,
+        "25 分钟窗短于最短课目，R2 不能恢复任何架次，需人工决定延长训练窗",
+    ),
+    (
+        "I4",
+        "每天只开 06:00-06:20，且 AC73 定检",
+        W02,
+        2,
+        False,
+        "时间窗 + 机队双重收紧，R2 不能恢复任何架次，升级人工",
+    ),
+    (
+        "I4",
+        "训练窗压缩至 06:00-06:05",
         W03,
         3,
-        True,
-        "★ 逐日不同的窗口，探针要判断顺延到哪一天才有意义",
+        False,
+        "§12.3 I4 第 6 变体：5 分钟窗无法容纳任何课目，升级人工",
     ),
     (
         "I5",
         "服务学员机型的跑道全部关闭",
         W03,
         1,
-        True,
-        "起降密度组把候选压成 0，约束9 确实进冲突集（这正是 I5 的设计目的）",
+        False,
+        "起降密度组把候选压成 0；按 §12.3 I5 无 R2 方案，升级人工调配跑道",
     ),
     (
         "I5",
-        "RWY-1 关闭（JL-9 无处起降）",
+        "服务学员机型的跑道全部关闭 + 训练窗压到 06:00-09:00",
         W02,
         2,
-        True,
-        "★ 只关一条：JL-9 全停但 JL-8 仍可走 RWY-2 —— 影响面比 I5 主构造小得多",
+        False,
+        "§12.3 I5 第 3 变体：无跑道后再收紧训练窗仍无 R2 方案，升级人工",
     ),
     (
         "I5",
-        "两条跑道每天各只开一小时",
+        "服务学员机型的跑道全部关闭 + 一名教员整周不可用",
         W03,
         3,
-        True,
-        "跑道不是关闭而是限时，20 分钟窗口的密度上限成为瓶颈",
+        False,
+        "§12.3 I5 第 4 变体：无跑道后再收紧教员容量仍无 R2 方案，升级人工",
     ),
     (
         "I5",
-        "RWY-2 关闭 + 起降间隔改为 20 分钟",
+        "服务学员机型的跑道全部关闭 + 一架学员机型飞机整周维护",
         W02,
         2,
-        True,
-        "★ 用户把约束9 的 7 分钟间隔改严（允许的方向），叠加跑道关闭后不可行",
+        False,
+        "§12.3 I5 第 5 变体：无跑道后再收紧飞机资源仍无 R2 方案，升级人工",
     ),
     (
         "I1",
@@ -1627,6 +1676,7 @@ def schedule_full() -> list[dict[str, Any]]:
     """13 条补足到 15（样例 2 条在前）。"""
     rows: list[dict[str, Any]] = []
     for i, (utterance, week, tools, shape, loop, why) in enumerate(SCHEDULE_CASES, start=3):
+        item_id = f"TRJ-SCH-{i:03d}"
         reject = "门禁驳回" in shape
         tail = ["explain", "resume_guard", "human_gate", "END"] if reject else list(TAIL)
         middle = ["compile_spec", "solve", "validate"]
@@ -1653,6 +1703,25 @@ def schedule_full() -> list[dict[str, Any]]:
         if not acceptable:
             acceptable.append(
                 [*SCH_HEAD, "tool:estimate_scope", *(f"tool:{t}" for t in tools), *middle, *tail]
+            )
+
+        # Planner 对带“本周/下周/ISO 周”的群体请求可安全补一次周次规范化。
+        # 它不改变求解语义，不能因为与 estimate_scope 同时出现就被完整路径枚举漏判。
+        if item_id in {"TRJ-SCH-004", "TRJ-SCH-007", "TRJ-SCH-010", "TRJ-SCH-012"}:
+            with_week = [*tools]
+            if "resolve_week" not in with_week:
+                with_week.insert(0, "resolve_week")
+            acceptable.append([*SCH_HEAD, *(f"tool:{t}" for t in with_week), *middle, *tail])
+            if "estimate_scope" not in with_week:
+                before_close = [*with_week[:-1], "estimate_scope", with_week[-1]]
+                acceptable.append([*SCH_HEAD, *(f"tool:{t}" for t in before_close), *middle, *tail])
+
+        # 首轮确定性 scan_modifiers 已把“AC84 别用”编译进 SolveIntent；
+        # translate_revision 是可审计的补充调用，不再是正确性的必要前提。
+        if item_id == "TRJ-SCH-013":
+            without_translate = tuple(t for t in tools if t != "translate_revision")
+            acceptable.append(
+                [*SCH_HEAD, *(f"tool:{t}" for t in without_translate), *middle, *tail]
             )
 
         forbidden = [
@@ -1694,12 +1763,13 @@ def schedule_full() -> list[dict[str, Any]]:
                 "planner",
                 tool,
                 _planner_params(tool, week),
+                optional=(item_id == "TRJ-SCH-013" and tool == "translate_revision"),
             )
             for order, tool in enumerate(tools, start=1)
         )
         rows.append(
             _item(
-                f"TRJ-SCH-{i:03d}",
+                item_id,
                 "schedule",
                 utterance,
                 "基准周快照已就绪，无既有计划。"
@@ -1772,6 +1842,60 @@ def reschedule_full() -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for i, (utterance, week, resolvers, why) in enumerate(RESCHEDULE_CASES, start=2):
         tools = (*resolvers, "assess_disruption", "propose_solve_intent")
+        item_id = f"TRJ-RSC-{i:03d}"
+        if item_id == "TRJ-RSC-005":
+            # IFR Route 整周关闭的权威回归是 INFEASIBLE；该条应进入
+            # Diagnosis，而不是继续 validate/commit 一个不存在的方案。
+            path = [
+                *SCH_HEAD,
+                "tool:assess_disruption",
+                "tool:propose_solve_intent",
+                "compile_spec",
+                "solve",
+                "diagnosis",
+                "human_gate",
+                "END",
+            ]
+            rows.append(
+                _item(
+                    item_id,
+                    "reschedule",
+                    utterance,
+                    f"{'本周' if week == W02 else '下周'}已有一版**已批准**的计划。",
+                    path,
+                    f"重排：{why}。关闭 IFR Route 后求解应为 INFEASIBLE，必须进入 Diagnosis，"
+                    "不得走到 validate/commit_plan。",
+                    acceptable=(
+                        [
+                            *SCH_HEAD,
+                            "tool:assess_disruption",
+                            "tool:estimate_scope",
+                            "tool:propose_solve_intent",
+                            "compile_spec",
+                            "solve",
+                            "diagnosis",
+                            "human_gate",
+                            "END",
+                        ],
+                    ),
+                    forbidden=(
+                        [
+                            *SCH_HEAD,
+                            "tool:assess_disruption",
+                            "tool:propose_solve_intent",
+                            "compile_spec",
+                            "solve",
+                            "validate",
+                            *TAIL,
+                        ],
+                    ),
+                    steps=tuple(
+                        _step(order, "planner", tool, _planner_params(tool, week))
+                        for order, tool in enumerate(tools, start=1)
+                    ),
+                )
+            )
+            continue
         path = [
             *SCH_HEAD,
             *(f"tool:{t}" for t in tools),
@@ -1804,6 +1928,22 @@ def reschedule_full() -> list[dict[str, Any]]:
                 *TAIL,
             ]
         )
+        if item_id == "TRJ-RSC-004":
+            # “下周三”需要周次规范化；跑道关闭也可由确定性修饰扫描留下
+            # translate_revision 审计动作。两者都不改变 assess_disruption 的必要性。
+            acceptable.append(
+                [
+                    *SCH_HEAD,
+                    "tool:resolve_week",
+                    "tool:translate_revision",
+                    "tool:assess_disruption",
+                    "tool:propose_solve_intent",
+                    "compile_spec",
+                    "solve",
+                    "validate",
+                    *TAIL,
+                ]
+            )
         without_assess = tuple(t for t in tools if t != "assess_disruption")
         forbidden = (
             [
@@ -1867,9 +2007,8 @@ REVISION_CASES: tuple[tuple[str, str, str, str], ...] = (
         "这次直接放宽约束11 的周上限",
         "FORBID",
         "authority",
-        "★ **授权不足**：放宽 R1 档需要 director 及以上，scheduler 提这个要求时"
-        "`check_authority` 会把它挡下来并写进 `open_questions` —— "
-        "路径在回显门禁那一步转向追问，**不进 solve**",
+        "★ **授权不足**：约束11 是 R1 规则，只能在 Tier3 由 director 及以上授权；"
+        "scheduler 提这个要求时 `check_authority` 会把它挡下来并转向追问，**不进 solve**",
     ),
     (
         "算了，这版不要了",
@@ -1925,7 +2064,7 @@ def revision_full() -> list[dict[str, Any]]:
                     params_for("translate_revision", utterance=utterance),
                 ),
                 _step(
-                    2, "planner", "check_authority", params_for("check_authority", requested_tier=1)
+                    2, "planner", "check_authority", params_for("check_authority", requested_tier=3)
                 ),
                 _step(
                     3,
@@ -1933,8 +2072,8 @@ def revision_full() -> list[dict[str, Any]]:
                     "ask_user",
                     params_for(
                         "ask_user",
-                        question="放宽 R1 档需要训练主任授权，是否请主任确认？",
-                        options=["请主任确认", "改用 R0 档"],
+                        question="放宽约束11 属于 Tier3，需要训练主任授权，是否请训练主任确认？",
+                        options=["请训练主任确认", "不放宽约束11"],
                     ),
                 ),
             )
@@ -2019,40 +2158,39 @@ def revision_full() -> list[dict[str, Any]]:
 #: `rejected` 走到门禁但用户拒绝，**不落库**。
 INGEST_CASES: tuple[tuple[str, str, tuple[str, ...], str, str], ...] = (
     (
-        "只上传一份人员表",
+        "上传完整四类文件，其中人员表是新版本",
         "full",
-        ("classify_doc", "parse_personnel", "diff_snapshot"),
-        "单文件上传：分类 → 抽取 → Diff → 人工确认 → 落库",
+        FULL_INGEST_TOOLS,
+        "四类必需输入齐全；人员表为本轮变更，其余三类显式随包上传",
     ),
     (
-        "上传新的飞机表",
+        "上传完整四类文件，其中飞机表是新版本",
         "full",
-        ("classify_doc", "parse_aircraft", "diff_snapshot"),
-        "同上，换一类文档",
+        FULL_INGEST_TOOLS,
+        "四类必需输入齐全；飞机表为本轮变更",
     ),
     (
-        "上传新的课目表",
+        "上传完整四类文件，其中课目表是新版本且带课程开始日期",
         "full",
-        ("classify_doc", "parse_missions", "diff_snapshot"),
+        FULL_INGEST_TOOLS,
         "★ 课目表带「课程开始日期」列 —— `cycle_start` 的第一来源（S-14）",
     ),
     (
-        "上传新的规则文件",
+        "上传完整四类文件，其中规则文件是新版本",
         "full",
-        ("classify_doc", "parse_rules", "propose_rule_dsl", "diff_snapshot"),
-        "★ 规则文件多一步 `propose_rule_dsl`：条文 → DSL 草案。**草案不自动生效**，"
-        "要经人工确认门禁（规则是 R0，改它必须有人签字）",
+        FULL_INGEST_TOOLS,
+        "规则 parser 产出结构化条文；规则是 R0，变更仍必须经过人工确认门禁",
     ),
     (
-        "上传人员表和飞机表两份",
+        "上传完整四类文件，其中人员表和飞机表是新版本",
         "full",
-        ("classify_doc", "classify_doc", "parse_personnel", "parse_aircraft", "diff_snapshot"),
-        "★ 两次分类的先后无所谓（规则 A）",
+        FULL_INGEST_TOOLS,
+        "★ 四份文件逐份分类；人员与飞机两类同时发生变更",
     ),
     (
-        "上传一份课目表，但没有课程开始日期列",
+        "上传完整四类文件，但课目表没有课程开始日期列",
         "question",
-        ("classify_doc", "parse_missions"),
+        FULL_INGEST_TOOLS,
         "★ **缺输入即提问**（S-14 / §5.1.1）：`cycle_start` 三条来源全空 → FTS-1004 阻断并追问。"
         "**没有默认值，配置项里也没有** —— 静默给一个默认日期是本项目明令的反模式",
     ),
@@ -2064,23 +2202,16 @@ INGEST_CASES: tuple[tuple[str, str, tuple[str, ...], str, str], ...] = (
         "也不让 `sionB-1` 这类脏 token 进库。路径**停在 prepare**，不进门禁、不落库",
     ),
     (
-        "上传的人员表里刘斌的到期日与总表冲突",
-        "blocked",
-        ("classify_doc", "parse_personnel"),
+        "上传完整四类文件，人员表里刘斌的到期日与总表冲突",
+        "rejected",
+        FULL_INGEST_TOOLS,
         "★ 源内冲突检出（§5.5 的 X1）：BLOCKING 冲突要走人工裁决，"
-        "不能自己挑一个继续 —— 这正是 `SPEC_DECISIONS §C.1` 那条 01-07 / 02-07 的来历",
+        "本用例在门禁保留未裁决状态、不落库；不能自己挑一个继续",
     ),
     (
         "上传四份 PDF，但确认时发现 Diff 不对",
         "rejected",
-        (
-            "classify_doc",
-            "parse_personnel",
-            "parse_aircraft",
-            "parse_missions",
-            "parse_rules",
-            "diff_snapshot",
-        ),
+        (*FULL_INGEST_TOOLS,),
         "★ 门禁 `REJECT`：走到 `ingest.gate` 但用户拒绝 → **不落库**。"
         "`commit` 拿不到 `GateDecision` 就跑不起来，这个切分就是为了让「先落库再说」写不出来",
     ),

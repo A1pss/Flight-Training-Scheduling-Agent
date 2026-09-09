@@ -33,6 +33,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime
@@ -77,6 +78,10 @@ KNOWLEDGE_TOOLS: Final[tuple[str, ...]] = (
 )
 
 KNOWLEDGE_AGENT: Final[AgentSpec] = AgentSpec(name="knowledge", tools=KNOWLEDGE_TOOLS)
+
+
+KnowledgeCheckpointReader = Any
+KnowledgeCheckpointObserver = Any
 
 
 @dataclass(frozen=True)
@@ -129,7 +134,13 @@ def knowledge_tool_handlers(
         statement = str(args.get("sql", ""))
         params = dict(args.get("params") or {})
         limit = int(args.get("limit", 100))
-        rows = session.execute(sql_text(statement), params).mappings().all()
+        # PostgreSQL 中一条坏 SQL 会把**整个外层事务**标成 aborted；Harness
+        # 虽会把工具异常转成 ``ToolResult(ok=False)``，但若不先回滚到
+        # SAVEPOINT，同一 Agent 后续的 ``prereq_cte`` / ``memory.search`` 也会
+        # 全部变成 ``InFailedSqlTransaction``。每次模型生成的 SQL 都放进独立
+        # 保存点：本次查询照常失败并如实回灌，已经存在的请求级事务则保持可用。
+        with session.begin_nested():
+            rows = session.execute(sql_text(statement), params).mappings().all()
         return [{k: _jsonable(v) for k, v in row.items()} for row in rows[:limit]]
 
     def run_prereq(args: dict[str, Any]) -> Any:
@@ -259,16 +270,128 @@ def _jsonable(value: Any) -> Any:
 # ─────────────────────────────────────────────────────────────────────
 # Agent
 # ─────────────────────────────────────────────────────────────────────
-def _blocks(result: RetrievalResult, step: int, gathered: Sequence[str]) -> list[ContextBlock]:
+_HISTORY_QUERY = re.compile(r"上(?:上)?周|上次|上一版|之前|曾经|驳回|第\s*\d+\s*周")
+_COMPOSITE_QUERY = re.compile(r"整体情况|训练情况|接下来|进度差|机队够用")
+
+
+def required_lookup_tools(result: RetrievalResult) -> tuple[str, ...]:
+    """按问题形态给自主检索设定最小证据集，防止查偏后原地回环。"""
+    query = result.query.original_query
+    if _HISTORY_QUERY.search(query):
+        return ("memory.search",)
+    if _COMPOSITE_QUERY.search(query):
+        return ("sql_query", "prereq_cte")
+    if "eligibility" in result.structured.kinds:
+        return ("prereq_cte",)
+    if result.structured.hit or result.query.resolved_entities:
+        return ("sql_query",)
+    return ("bm25_search", "vector_search", "rrf_fuse", "rerank")
+
+
+def _lookup_plan(
+    session: Session,
+    snapshot_id: str,
+    result: RetrievalResult,
+    required: Sequence[str],
+) -> str:
+    """为自主检索提供确定性的合法参数草案。
+
+    Knowledge Agent 可以自主决定是否需要补查，但不应自主发明项目表名、课目
+    编号。开放式问题尤其容易在 ``prereq_cte`` 上把 ``JL-8`` 或
+    ``MISSIONJL-*`` 当成课目。这里的计划只是一段给模型看的**只读指引**，实际
+    执行仍经过 Harness 的契约、实体和 ACL 校验；没有任何答案或数据库结果在此
+    处被猜测。
+    """
+    query = result.query.original_query
+    persons = [e.entity_id for e in result.query.resolved_entities if e.kind == "person"]
+    missions = [e.entity_id for e in result.query.resolved_entities if e.kind == "mission"]
+    known_missions = sorted(m.mission_id for m in semantic.all_missions(session, snapshot_id))
+
+    # 开放式问题没有明确课目时，prereq_cte 仍需要一个真实课目编号。选取
+    # B-1（若当前快照存在）作为最小核验样本；这不是把它冒充成“全部训练情况”，
+    # 只是满足该工具的一项具体输入要求，训练全量仍由 sql_query 读取。
+    target_mission = next((m for m in missions if m in known_missions), None)
+    if target_mission is None:
+        target_mission = next(
+            (m for m in known_missions if m.startswith("missionB-") and m.endswith("-1")),
+            None,
+        )
+    if target_mission is None and known_missions:
+        target_mission = known_missions[0]
+
+    if persons:
+        person_id = persons[0]
+        sql = {
+            "sql": "SELECT * FROM persons WHERE person_id = :pid",
+            "params": {"pid": person_id},
+            "limit": 1,
+        }
+    elif "机队" in query or "飞机" in query or "资源" in query:
+        sql = {
+            "sql": (
+                "SELECT aircraft_id, aircraft_type, seats, turnaround_minutes "
+                "FROM aircraft WHERE snapshot_id = :snapshot_id"
+            ),
+            "params": {"snapshot_id": snapshot_id},
+            "limit": 100,
+        }
+    else:
+        sql = {
+            "sql": "SELECT * FROM missions WHERE snapshot_id = :snapshot_id",
+            "params": {"snapshot_id": snapshot_id},
+            "limit": 100,
+        }
+
+    lines = [
+        "【确定性检索计划（只读）】",
+        f"最低核验顺序：{' → '.join(required)}。只调用这组最低核验工具。",
+    ]
+    if "sql_query" in required:
+        lines.extend(
+            [
+                "sql_query 只能使用当前快照真实表：persons、training_progress、aircraft、"
+                "aircraft_mission_capability、missions、mission_prereq、person_qualifications。",
+                "不要使用 training_records、training_status、trainee_missions、"
+                "flight_schedule 等不存在的表，也不要查询 JL-8/JL-9 作为课目。",
+                "本次 sql_query 建议参数：" + json.dumps(sql, ensure_ascii=False, sort_keys=True),
+            ]
+        )
+    if "prereq_cte" in required:
+        if target_mission is None or not persons:
+            lines.append(
+                "prereq_cte 需要真实 person_id 和 mission_id；缺少时不要编造，说明无法核验。"
+            )
+        else:
+            prereq = {"person_id": persons[0], "mission_id": target_mission}
+            lines.append(
+                "本次 prereq_cte 建议参数："
+                + json.dumps(prereq, ensure_ascii=False, sort_keys=True)
+            )
+    if known_missions:
+        lines.append("当前快照合法 mission_id 候选（只能从中选择）：" + "、".join(known_missions))
+    return "\n".join(lines)
+
+
+def _blocks(
+    result: RetrievalResult,
+    step: int,
+    gathered: Sequence[str],
+    required: Sequence[str],
+    completed: set[str],
+    lookup_plan: str,
+) -> list[ContextBlock]:
     payload: dict[str, Any] = {
         "问题": result.query.original_query,
         "已消解实体": [e.entity_id for e in result.query.resolved_entities] or ["（无）"],
         "结构化结论": len(result.answers),
         "召回上下文": len(result.contexts),
         "本轮": f"{step}/{KNOWLEDGE_MAX_STEPS}",
+        "最低核验工具": list(required),
+        "已完成核验": sorted(completed),
     }
     blocks = [
         ContextBlock(kind="summary", content=structured_summary("当前检索状态", payload)),
+        ContextBlock(kind="summary", content=lookup_plan, role="user"),
     ]
     if gathered:
         blocks.append(
@@ -282,7 +405,8 @@ def _blocks(result: RetrievalResult, step: int, gathered: Sequence[str]) -> list
         ContextBlock(
             kind="history",
             content=(
-                "还需要查什么就调工具；已经够回答了就不要再调。"
+                "只调用尚未完成的最低核验工具；这些工具成功后立即停止，不要改用"
+                "异构工具重复探索。"
                 "**不要自己写答案**，答案由后一步统一生成。"
             ),
             role="user",
@@ -306,6 +430,8 @@ def ask(
     vector_index: VectorIndex | None = None,
     reranker: Reranker | None = None,
     settings: Settings | None = None,
+    control_checkpoint_reader: KnowledgeCheckpointReader | None = None,
+    control_checkpoint_observer: KnowledgeCheckpointObserver | None = None,
 ) -> KnowledgeOutcome:
     """回答一个问题。
 
@@ -365,11 +491,50 @@ def ask(
             )
         )
         gathered: list[str] = []
+        required = required_lookup_tools(result)
+        completed: set[str] = set()
+        lookup_plan = _lookup_plan(session, snapshot_id, result, required)
+        if control_checkpoint_reader is not None:
+            payload = control_checkpoint_reader("knowledge_control")
+            if not isinstance(payload, dict):
+                raise FTSError(
+                    "Knowledge replay checkpoint payload 必须是对象",
+                    details={"name": "knowledge_control"},
+                )
+            raw_required = payload.get("required")
+            raw_plan = payload.get("lookup_plan")
+            if not isinstance(raw_required, list) or not all(
+                isinstance(tool, str) for tool in raw_required
+            ):
+                raise FTSError(
+                    "Knowledge replay checkpoint 缺少合法 required",
+                    details={"name": "knowledge_control"},
+                )
+            if not isinstance(raw_plan, str):
+                raise FTSError(
+                    "Knowledge replay checkpoint 缺少合法 lookup_plan",
+                    details={"name": "knowledge_control"},
+                )
+            required = tuple(raw_required)
+            lookup_plan = raw_plan
+        elif control_checkpoint_observer is not None:
+            control_checkpoint_observer(
+                "knowledge_control",
+                {"required": list(required), "lookup_plan": lookup_plan},
+            )
         max_steps = min(KNOWLEDGE_MAX_STEPS, cfg.KNOWLEDGE_MAX_STEPS)
         for step in range(1, max_steps + 1):
             try:
-                out = harness.call(KNOWLEDGE_AGENT, _blocks(result, step, gathered))
+                out = harness.call(
+                    KNOWLEDGE_AGENT,
+                    _blocks(result, step, gathered, required, completed, lookup_plan),
+                )
             except FTSError as exc:
+                # 重放失配不是生产运行期的 LLM 暂时不可用；若把它降级吞掉，
+                # 最终只会留下“未消费响应”的二次症状，失去实际指纹差异。
+                # 严格重放必须原样失败，供实验驱动器报告具体 request key。
+                if getattr(harness, "strict_replay", False):
+                    raise
                 notes.append(f"自主检索中断（{exc.message}），已用现有召回作答")
                 autonomous = False
                 break
@@ -404,6 +569,18 @@ def ask(
             # 收工报告列为改进项。
             tool_calls.extend(call.name for call in out.calls)
             gathered.extend(_tool_notes(out.calls, out.results))
+            completed.update(
+                call.name
+                for call, tool_result in zip(out.calls, out.results, strict=False)
+                if tool_result.ok
+            )
+            # 严格重放必须先消费轨迹中已经录下的后续工具事件；否则旧环境的
+            # snapshot/物化状态差异可能让 Agent 过早收口，留下 LLM/tool 轨迹。
+            # 下一次 LLM 请求仍会逐指纹核对，故不会把错误路径洗成成功。
+            replay_pending = bool(getattr(harness, "replay_tools_remaining", 0))
+            if set(required).issubset(completed) and not replay_pending:
+                notes.append("最低核验工具已全部成功，停止自主检索")
+                break
             if step == max_steps:
                 # ★ 熔断：步数用尽不是错误，是「答到这里」（v6 §7.2.2 步数上限 6）
                 exhausted = True
@@ -432,7 +609,13 @@ def _tool_notes(calls: Any, results: Any) -> list[str]:
     out: list[str] = []
     for call, result in zip(calls, results, strict=False):
         payload = result.value if result.ok else result.error
-        out.append(f"{call.name}: {json.dumps(payload, ensure_ascii=False, default=str)[:300]}")
+        # 工具返回会先写入 JSONL 再在 replay 里读回；JSON 对象的键序不能成为
+        # 下一轮 LLM 提示词的一部分隐式状态。固定排序使记录态与重放态生成相同
+        # 的“已查到”摘要，严格 request fingerprint 才真正可比。
+        out.append(
+            f"{call.name}: "
+            f"{json.dumps(payload, ensure_ascii=False, default=str, sort_keys=True)[:300]}"
+        )
     return out
 
 
@@ -443,4 +626,5 @@ __all__ = [
     "KnowledgeOutcome",
     "ask",
     "knowledge_tool_handlers",
+    "required_lookup_tools",
 ]

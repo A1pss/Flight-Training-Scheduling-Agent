@@ -37,7 +37,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import date, time
@@ -51,7 +51,11 @@ from langgraph.store.base import BaseStore
 from langgraph.types import Command
 from sqlalchemy.orm import Session
 
-from backend.agents.diagnosis import run_diagnosis
+from backend.agents.diagnosis import (
+    DiagnosisBaseCheckpoint,
+    DiagnosisOutcomeCheckpoint,
+    run_diagnosis,
+)
 from backend.components.explain import explain as run_explain
 from backend.components.planner import planner_node, rollback_revision
 from backend.components.route import route_node
@@ -75,6 +79,8 @@ from backend.schemas.plan import SchedulePlan
 from backend.schemas.solver import SolverStats
 from backend.schemas.validation import ValidationReport
 from backend.skills_loader import SkillLibrary, load_library
+from backend.solver.data import NO_OVERRIDES, ScenarioOverrides
+from backend.solver.diagnose import ProbeBudget
 
 #: 图里全部节点名。**与 v6 §7.5 的节点集一致**：4 个 LLM 组件 + 6 个确定性节点
 #: + 2 个 Agent（knowledge / diagnosis）。
@@ -115,6 +121,24 @@ class GraphDeps:
     horizon_minutes: int = 720
     plans_root: Path | None = None
     prompt_versions: dict[str, str] = field(default_factory=dict)
+    #: 实验/场景运行注入的外部扰动；生产默认无扰动。
+    scenario_overrides: ScenarioOverrides = NO_OVERRIDES
+    #: 诊断探针的独立预算池。None 时按配置新建标准预算。
+    probe_budget: ProbeBudget | None = None
+    #: 实验夹具可从既有人工门禁开始；生产默认始终从 route 入图。
+    entry_node: str = "route"
+    #: 场景测试的校验故障注入点；生产默认调用真实独立校验器。
+    validation_override: Callable[[FTSState, Session, Settings], Command[str]] | None = None
+    #: 实验严格重放的 solve 边界；生产默认 None，始终调用真实求解器。
+    solve_override: Callable[[FTSState, Session], Command[str]] | None = None
+    #: 只读观测 solve 节点原始 Command，用于实验录制。
+    solve_observer: Callable[[FTSState, Command[str]], None] | None = None
+    #: Diagnosis Agent 前后边界的实验 checkpoint。生产默认均为 None。
+    diagnosis_checkpoint_reader: Callable[[str], Mapping[str, Any]] | None = None
+    diagnosis_checkpoint_observer: Callable[[str, Mapping[str, Any]], None] | None = None
+    #: Knowledge Agent 自主循环控制面的实验 checkpoint。生产默认均为 None。
+    knowledge_checkpoint_reader: Callable[[str], Mapping[str, Any]] | None = None
+    knowledge_checkpoint_observer: Callable[[str, Mapping[str, Any]], None] | None = None
 
     def config(self) -> Settings:
         return self.settings or get_settings()
@@ -207,12 +231,17 @@ def _planner(state: FTSState, deps: GraphDeps) -> Command[str]:
 
 def _compile_spec(state: FTSState, deps: GraphDeps) -> Command[str]:
     with deps.session() as session:
-        return compile_spec_node(state, session)
+        return compile_spec_node(state, session, overrides=deps.scenario_overrides)
 
 
 def _solve(state: FTSState, deps: GraphDeps) -> Command[str]:
     with deps.session() as session:
-        command = solve_node(state, session)
+        if deps.solve_override is not None:
+            command = deps.solve_override(state, session)
+        else:
+            command = solve_node(state, session, overrides=deps.scenario_overrides)
+    if deps.solve_observer is not None:
+        deps.solve_observer(state, command)
     # ★ 修订使问题不可行 → 回滚上一版并解释，**不静默丢弃**
     #   （v6 §7.3.4 第 3 条硬性设计 / FTS-3005）。
     #   判据是「本次带着修订栈」：首轮排班的 INFEASIBLE 该去诊断，
@@ -228,6 +257,8 @@ def _solve(state: FTSState, deps: GraphDeps) -> Command[str]:
 
 def _validate(state: FTSState, deps: GraphDeps) -> Command[str]:
     with deps.session() as session:
+        if deps.validation_override is not None:
+            return deps.validation_override(state, session, deps.config())
         return validate_node(state, session, settings=deps.config())
 
 
@@ -306,14 +337,17 @@ def _knowledge(state: FTSState, deps: GraphDeps) -> Command[str]:
         )
 
     with deps.session() as session:
+        harness = _harness_for(state, deps)
         outcome = ask(
             question,
             session=session,
             snapshot_id=snapshot_id,
             directory=deps.directory,
             today=deps.today,
-            harness=_harness_for(state, deps),
+            harness=harness,
             settings=deps.config(),
+            control_checkpoint_reader=deps.knowledge_checkpoint_reader,
+            control_checkpoint_observer=deps.knowledge_checkpoint_observer,
         )
     return Command(
         goto=END,
@@ -349,8 +383,37 @@ def _diagnosis(state: FTSState, deps: GraphDeps) -> Command[str]:
     if spec is None:
         return Command(goto="human_gate", update={"needs_human": True})
     with deps.session() as session:
-        bundle = bundle_from_spec(session, spec)
-        outcome = run_diagnosis(bundle, harness=deps.harness_factory(state), settings=deps.config())
+        bundle = bundle_from_spec(session, spec, overrides=deps.scenario_overrides)
+        harness = deps.harness_factory(state)
+        base_checkpoint = None
+        outcome_checkpoint = None
+        if deps.diagnosis_checkpoint_reader is not None:
+            base_checkpoint = DiagnosisBaseCheckpoint.model_validate(
+                deps.diagnosis_checkpoint_reader("diagnosis_base")
+            )
+            # DIA-025 是显式的无 Harness 降级路径。该路径在 record 时会在
+            # `run_diagnosis` 的入口直接返回，因此没有 outcome checkpoint；
+            # replay 只能恢复确定性 base，不能强行消费一个不存在的 Agent 结果。
+            if harness is not None:
+                outcome_checkpoint = DiagnosisOutcomeCheckpoint.model_validate(
+                    deps.diagnosis_checkpoint_reader("diagnosis_outcome")
+                )
+
+        def observe_checkpoint(name: str, checkpoint: Any) -> None:
+            if deps.diagnosis_checkpoint_observer is not None:
+                deps.diagnosis_checkpoint_observer(name, checkpoint.model_dump(mode="json"))
+
+        outcome = run_diagnosis(
+            bundle,
+            harness=harness,
+            budget=deps.probe_budget,
+            settings=deps.config(),
+            base_checkpoint=base_checkpoint,
+            outcome_checkpoint=outcome_checkpoint,
+            checkpoint_observer=(
+                observe_checkpoint if deps.diagnosis_checkpoint_observer is not None else None
+            ),
+        )
     return Command(
         goto="human_gate",
         update={
@@ -465,7 +528,9 @@ def build_graph(
     g.add_node("human_gate", human_gate, destinations=("commit_plan", "planner", "solve", END))
     g.add_node("commit_plan", commit, destinations=(END,))
 
-    g.add_edge(START, "route")
+    if d.entry_node not in NODE_NAMES:
+        raise ValueError(f"未知入口节点：{d.entry_node}")
+    g.add_edge(START, d.entry_node)
     return g.compile(checkpointer=checkpointer, store=store)
 
 

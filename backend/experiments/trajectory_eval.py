@@ -116,11 +116,15 @@ def path_is_correct(
         if obs == list(ok):
             return True, "命中 acceptable_path"
 
+    # Z-41 的折叠口径对路径两侧对称生效。期望路径为了表达自治 Agent 的
+    # 探针预算，可能枚举了多次连续 ``probe_solve``；若只折叠 observed，
+    # “实际探 1 次、标签示例写 2 次”仍会被误判，和裁定本意相反。
     collapsed = _collapse_repeat_tools(obs)
-    if collapsed == list(expected):
+    collapsed_expected = _collapse_repeat_tools(expected)
+    if collapsed == collapsed_expected:
         return True, "折叠同工具的连续重复调用后与 expected_path 相同"
     for ok in acceptable:
-        if collapsed == list(ok):
+        if collapsed == _collapse_repeat_tools(ok):
             return True, "折叠同工具的连续重复调用后命中 acceptable_path"
     return False, "既非期望路径也不在可接受集合内"
 
@@ -230,7 +234,14 @@ class TrajectoryOutcome:
 
     item_id: str
     flow: str
+    #: 未裁剪的端到端真实节点/工具序列，用于审计上游组件是否额外调用工具。
     observed_path: list[str] = field(default_factory=list)
+    #: 按该条标注的焦点组件投影后的计分序列。路径指标只使用这一列。
+    scored_path: list[str] = field(default_factory=list)
+    #: 本条参与工具层计分的组件；完整调用仍保留在 ``observed_path``。
+    score_components: list[str] = field(default_factory=list)
+    #: 全链路实际工具调用数，与 ``steps.observed_calls``（焦点组件调用数）分开。
+    raw_observed_calls: int = 0
     expected_path: list[str] = field(default_factory=list)
     path_ok: bool = False
     path_reason: str = ""
@@ -240,6 +251,10 @@ class TrajectoryOutcome:
     invalid_loop: bool = False
     revision_translation_ok: bool | None = None
     revision_rollback_ok: bool | None = None
+    #: 生成文本只作逐条诊断，不进入八项轨迹指标。
+    answer_text: str = ""
+    #: 已有确定性事实断言的专项忠实度判定；其余条目为 None。
+    answer_fidelity_ok: bool | None = None
     error: str = ""
 
     def to_json(self) -> dict[str, Any]:
@@ -247,6 +262,9 @@ class TrajectoryOutcome:
             "item_id": self.item_id,
             "flow": self.flow,
             "observed_path": self.observed_path,
+            "scored_path": self.scored_path,
+            "score_components": self.score_components,
+            "raw_observed_calls": self.raw_observed_calls,
             "expected_path": self.expected_path,
             "path_ok": self.path_ok,
             "path_reason": self.path_reason,
@@ -264,6 +282,8 @@ class TrajectoryOutcome:
             "invalid_loop": self.invalid_loop,
             "revision_translation_ok": self.revision_translation_ok,
             "revision_rollback_ok": self.revision_rollback_ok,
+            "answer_text": self.answer_text,
+            "answer_fidelity_ok": self.answer_fidelity_ok,
             "error": self.error,
         }
 

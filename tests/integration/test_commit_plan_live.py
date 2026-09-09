@@ -17,20 +17,23 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import time
+from datetime import datetime, time
+from typing import Any, cast
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from backend.core.db import get_session_factory, session_scope
 from backend.core.ruleset import cycle_required_for
 from backend.models.entities import Mission as MissionRow
 from backend.models.entities import PersonCompletedMission as PersonCompletedMissionRow
+from backend.models.planning import Plan as PlanRow
 from backend.models.progress import TrainingProgress
-from backend.nodes.commit_plan import advance_progress, flown_counts
+from backend.nodes.commit_plan import advance_progress, commit_plan, flown_counts
+from backend.schemas.common import HumanDecision
 from tests.fixtures.baseline_snapshot import ensure_baseline_snapshot
-from tests.fixtures.graph_fixtures import plan, sortie
+from tests.fixtures.graph_fixtures import all_green_report, plan, sortie, stats
 
 pytestmark = pytest.mark.integration
 
@@ -187,6 +190,64 @@ def test_overshooting_the_cycle_is_still_completed(snapshot: str) -> None:
         advances = advance_progress(session, _one_sortie_plan(snapshot), snapshot_id=snapshot)  # type: ignore[arg-type]
         subject = next(a for a in advances if (a.person_id, a.mission_id) == SUBJECT)
         assert subject.status_after == "COMPLETED"
+
+
+def test_commit_plan_is_idempotent_for_the_same_plan_content(snapshot: str) -> None:
+    """人工门禁恢复/录制重放重复提交同一 plan_id 时，不重复推进也不主键冲突。"""
+    plan_id = "pl_test_idempotent_commit_20260902"
+    with shared_session() as session:
+        # 防止一次中断的本地测试给后续运行留状态；外层事务结束仍整体回滚。
+        session.execute(delete(PlanRow).where(PlanRow.plan_id == plan_id))
+        session.flush()
+        candidate = plan([], plan_id=plan_id).model_copy(
+            update={
+                "snapshot_id": snapshot,
+                "ruleset_version": "1.3.0",
+                "semantics_version": "1.1.0",
+            }
+        )
+        validation = all_green_report(plan_id).model_copy(
+            update={"ruleset_version": "1.3.0", "semantics_version": "1.1.0"}
+        )
+        decision = HumanDecision(
+            decision="APPROVE",
+            user_id="m9b",
+            role="director",
+            decided_at=datetime(2026, 9, 2, 9, 0),
+        )
+        state = cast(
+            Any,
+            {
+                "solution": candidate,
+                "validation": validation,
+                "solver_stats": stats(),
+                "human_decision": decision,
+            },
+        )
+
+        first = commit_plan(
+            session,
+            state,
+            archive=False,
+            now=datetime(2026, 9, 2, 9, 1),
+        )
+        second = commit_plan(
+            session,
+            state,
+            archive=False,
+            now=datetime(2026, 9, 2, 9, 2),
+        )
+
+        assert first.reused is False
+        assert second.reused is True
+        assert second.plan_version == first.plan_version
+        assert second.advances == ()
+        assert (
+            session.scalar(
+                select(func.count()).select_from(PlanRow).where(PlanRow.plan_id == plan_id)
+            )
+            == 1
+        )
 
 
 def _completed_fact_exists(session: Session, snapshot_id: str) -> bool:

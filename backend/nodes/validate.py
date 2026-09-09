@@ -24,6 +24,7 @@ v6 §7.5 说得很清楚：
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Any
 
 from langgraph.types import Command
@@ -38,7 +39,64 @@ from backend.schemas.intent import ConstraintSpec, IncrementalConstraint
 from backend.schemas.plan import SchedulePlan
 from backend.schemas.solver import SolverStats
 from backend.schemas.validation import ValidationReport
-from backend.validator import load_context, run_all_checks, verify_format
+from backend.validator import ValidationContext, load_context, run_all_checks, verify_format
+
+
+def validation_context_for_scope(
+    ctx: ValidationContext,
+    spec: ConstraintSpec,
+    plan: SchedulePlan,
+) -> ValidationContext:
+    """投影局部方案的 C03/C13 义务上下文，其他校验仍使用完整事实视图。
+
+    局部排班只承诺 ``scope_persons`` / ``scope_missions`` 内的周频与进度推进；
+    但实际架次中的机组、课目仍要保留，供 C03 的机组编成部分和 C13 的
+    “阻塞课目不得执行”部分核验。资源、时间、资质及格式校验不使用本投影。
+    """
+    if spec.scope_persons == "ALL" and spec.scope_missions == "ALL":
+        return ctx
+    scoped_people = set(ctx.persons) if spec.scope_persons == "ALL" else set(spec.scope_persons)
+    scoped_missions = (
+        set(ctx.missions) if spec.scope_missions == "ALL" else set(spec.scope_missions)
+    )
+    crew_people = {member.person_id for sortie in plan.sorties for member in sortie.crew}
+    planned_missions = {sortie.mission_id for sortie in plan.sorties}
+    obligation_people = scoped_people | crew_people
+    obligation_missions = scoped_missions | planned_missions
+    return replace(
+        ctx,
+        persons={key: value for key, value in ctx.persons.items() if key in obligation_people},
+        missions={key: value for key, value in ctx.missions.items() if key in obligation_missions},
+        progress={
+            key: value
+            for key, value in ctx.progress.items()
+            if key[0] in scoped_people and key[1] in scoped_missions
+        },
+    )
+
+
+def run_scope_aware_checks(
+    plan: SchedulePlan,
+    ctx: ValidationContext,
+    spec: ConstraintSpec,
+) -> ValidationReport:
+    """完整跑 14 条，并仅用作用域投影替换 C03/C13 两项结果。"""
+    full = run_all_checks(plan, ctx, constraint_spec=spec)
+    scoped_ctx = validation_context_for_scope(ctx, spec, plan)
+    if scoped_ctx is ctx:
+        return full
+    scoped = run_all_checks(plan, scoped_ctx, constraint_spec=spec)
+    scoped_results = {result.rule_id: result for result in scoped.results}
+    results = [
+        scoped_results[result.rule_id] if result.rule_id in {"C03", "C13"} else result
+        for result in full.results
+    ]
+    return full.model_copy(
+        update={
+            "results": results,
+            "duration_ms": full.duration_ms + scoped.duration_ms,
+        }
+    )
 
 
 def inject_nogoods(
@@ -98,7 +156,7 @@ def validate_node(
     # 校验器有**自己**的一份只读事实视图（v6 §4.2）：它从 PG 的事实表直接装配，
     # 不复用求解侧的数据装配。这是双通道校验的证据基础（铁律 2）。
     ctx = load_context(session, snapshot_id=spec.snapshot_id, week_start=spec.week_start)
-    report = run_all_checks(plan, ctx)
+    report = run_scope_aware_checks(plan, ctx, spec)
     fmt = verify_format(plan, ctx)
 
     attempts = int(state_get(state, "solve_attempts", 0))
@@ -165,4 +223,9 @@ def validate_node(
     )
 
 
-__all__ = ["inject_nogoods", "validate_node"]
+__all__ = [
+    "inject_nogoods",
+    "run_scope_aware_checks",
+    "validate_node",
+    "validation_context_for_scope",
+]

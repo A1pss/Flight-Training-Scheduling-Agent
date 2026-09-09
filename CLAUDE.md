@@ -58,7 +58,7 @@
 | 项 | 值 |
 |---|---|
 | Python 环境 | conda 虚拟环境 **`schedule`**。所有命令前置 `conda run -n schedule` 或先 `conda activate schedule` |
-| GPU | **只用第 1 块卡（GPU 0）**：`CUDA_VISIBLE_DEVICES=0`。写进 `.env`、所有训练/推理脚本、Ollama 启动环境。⚠️ **2026-08-21 由 3 号卡迁来**：另一用户长期占着 GPU 3 的 12+ GB，14B-Q4 被迫把 24/49 层卸到 CPU，推理慢 3~5 倍且 QLoRA 的 ~21 GB 根本放不下。**迁卡不改「只用一块卡」这条约束本身**，只改是哪一块 |
+| GPU | **只用第 1 块卡（GPU 0）**：`CUDA_VISIBLE_DEVICES=0`。写进 `.env`、所有推理脚本与 Ollama 启动环境。⚠️ **2026-08-21 由 3 号卡迁来**：另一用户长期占着 GPU 3 的 12+ GB，14B-Q4 被迫把 24/49 层卸到 CPU，推理慢 3~5 倍。**迁卡不改「只用一块卡」这条约束本身**，只改是哪一块 |
 | 容器 | **无 Docker**。PostgreSQL 16 / Redis 7 / Ollama 全部裸装，用户态运行，不要求 root |
 | 网络 | 服务器**可联外网**（仅用于安装依赖与拉模型）。但**应用代码本身必须写成全离线可运行**，§11.4 的 egress 禁令照常实现与测试 |
 | 数据库 | PG16 用 `initdb` 在项目目录下起独立实例（非系统服务），端口默认 5433 避让 |
@@ -130,7 +130,7 @@
 | **提示词构成 (Z-35)** | **工具调用路径上没有 few-shot**。全仓库唯一的 6 组 few-shot 在 `planner/revision.py::FEW_SHOT`，只挂修订翻译一条路径。实测提示词 = system **455.7** + 工具 schema **1278.0** = **1733.7**（不是 §15.1 写的 ~2.4k few-shot）。**§15.4 的「降 30%」在只砍 system 时数学上不可达**（地板 1295.0 > 门槛 1213.6），处置见 `Z-39`，**未裁定前不作为准入项** | §15.4 `Z-39` |
 | **模型会自己越权 (Z-37)** | 口径 B 下 Diagnosis 去调了 `resolve_person`，被调用期 `assert_allowed` 拦下（`FTS-4004`）。**这是模型行为不是数据缺陷**，统计时与五类契约失败**分开计**；数据集自身越权由 `ToolCallItem._consistency` 在**加载期**挡住，两者别混 | §12.5.1 |
 | **温度 0 下的「×3 轮」(Z-38)** | 验的是**稳定性不是方差**（三轮条目顺序相同 → 逐轮结果相同：0.995/0.995/0.995）。**不许当独立样本算置信区间** | §12.5.1 |
-| **§12 三处指标口径 (Z-40/41/42)** | **业务方 2026-08-23 依 M9-B 实测裁定**：① 语义类 Recall@5 **98% → 92%**（失败 12 条几乎全在 14 条近乎同构的规则原文之间排错；而总体 95.96% 已达标、留 3.96 个点，该项的作用已兑现）；② **缺失调用率的判据是「一个工具都没调」**，不是「没调到期望的那个」——后者把「换了工具去查」也算进来，等于同一个错误在工具选择准确率里再记一遍（54.29% vs **26.67%**，差 27 个点），**目标 ≤3% 不变**；③ **误执行率暂不定数值**，先重建置信信号 —— 原目标默认存在一个能区分「该问/该做」的信号，而实测 1075/1080 条置信度恰为 1.0、阈值 0→1 只动 0.19 个点，**该信号不存在**。⚠️ 三项都**不得删除**，误执行率仍照报实测值 | §12.2 `Z-42`、§12.4 `Z-40`、§12.6 `Z-41` |
+| **§12 指标口径 (Z-40/41/42/46/47)** | 语义类 Recall@5 当前目标 **≥89%**、总体仍 ≥92%；缺失调用率仍按「一个工具都没调」判；误执行率暂不定数值。**Z-47（2026-09-02）**：端到端完成率目标改为 **≥80%**；缺失调用率、冗余调用率、无效回环率继续实测并报 Wilson，但**不设门槛、不作门禁**。工具选择 ≥88%、路径正确 ≥85%、修订翻译 ≥82%、修订回滚 100% 不变 | §12.2、§12.4、§12.6 |
 | **参数准确率与路径正确率 (Z-41)** | **参数准确率降级为诊断指标**（与 §12.5.1 对同名指标的处置一致，可比样本仅 20 次，不足以支撑准入门禁）；**路径正确率把「同工具不同参数的连续重复调用」折叠后再比** —— 那是探索不是走错路，冗余程度已由冗余调用率单独在管。⚠️ **`forbidden_paths` 仍用未折叠的原路径判**，折叠不得把禁止路径洗成可接受 | §12.6 `Z-41` |
 | **Planner 单轮 (Z-43)** | **Planner 保持单轮调用**。曾改成两轮（第一轮只调消解类工具时回灌结果再问一轮，与 §12.6 期望路径的多步形态一致），两条原本失败的用例也确实通了 —— 但 **360×3 全量实测不兑现**：完成率 78.89%→76.94%、槽位 F1 85.11%→84.81%（跌破线）、`constraint_modifiers` 16.02%→16.00% 纹丝不动，而 **LLM 调用 +40%**。⚠️ **教训**：拿「先前失败的那几条」验证修复，等于拿修复的目标样本验证修复 —— **几条样本能验证量具装没装对，不能验证改动有没有用** | §7.3.3 |
 | **三条「维持现状」(Z-29)** | 业务方 2026-08-19 逐条确认，**都不改代码，也不要再问**：① **交付包不自带 Python 解释器**，靠 `conda/PYTHON_VERSION` + install.sh 按版本挑，挑不到明确失败；② **未预期异常不占业务码**，500 用 `{"kind":"internal"}` 的不同形状，**码表仍是 16 个**；③ **不加速率限制**（v6 §11.5 未定义口径，两把锁已挡住数据层并发） | §9.3、§11.4、§11.5 |
@@ -159,8 +159,8 @@
 ## 5. Git 工作流
 
 - **单仓库，每个里程碑一个分支，PR 合入 main。** `main` 必须随时可跑。
-- 分支命名：`feat/m0-bootstrap`、`feat/m1-ingestion`、`feat/m2a-solver`、`feat/m2b-validator`、`feat/m2c-crosscheck`、`feat/m3-report`、`feat/m4a-harness`、`feat/m4b-orchestration`、`feat/m5-retrieval`、`feat/m6-frontend`、`feat/m8-hardening`、`feat/m9a-datasets`、`feat/m7-finetune`、`feat/m9b-experiments`
-- ⚠️ **M7 与 M9-B 的顺序已于 2026-08-21 调整为 `M7 第一阶段 → M9-B → M7 第二阶段（若需要）`**。M7 只交付了 §12.5.1 基线与评测底座，**不含微调**（实测把 §15 的前提推翻了，见 §4 速查表 `Z-35/36`）。是否微调取决于 M9-B 实验一/实验五的结果。**M7 里程碑未完成，不打 tag。**
+- 分支命名：`feat/m0-bootstrap`、`feat/m1-ingestion`、`feat/m2a-solver`、`feat/m2b-validator`、`feat/m2c-crosscheck`、`feat/m3-report`、`feat/m4a-harness`、`feat/m4b-orchestration`、`feat/m5-retrieval`、`feat/m6-frontend`、`feat/m8-hardening`、`feat/m9a-datasets`、`M7（历史）`、`feat/m9b-experiments`
+- M7 已交付 §12.5.1 工具调用基线与评测底座。生产、开发与验收统一使用 `qwen2.5:14b-instruct-q4_K_M`；`backend/training/` 与相关数据集不是交付运行路径。后续只以完整实验定位并修复实现问题。
 - **开工第一件事**：`git fetch origin && git switch main && git pull && git switch -c <分支名>`
 - **收工顺序**：静态工具链全绿 → 测试全绿 → `git add -A && git commit` → `git push -u origin <分支>` → `gh pr create` → 里程碑验收通过后打 tag（`m2-done` 等）
 - Commit message 用中文，格式 `<模块>: <做了什么>`，正文列出关键决策。
@@ -257,7 +257,7 @@ fts/
 │   ├── report/         # excel.py / verify.py / naming.py / manifest.py
 │   ├── harness/        # 契约校验 / 重试 / ACL / 预算 / 上下文装配 / 录制重放 / prompt版本
 │   ├── planner/        # SolveIntent 生成 / 影响面探测 / 修订翻译 / 置信度校准
-│   ├── training/       # 数据合成 / LoRA 训练脚本 / 准入评估（离线批任务）
+│   ├── training/       # 已保留的离线研究实现；不属交付运行路径、不执行训练
 │   ├── skills_loader/  # frontmatter 解析 / 路由 / authoritative 校验
 │   ├── llm/            # provider.py / ollama.py / mock.py / replay.py
 │   ├── models/         # SQLAlchemy ORM
@@ -269,7 +269,7 @@ fts/
 ├── skills/             # 知识层 markdown（业务方可编辑，authoritative: false）
 ├── templates/          # Excel 模板 + 版式基准抽取清单
 ├── tests/              # unit / property / integration / golden / trajectory / guardrail / e2e
-├── datasets/           # 评测集 / 轨迹标注 / SFT 合成数据（版本化）
+├── datasets/           # 评测集 / 轨迹标注 / 合成评测源数据（版本化）
 ├── data/origin/        # 原始 PDF 与版式图（只读，禁止修改）
 ├── data/plans/         # 归档的排班产物 YYYY/Www/（xlsx + json + manifest + 校验报告 + solver log）
 ├── deploy/             # native（主路径）/ compose（交付备选）/ scripts / offline-package

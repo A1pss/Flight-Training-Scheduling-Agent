@@ -9,13 +9,14 @@ from __future__ import annotations
 
 import dataclasses
 from collections.abc import Callable, Iterable, Mapping
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from typing import Any
 
 import pytest
 
 from backend.core.ruleset import get_semantics
 from backend.models.entities import AircraftMaintenance
+from backend.schemas.intent import ConstraintSpec, IncrementalConstraint, ObjectiveWeights
 from backend.schemas.plan import CrewMember, SchedulePlan, Sortie
 from backend.schemas.validation import CheckResult, ValidationReport
 from backend.validator.checks import (
@@ -100,6 +101,24 @@ def details(result: CheckResult) -> str:
 
 def rules_violated(report: ValidationReport) -> set[str]:
     return {v.rule_id for v in report.all_violations()}
+
+
+def spec_with(*constraints: IncrementalConstraint, ctx: ValidationContext) -> ConstraintSpec:
+    """仅为 validator 构造编译后规格，不经过求解器。"""
+    return ConstraintSpec(
+        snapshot_id=ctx.snapshot_id,
+        ruleset_version=ctx.ruleset.version,
+        semantics_version=ctx.semantics.version,
+        iso_week="2026W02",
+        week_start=ctx.week_start,
+        week_end=ctx.week_start + timedelta(days=6),
+        scope_persons="ALL",
+        scope_missions="ALL",
+        relaxation_tier=0,
+        objective_weights=ObjectiveWeights(progress=1.0, disruption=1.0, balance=1.0),
+        incremental_constraints=list(constraints),
+        runway_model="dual_runway",
+    )
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -593,6 +612,114 @@ def test_c08_does_not_accumulate_across_days(ctx: ValidationContext) -> None:
 # ─────────────────────────────────────────────────────────────────────
 # C09 起降密度（D-2 的唯一守门人）
 # ─────────────────────────────────────────────────────────────────────
+def test_c09_forbid_runway_constraint_blocks_all_targets(ctx: ValidationContext) -> None:
+    """编译后的 ``FORBID(day_index, runway_id)`` 必须在 validator 再次兜底。"""
+    forbid = IncrementalConstraint(
+        kind="FORBID",
+        targets=["ALL"],
+        params={"day_index": 0, "runway_id": "RWY-2"},
+        origin_utterance="周一 RWY-2 不要使用",
+        round_no=2,
+    )
+
+    report = run_all_checks(
+        plan=compliant_plan(), ctx=ctx, constraint_spec=spec_with(forbid, ctx=ctx)
+    )
+    c09 = next(result for result in report.results if result.rule_id == "C09")
+
+    assert not c09.passed
+    assert c09.violations[0].subjects[:2] == ["S000002", "RWY-2"]
+    assert "违反第 2 轮 FORBID 跑道约束" in details(c09)
+    assert "周一 RWY-2 不要使用" in details(c09)
+
+
+def test_c09_forbid_runway_constraint_respects_person_aircraft_and_sortie_targets(
+    ctx: ValidationContext,
+) -> None:
+    """目标可独立限定到人员、飞机或某一个 sortie；不命中的架次不得误伤。"""
+    person_forbid = IncrementalConstraint(
+        kind="FORBID",
+        targets=["P05"],
+        params={"day_index": 0, "runway_id": "RWY-1"},
+        origin_utterance="罗磊周一不走一号跑道",
+        round_no=1,
+    )
+    aircraft_forbid = IncrementalConstraint(
+        kind="FORBID",
+        targets=["AC27"],
+        params={"day_index": 0, "runway_id": "RWY-2"},
+        origin_utterance="AC27 周一不走二号跑道",
+        round_no=1,
+    )
+    sortie_forbid = IncrementalConstraint(
+        kind="FORBID",
+        targets=["S000002"],
+        params={"day_index": 0, "runway_id": "RWY-2"},
+        origin_utterance="该架次周一不走二号跑道",
+        round_no=1,
+    )
+    unmatched = IncrementalConstraint(
+        kind="FORBID",
+        targets=["P08"],
+        params={"day_index": 0, "runway_id": "RWY-2"},
+        origin_utterance="何超周一不走二号跑道",
+        round_no=1,
+    )
+
+    matching = check_c09(
+        compliant_plan(),
+        ctx,
+        spec_with(person_forbid, aircraft_forbid, sortie_forbid, ctx=ctx),
+    )
+    assert not matching.passed
+    assert [violation.subjects[0] for violation in matching.violations] == [
+        "S000001",
+        "S000002",
+        "S000002",
+    ]
+
+    assert check_c09(compliant_plan(), ctx, spec_with(unmatched, ctx=ctx)).passed
+
+
+def test_c09_ignores_ordinary_forbid_with_only_day_index(ctx: ValidationContext) -> None:
+    """普通 FORBID 的 day_index 不表示跑道关闭，不能被 C09 误判。"""
+    ordinary_forbid = IncrementalConstraint(
+        kind="FORBID",
+        targets=["ALL"],
+        params={"day_index": 0},
+        origin_utterance="周一不要安排飞行",
+        round_no=1,
+    )
+
+    assert check_c09(compliant_plan(), ctx, spec_with(ordinary_forbid, ctx=ctx)).passed
+
+
+@pytest.mark.parametrize(
+    ("params", "expected"),
+    [
+        ({"day_index": 7, "runway_id": "RWY-2"}, "day_index 必须是 0~6 的整数"),
+        ({"day_index": 0, "runway_id": "RWY-9"}, "跑道 RWY-9 不在当前快照"),
+    ],
+)
+def test_c09_forbid_runway_constraint_rejects_unverifiable_spec_shape(
+    ctx: ValidationContext,
+    params: dict[str, object],
+    expected: str,
+) -> None:
+    """编译规格损坏时宁可硬失败，也不能静默跳过用户确认的跑道禁用。"""
+    forbid = IncrementalConstraint(
+        kind="FORBID",
+        targets=["ALL"],
+        params=params,
+        origin_utterance="测试禁用跑道",
+        round_no=1,
+    )
+
+    result = check_c09(compliant_plan(), ctx, spec_with(forbid, ctx=ctx))
+    assert not result.passed
+    assert expected in details(result)
+
+
 def test_c09_detects_three_takeoffs_in_twenty_minutes_on_one_runway(
     ctx: ValidationContext,
 ) -> None:
@@ -880,6 +1007,49 @@ def test_c13_s11_recurrent_window_binds_when_it_falls_inside_the_week(
         ]
     )
     assert "首次执行在第 3 天，晚于截止日第 2 天" in details(check_c13(too_late, earlier))
+
+
+def test_c13_s11_overdue_cross_week_window_is_due_on_monday() -> None:
+    """S-11 跨周已逾期时，截止日钳制为第 0 天而不是负数。"""
+    week_start = date(2026, 1, 19)  # 2026-W04
+    rows = baseline_rows()
+    rows.progress[:] = [
+        p
+        for p in rows.progress
+        if p.person_id == "P04" and p.mission_id in {"missionC-1", "missionC-2"}
+    ]
+    recurrent_ctx = context_from_rows(rows, week_start=week_start, snapshot_id=SNAPSHOT)
+
+    base = make_sortie(
+        "S000173",
+        0,
+        "07:20",
+        "missionC-1",
+        "AC61",
+        (("P04", "复训"),),
+        is_recurrent=True,
+    )
+    monday = base.model_copy(update={"date": week_start, "weekday": "周一"})
+    monday_plan = make_plan(
+        [monday],
+        validate=False,
+        iso_week="2026W04",
+        week_start=week_start,
+        week_end=date(2026, 1, 25),
+    )
+    assert check_c13(monday_plan, recurrent_ctx).passed
+
+    tuesday = base.model_copy(update={"date": date(2026, 1, 20), "weekday": "周二"})
+    tuesday_plan = make_plan(
+        [tuesday],
+        validate=False,
+        iso_week="2026W04",
+        week_start=week_start,
+        week_end=date(2026, 1, 25),
+    )
+    result = check_c13(tuesday_plan, recurrent_ctx)
+    assert not result.passed
+    assert "首次执行在第 1 天，晚于截止日第 0 天" in details(result)
 
 
 def test_c13_shortfall_is_soft_when_tier1_and_disclosed(ctx: ValidationContext) -> None:

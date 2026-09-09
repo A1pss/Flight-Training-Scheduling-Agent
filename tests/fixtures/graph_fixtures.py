@@ -93,6 +93,7 @@ class FakeHarness:
 
     responses: list[AgentOutput] = field(default_factory=list)
     calls: list[tuple[AgentSpec, list[ContextBlock]]] = field(default_factory=list)
+    deterministic_calls: list[ValidatedCall] = field(default_factory=list)
     registry: Any = None
     _index: int = 0
 
@@ -103,6 +104,14 @@ class FakeHarness:
         index = min(self._index, len(self.responses) - 1)
         self._index += 1
         return self.responses[index]
+
+    def execute_deterministic_tools(
+        self, component: str, calls: Sequence[ValidatedCall], **_: Any
+    ) -> tuple[ToolResult, ...]:
+        """给 Planner 编排单测的最小确定性工具替身。"""
+        del component
+        self.deterministic_calls.extend(calls)
+        return tuple(ToolResult(tool=call.name, value={"fixture": call.name}) for call in calls)
 
 
 class FakeRegistry:

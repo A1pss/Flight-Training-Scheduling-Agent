@@ -83,6 +83,14 @@ _PIN_AIRCRAFT: Final[re.Pattern[str]] = re.compile(
 _PIN_RUNWAY: Final[re.Pattern[str]] = re.compile(
     r"(?:都|全部)?(?:改)?(?:走|排(?:到|在)?|使用)\s*(RWY-\d+)"
 )
+# 「RWY-2 下周三关闭」不是“周三全场停飞”，也绝不能翻成 PIN_RUNWAY。
+# 它有一条可枚举、无歧义的线格式：指定日禁用指定跑道。相对星期只表达目标周内
+# 的星期几，周次本身已由上游 Route 消解到 SchedulingRequest.iso_week。
+_CLOSED_RUNWAY: Final[re.Pattern[str]] = re.compile(
+    r"(RWY-\d+)[^，。；、]{0,12}?"
+    r"(周[一二三四五六日天]|星期[一二三四五六日]|礼拜[一二三四五六日])"
+    r"[^，。；、]{0,8}?(?:关闭|停用|封闭|不可用)"
+)
 #: 「都安排在上午」/「都排在 08:00 之后」/「早上 8 点以后」。
 _SHIFT_MORNING: Final[re.Pattern[str]] = re.compile(r"都?(?:安排|排)?在?上午")
 _PIN_AFTER_TIME: Final[re.Pattern[str]] = re.compile(
@@ -127,6 +135,11 @@ def scan_modifiers(text: str, *, round_no: int = 1) -> list[IncrementalConstrain
             day = _WEEKDAYS.get(m.group(day_group))
             if day:
                 add("FORBID", {"weekday": day}, m.group(0))
+
+    for m in _CLOSED_RUNWAY.finditer(text):
+        day = _WEEKDAYS.get(m.group(2))
+        if day:
+            add("FORBID", {"weekday": day, "runway_id": m.group(1)}, m.group(0))
 
     for m in _DENSITY.finditer(text):
         n = _as_int(m.group(1))

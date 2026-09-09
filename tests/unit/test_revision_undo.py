@@ -178,7 +178,7 @@ def test_the_echo_lives_in_its_own_field_not_in_explanation() -> None:
 def test_undo_emits_a_traceable_event() -> None:
     command = planner_node(cast(Any, state_with_stack("撤销", 2)))
     update = cast(dict[str, Any], command.update)
-    event = update["trace_events"][0]
+    event = next(event for event in update["trace_events"] if event.payload.get("action") == "undo")
     assert event.payload["action"] == "undo"
     assert event.payload["undone"] == 1
     assert event.payload["dropped_rounds"] == [2]

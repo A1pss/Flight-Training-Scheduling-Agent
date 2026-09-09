@@ -135,6 +135,16 @@ def test_replay_makes_zero_calls_to_the_real_provider(tmp_path: Path) -> None:
     assert calls == ["ReplayProvider"]
 
 
+def test_replay_harness_marks_strict_tool_replay(tmp_path: Path) -> None:
+    _record_a_run(tmp_path)
+    trace = load_trace("trace_test", root=tmp_path)
+
+    harness = Harness.for_replay(trace=trace, settings=harness_settings())
+
+    assert harness.strict_replay is True
+    assert harness.replay_tools_remaining == 2
+
+
 def test_replay_detects_a_changed_flow(tmp_path: Path) -> None:
     """图改了 → 重放抛，而不是「凑合出一个结果」。"""
     _record_a_run(tmp_path)

@@ -466,6 +466,44 @@ class CommitResult:
     plan_version: int
     advances: tuple[ProgressAdvance, ...]
     archive: ArchiveResult | None
+    #: 同一个 ``plan_id`` 与同一内容已经提交过时，本次是幂等重放。
+    reused: bool = False
+
+
+def _matching_existing_plan(
+    session: Session,
+    plan: SchedulePlan,
+) -> PlanRow | None:
+    """返回内容完全相同的既有计划；同 ID 异内容则明确失败。
+
+    ``plan_id`` 来自确定性内容指纹。人工门禁恢复、客户端重试或录制重放可能
+    再次走到 ``commit_plan``，这不应重复推进训练进度，也不应以数据库主键冲突
+    结束。反之，同一个 ID 指向不同快照/周次/内容是状态冲突，绝不能静默复用。
+    """
+    existing = session.get(PlanRow, plan.plan_id)
+    if existing is None:
+        return None
+    identity = (
+        existing.iso_week,
+        existing.week_start,
+        existing.week_end,
+        existing.snapshot_id,
+        existing.ruleset_version,
+        existing.semantics_version,
+        existing.content_sha256,
+    )
+    requested = (
+        plan.iso_week,
+        plan.week_start,
+        plan.week_end,
+        plan.snapshot_id,
+        plan.ruleset_version,
+        plan.semantics_version,
+        plan.content_sha256,
+    )
+    if identity != requested:
+        raise ValueError(f"plan_id={plan.plan_id} 已存在，但快照、周次或内容指纹不一致")
+    return existing
 
 
 def commit_plan(
@@ -495,6 +533,16 @@ def commit_plan(
     decision = model_get(state, "human_decision", HumanDecision)
     stamp = now or datetime.now()
 
+    existing = _matching_existing_plan(session, plan)
+    if existing is not None:
+        return CommitResult(
+            plan_id=existing.plan_id,
+            plan_version=existing.plan_version,
+            advances=(),
+            archive=None,
+            reused=True,
+        )
+
     register_versions(
         session,
         ruleset_version=plan.ruleset_version,
@@ -522,6 +570,7 @@ def commit_plan(
         plan_version=row.plan_version,
         advances=tuple(advances),
         archive=result,
+        reused=False,
     )
 
 
@@ -551,6 +600,7 @@ def commit_plan_node(
         "progress_rows_advanced": len(result.advances),
         "anchors_written": sum(1 for a in result.advances if a.last_done_date is not None),
         "debt_rows": sum(1 for a in result.advances if a.debt_delta),
+        "idempotent_replay": result.reused,
     }
     update: dict[str, Any] = {
         "committed_plan_id": result.plan_id,
