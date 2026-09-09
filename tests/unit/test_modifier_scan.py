@@ -81,6 +81,13 @@ def test_pin_scanners_never_reverse_a_closure(text: str) -> None:
     assert not {"PIN_RUNWAY", "PIN_TIME"} & set(kinds(text))
 
 
+def test_closed_runway_becomes_day_scoped_forbid() -> None:
+    got = scan_modifiers("RWY-2 下周三关闭，重新排一版")
+    assert [(c.kind, c.targets, c.params) for c in got] == [
+        ("FORBID", ["ALL"], {"weekday": "周三", "runway_id": "RWY-2"})
+    ]
+
+
 def test_shift_window_morning() -> None:
     assert kinds("都安排在上午") == ["SHIFT_WINDOW"]
 

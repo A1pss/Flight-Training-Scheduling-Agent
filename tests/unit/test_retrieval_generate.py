@@ -6,6 +6,9 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
+from backend.agents.knowledge import _tool_notes
 from backend.retrieval.documents import RetrievedDoc, structured_doc
 from backend.retrieval.generate import (
     EvidenceIndex,
@@ -30,6 +33,14 @@ FACT = FactAnswer(
     kind="qualification_expiry",
     statement="刘斌（P04）的 C 类资质复训到期日是 2026-01-07。",
     citations=(FACT_DOC.citation(),),
+)
+
+NEGATIVE_ELIGIBILITY = FactAnswer(
+    kind="eligibility",
+    statement="何超（P08）现在不能排 missionC-1：缺少先修 missionA-2（S-01）。",
+    citations=(FACT_DOC.citation(),),
+    verdict=False,
+    basis=("S-01",),
 )
 
 
@@ -59,6 +70,16 @@ def result(
 # ─────────────────────────────────────────────────────────────────────
 def test_split_claims_drops_empty_and_punctuation_only_sentences() -> None:
     assert split_claims("第一句。第二句。\n\n。") == ["第一句。", "第二句。"]
+
+
+def test_knowledge_tool_notes_canonicalize_mapping_key_order() -> None:
+    """JSONL 回读会改变对象键序，下一轮 prompt 必须不受其影响。"""
+    call = SimpleNamespace(name="sql_query")
+    result = SimpleNamespace(ok=True, value={"person_id": "P08", "mission_id": "missionB-1"})
+
+    assert _tool_notes([call], [result]) == [
+        'sql_query: {"mission_id": "missionB-1", "person_id": "P08"}'
+    ]
 
 
 def test_a_claim_whose_numbers_and_ids_all_appear_is_supported() -> None:
@@ -123,6 +144,24 @@ def test_a_faithful_llm_answer_is_kept() -> None:
     assert "2026-01-07" in out.text
     assert out.fallback is False
     assert out.faithful
+
+
+def test_boolean_verdict_bypasses_generation_to_prevent_polarity_flip() -> None:
+    """TRJ-KNW-006：召回与上下文正确时，生成层也不得把「不能」改成「可以」。"""
+    harness = FakeHarness(
+        responses=[
+            text_output(
+                "knowledge",
+                "何超（P08）已经完成先修要求，因此现在可以排 missionC-1。",
+            )
+        ]
+    )
+    out = answer(result(answers=(NEGATIVE_ELIGIBILITY,)), harness=harness)
+    assert out.text == NEGATIVE_ELIGIBILITY.statement
+    assert out.facts == (NEGATIVE_ELIGIBILITY,)
+    assert out.llm_calls == 0
+    assert harness.calls == []
+    assert "结构化事实直接呈现" in out.notes[0]
 
 
 def test_an_unfaithful_llm_answer_is_discarded_for_the_fact_direct_version() -> None:

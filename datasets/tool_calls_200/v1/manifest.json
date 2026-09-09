@@ -1,13 +1,13 @@
 {
-  "approved_at": "2026-08-20",
-  "approved_by": "Alps",
+  "approved_at": "2026-09-06",
+  "approved_by": "业务方（2026-09-06 最终交付授权）",
   "context": {
     "acl_source": "backend.harness.acl.ACL_MATRIX 的补集（字典序，可复现）",
     "error_codes": "越权 FTS-4004 / Harness 预算 FTS-4003 / 探针池无错误码",
     "floor_per_tool": "2",
     "weight_source": "trajectory_100 v1 的 242 个工具步骤频次"
   },
-  "generated_at": "2026-08-19T18:31:24Z",
+  "generated_at": "2026-09-06T13:42:25Z",
   "item_count": 260,
   "items_file": "items.jsonl",
   "known_limitations": [
@@ -19,7 +19,7 @@
   ],
   "method": "由实体表 + 工具 schema **反向构造**，标签天然正确：valid 层的参数由工具自己的 params_model 生成并校验；越权层的 (组件, 工具) 取自 ACL 矩阵的补集；超预算层是预算池设成 0 之后的必然结果。无一处依赖人的判断。",
   "name": "tool_calls_200",
-  "sha256": "2944f27208e2cd8037d7457d4f7736175951328bde39996e413bccd021e8422b",
+  "sha256": "74aefe903d49578f3a675e353287419e26d37281735c97ef167140997364825b",
   "spec_refs": [
     "v6 §12.5.1",
     "v6 §7.7.2",

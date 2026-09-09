@@ -472,10 +472,11 @@ def _post_lateness_bound(
 
 
 def canonical_tiebreak(built: BuiltModel) -> cp_model.LinearExpr:
-    """规范化目标：`Σ (i+1)·x[i]`，i 为候选在 `Candidate.sort_key` 下的序号。
+    """候选稳定序上的加权和，供小模型目标测试使用。
 
-    最小化它 = 在等价最优解中挑**字典序最小**的那一个
-    （按 课目 → 天 → 受训人 → 教员 → 机号 排序）。
+    ``Σ (i+1)·x[i]`` 不是字典序：不同候选集合可以拥有相同的权重和。
+    因而它不能作为生产规范化目标；生产路径由 :func:`canonicalize` 在固定
+    业务偏好分量后单线程求纯可行解，避免这个碰撞。
     """
     return cp_model.LinearExpr.sum([(i + 1) * var for i, var in enumerate(built.x)])
 

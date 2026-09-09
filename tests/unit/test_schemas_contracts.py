@@ -126,6 +126,29 @@ def test_incremental_constraint_needs_target_and_round() -> None:
         IncrementalConstraint(kind="FORBID", targets=["P04"], origin_utterance="x", round_no=0)
 
 
+def test_incremental_constraint_normalizes_weekday_alias() -> None:
+    """不让相对日期因缺失 day_index 而静默扩大成整周 FORBID。"""
+    constraint = IncrementalConstraint(
+        kind="FORBID",
+        targets=["ALL"],
+        params={"weekday": "下周三"},
+        origin_utterance="RWY-2 下周三关闭",
+        round_no=1,
+    )
+    assert constraint.params["weekday"] == "周三"
+
+
+def test_incremental_constraint_rejects_unknown_weekday() -> None:
+    with pytest.raises(ValidationError, match="规范值"):
+        IncrementalConstraint(
+            kind="FORBID",
+            targets=["ALL"],
+            params={"weekday": "下旬"},
+            origin_utterance="下旬禁飞",
+            round_no=1,
+        )
+
+
 # ─── ConstraintSpec ──────────────────────────────────────────────────
 
 

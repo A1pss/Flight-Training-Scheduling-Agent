@@ -905,20 +905,68 @@ class _Builder:
             day_index = (
                 None if inc.params.get("day_index") is None else int(inc.params["day_index"])
             )
+            mission_filter_value = str(inc.params.get("mission", inc.params.get("mission_id", "")))
+            raw_aircraft_filter = inc.params.get(
+                "aircraft_ids", inc.params.get("aircraft_id", inc.params.get("aircraft", ""))
+            )
+            if isinstance(raw_aircraft_filter, list):
+                aircraft_filter_value = frozenset(
+                    str(value) for value in raw_aircraft_filter if str(value)
+                )
+            elif raw_aircraft_filter is None:
+                aircraft_filter_value = frozenset()
+            else:
+                aircraft_value = str(raw_aircraft_filter)
+                aircraft_filter_value = (
+                    frozenset({aircraft_value}) if aircraft_value else frozenset()
+                )
+            runway_filter_value = str(inc.params.get("runway_id", ""))
 
             def same_day(cand: Candidate, day_index: int | None = day_index) -> bool:
                 return day_index is None or cand.day == day_index
+
+            def matches_entity(cand: Candidate, targets: set[str] = targets) -> bool:
+                return (
+                    "ALL" in targets
+                    or bool(targets & set(cand.crew_ids))
+                    or cand.aircraft_id in targets
+                )
+
+            def applies_to(
+                cand: Candidate,
+                targets: set[str] = targets,
+                mission_filter: str = mission_filter_value,
+                aircraft_filter: frozenset[str] = aircraft_filter_value,
+            ) -> bool:
+                """``ALL`` 表示当前 SolveIntent 范围内的全部候选。
+
+                确定性修饰扫描器对“周三不飞”“只用 AC10/AC27”这类整周请求
+                产出 ``targets=["ALL"]``。把它当普通实体编号会导致约束静默失效；
+                PIN_RESOURCE 更会因空机号把全部候选错误禁掉。
+                """
+                return (
+                    matches_entity(cand, targets)
+                    and (not mission_filter or mission_filter == cand.mission_id)
+                    and (not aircraft_filter or cand.aircraft_id in aircraft_filter)
+                )
 
             if inc.kind == "FORBID":
                 for idx, cand in enumerate(self.cset.candidates):
                     if not same_day(cand):
                         continue
-                    if targets & set(cand.crew_ids) or cand.aircraft_id in targets:
-                        self.m.add(self.x[idx] == 0)
+                    if applies_to(cand):
+                        if runway_filter_value:
+                            # 跑道关闭只禁止该条跑道的选择，不能扩大成全场禁飞。
+                            # 不具备该跑道选项的机型（例如 JL-9 对 RWY-2）不受影响。
+                            runway_lit = self.slot_runway[cand.slot].get(runway_filter_value)
+                            if runway_lit is not None:
+                                self.m.add(runway_lit == 0).only_enforce_if(self.x[idx])
+                        else:
+                            self.m.add(self.x[idx] == 0)
             elif inc.kind == "PIN_RUNWAY":
                 runway_id = str(inc.params.get("runway_id", ""))
                 for idx, cand in enumerate(self.cset.candidates):
-                    if not (targets & set(cand.crew_ids) or cand.aircraft_id in targets):
+                    if not applies_to(cand):
                         continue
                     lits = self.slot_runway[cand.slot]
                     if runway_id in lits and runway_id in self.data.allowed_runways(
@@ -933,7 +981,7 @@ class _Builder:
                 lo = int(inc.params.get("earliest_minute", 0))
                 hi = int(inc.params.get("latest_minute", self.data.horizon_minutes))
                 for idx, cand in enumerate(self.cset.candidates):
-                    if not (targets & set(cand.crew_ids) or cand.aircraft_id in targets):
+                    if not applies_to(cand):
                         continue
                     start = self.slot_start[cand.slot]
                     self.m.add(start >= lo).only_enforce_if(self.x[idx])
@@ -943,14 +991,30 @@ class _Builder:
             elif inc.kind == "PIN_TIME":
                 minute = int(inc.params.get("takeoff_minute", 0))
                 for idx, cand in enumerate(self.cset.candidates):
-                    if targets & set(cand.crew_ids):
+                    if applies_to(cand):
                         self.m.add(self.slot_start[cand.slot] == minute).only_enforce_if(
                             self.x[idx]
                         )
             elif inc.kind == "PIN_RESOURCE":
-                aircraft_id = str(inc.params.get("aircraft_id", ""))
+                raw_aircraft = inc.params.get(
+                    "aircraft_ids", inc.params.get("aircraft", inc.params.get("aircraft_id", ""))
+                )
+                allowed_aircraft = (
+                    {str(value) for value in raw_aircraft}
+                    if isinstance(raw_aircraft, list)
+                    else {str(raw_aircraft)}
+                )
+                allowed_aircraft.discard("")
                 for idx, cand in enumerate(self.cset.candidates):
-                    if targets & set(cand.crew_ids) and cand.aircraft_id != aircraft_id:
+                    # ``aircraft_ids`` is the *allowed* set for PIN_RESOURCE, not
+                    # an additional scope filter.  Applying it in ``applies_to``
+                    # would skip the disallowed candidates instead of forcing
+                    # them to zero.
+                    if (
+                        matches_entity(cand)
+                        and (not mission_filter_value or mission_filter_value == cand.mission_id)
+                        and cand.aircraft_id not in allowed_aircraft
+                    ):
                         self.m.add(self.x[idx] == 0)
             elif inc.kind == "REDUCE_DENSITY":
                 cap = int(inc.params.get("max_takeoffs_per_day", self.data.horizon_minutes))
@@ -961,7 +1025,11 @@ class _Builder:
                 # 这条的粒度如实降到「整日」并在回显里说明。
                 days = self.data.days if day_index is None else [int(day_index)]
                 for day in days:
-                    idxs = [i for i, c in enumerate(self.cset.candidates) if c.day == day]
+                    idxs = [
+                        i
+                        for i, c in enumerate(self.cset.candidates)
+                        if c.day == day and applies_to(c)
+                    ]
                     if idxs:
                         self.m.add(sum(self.x[i] for i in idxs) <= cap)
 

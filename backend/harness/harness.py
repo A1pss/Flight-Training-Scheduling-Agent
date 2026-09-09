@@ -200,11 +200,53 @@ class Harness:
         return self._registry
 
     @property
+    def replay_tools_remaining(self) -> int:
+        """严格重放时尚未消费的工具事件数；真机路径恒为 0。"""
+        return self._replayer.remaining if self._replayer is not None else 0
+
+    @property
+    def strict_replay(self) -> bool:
+        """当前 Harness 是否正在以录制工具结果执行严格重放。"""
+        return self._replayer is not None
+
+    @property
     def cache(self) -> ToolResultCache:
         return self._cache
 
     def usage(self) -> BudgetUsage:
         return self._ledger.usage()
+
+    def execute_deterministic_tools(
+        self,
+        component: ComponentName,
+        calls: Sequence[ValidatedCall],
+        *,
+        snapshot_id: str | None = None,
+    ) -> tuple[ToolResult, ...]:
+        """执行由工作流确定的只读工具，不发起 LLM 调用。
+
+        少数流程的工具顺序并非需要模型判断：例如重排在生成求解意图前，必须
+        先确认已点名的人机实体并量化既有方案的影响面。把这类前置检查留给
+        模型会把确定性输入完整性误报成“工具选择能力不足”。
+
+        本方法仍复用常规执行链：ACL、工具预算、缓存、录制以及 replay 都不会
+        被绕过。调用方须给出已经由自身确定性逻辑构造的 ``ValidatedCall``；这里
+        再以工具参数模型复核一次，避免把未校验的原始字典带入执行器。
+        """
+        if not calls:
+            return ()
+        tools = tuple(call.name for call in calls)
+        self._acl.assert_exposable(component, tools)
+        normalized: list[ValidatedCall] = []
+        for call in calls:
+            spec = self._registry.spec(call.name)
+            parsed = spec.params_model.model_validate(call.arguments)
+            normalized.append(
+                ValidatedCall(name=call.name, arguments=parsed.model_dump(mode="json"))
+            )
+        agent = AgentSpec(name=component, tools=tools, requires_tool_call=False)
+        snap = self.snapshot_id if snapshot_id is None else snapshot_id
+        return tuple(self._execute(agent, normalized, snap))
 
     # ── 主流程 ───────────────────────────────────────────────────────
     def call(
@@ -398,6 +440,20 @@ class Harness:
                 failures.append(failure)
             elif call is not None:
                 calls.append(call)
+        present = {call.name for call in calls}
+        for required in agent.required_tools:
+            if required not in agent.tools:
+                raise ValueError(f"required tool {required!r} 未包含在暴露工具表中")
+            if required not in present:
+                failures.append(
+                    ValidationFailure(
+                        mode=FailureMode.MISSING_FIELD,
+                        tool=required,
+                        expected="本次响应必须包含该收口工具",
+                        actual="未调用",
+                        message=f"缺少必需收口工具 {required}",
+                    )
+                )
         return calls, failures
 
     def _precheck_acl(self, agent: AgentSpec, tool: str) -> None:

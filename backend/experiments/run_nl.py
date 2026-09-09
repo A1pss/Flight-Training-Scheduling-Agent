@@ -10,13 +10,14 @@ import argparse
 import sys
 import time
 from collections.abc import Sequence
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from pathlib import Path
 
 from backend.core.config import Settings
 from backend.core.db import get_session_factory
 from backend.datasets.loader import load_eval_dataset
-from backend.experiments.nl_eval import append_jsonl, iter_jsonl, run_item
+from backend.experiments.nl_eval import NLObservation, append_jsonl, iter_jsonl, run_item
 from backend.harness import Harness
 from backend.ingestion.loader import active_snapshot_id
 from backend.planner.tools import planner_tool_handlers
@@ -31,6 +32,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--rounds", type=int, default=3)
     parser.add_argument("--limit", type=int, default=0, help="只跑前 N 条（估时用）")
     parser.add_argument(
+        "--workers",
+        type=int,
+        default=1,
+        help="并行样本数；每条仍使用独立 Harness，结果按数据集顺序落盘",
+    )
+    parser.add_argument(
         "--variant",
         default="main",
         choices=("main", "no_rules"),
@@ -38,6 +45,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("--out", default="reports/m9b/exp1_nl360.jsonl")
     args = parser.parse_args(argv)
+    if args.workers < 1:
+        parser.error("--workers 必须至少为 1")
 
     cfg = Settings(_env_file=None, LLM_PROVIDER="ollama")
     out = Path(args.out)
@@ -84,23 +93,32 @@ def main(argv: Sequence[str] | None = None) -> int:
             return h
 
         total = len(records) * args.rounds
+        pending: list[tuple[int, int, dict[str, object]]] = []
         n = 0
-        started = time.monotonic()
         for rnd in range(1, args.rounds + 1):
             for item in records:
                 n += 1
                 key = (rnd, str(item["item_id"]), args.variant)
-                if key in done:
-                    continue
-                obs = run_item(
-                    item,
-                    directory=directory,
-                    today=EVAL_TODAY,
-                    harness=fresh_harness(),
-                    settings=cfg,
-                    round_index=rnd,
-                    use_rules=args.variant == "main",
-                )
+                if key not in done:
+                    pending.append((n, rnd, item))
+
+        started = time.monotonic()
+
+        def observe(rnd: int, item: dict[str, object]) -> NLObservation:
+            return run_item(
+                item,
+                directory=directory,
+                today=EVAL_TODAY,
+                harness=fresh_harness(),
+                settings=cfg,
+                round_index=rnd,
+                use_rules=args.variant == "main",
+            )
+
+        with ThreadPoolExecutor(max_workers=args.workers) as executor:
+            futures = [(n, rnd, executor.submit(observe, rnd, item)) for n, rnd, item in pending]
+            for n, rnd, future in futures:
+                obs = future.result()
                 payload = obs.to_json() | {"variant": args.variant}
                 append_jsonl(out, payload)
                 elapsed = time.monotonic() - started

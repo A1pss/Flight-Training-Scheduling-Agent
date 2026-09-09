@@ -41,6 +41,8 @@ from backend.planner.intent import (
     PlannerDecision,
     deterministic_intent,
     plan_solve_intent,
+    recommended_planner_tools,
+    required_planner_tools,
 )
 from backend.planner.revision import (
     FEW_SHOT,
@@ -98,7 +100,9 @@ __all__ = [
     "normalize_role",
     "plan_solve_intent",
     "planner_tool_handlers",
+    "recommended_planner_tools",
     "reliability_bins",
+    "required_planner_tools",
     "required_role_for",
     "route_tool_handlers",
     "rule_translate",

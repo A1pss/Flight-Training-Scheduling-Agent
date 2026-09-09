@@ -35,6 +35,34 @@ RevisionKind = Literal[
     "PIN_RUNWAY",
 ]
 
+_CANONICAL_WEEKDAYS = frozenset({"周一", "周二", "周三", "周四", "周五", "周六", "周日"})
+_WEEKDAY_ALIASES = {
+    "MON": "周一",
+    "TUE": "周二",
+    "WED": "周三",
+    "THU": "周四",
+    "FRI": "周五",
+    "SAT": "周六",
+    "SUN": "周日",
+    "周天": "周日",
+    "星期一": "周一",
+    "星期二": "周二",
+    "星期三": "周三",
+    "星期四": "周四",
+    "星期五": "周五",
+    "星期六": "周六",
+    "星期日": "周日",
+    "星期天": "周日",
+    "下周一": "周一",
+    "下周二": "周二",
+    "下周三": "周三",
+    "下周四": "周四",
+    "下周五": "周五",
+    "下周六": "周六",
+    "下周日": "周日",
+    "下周天": "周日",
+}
+
 
 class SchedulingRequest(BaseModel):
     """排班/重排请求（v6 §7.4 `state.request` 的一支）。
@@ -128,6 +156,26 @@ class IncrementalConstraint(BaseModel):
     )
     origin_utterance: str = Field(min_length=1, description="★ 原始语句，供撤销与审计")
     round_no: int = Field(ge=1, description="★ 第几轮修订")
+
+    @model_validator(mode="after")
+    def _weekday_is_canonical_when_provided(self) -> IncrementalConstraint:
+        """归一化星期值，拒绝会在求解层退化为「整周」的未知值。
+
+        ``to_solver_params`` 只会为可识别的星期写入 ``day_index``。若放任
+        ``"下周三"`` 这类相对日期穿透，FORBID 会缺少日索引，继而被误解为
+        整周约束。此处将既有的中英文别名及相对星期归一到 v6 §7.3.4 的规范
+        中文星期；不能归一的值则拒绝。用户原话仍完整保存在 ``origin_utterance``
+        中，不丢失审计语义。
+        """
+        day_key = "day" if "day" in self.params else "weekday"
+        raw_day = self.params.get(day_key)
+        if raw_day is None:
+            return self
+        normalized = _WEEKDAY_ALIASES.get(str(raw_day).strip().upper(), str(raw_day).strip())
+        if normalized not in _CANONICAL_WEEKDAYS:
+            raise ValueError(f"约束中的 day/weekday 必须是周一至周日的规范值；实际 {raw_day!r}")
+        self.params[day_key] = normalized
+        return self
 
 
 class SolveIntent(BaseModel):

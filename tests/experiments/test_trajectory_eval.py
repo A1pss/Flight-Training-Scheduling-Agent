@@ -185,6 +185,22 @@ def test_repeated_same_tool_with_different_params_is_an_acceptable_path() -> Non
     assert "折叠" in reason
 
 
+def test_expected_probe_repetitions_are_collapsed_symmetrically() -> None:
+    observed = ["diagnosis", "tool:min_conflict_set", "tool:probe_solve", "human_gate"]
+    expected = [
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:probe_solve",
+        "human_gate",
+    ]
+
+    ok, reason = path_is_correct(observed, expected)
+
+    assert ok
+    assert "折叠" in reason
+
+
 def test_collapsing_never_launders_a_forbidden_path() -> None:
     """折叠只用来宽容重复探索，**不得把禁止路径洗成可接受**。"""
     forbidden = [["route", "knowledge", "tool:sql_query", "tool:sql_query", "END"]]
@@ -273,3 +289,145 @@ def test_revision_metrics_only_count_revision_flows() -> None:
     ]
     agg = aggregate(outs)
     assert agg["revision_translation"] == {"hits": 1, "n": 1}
+
+
+def test_expected_validation_retry_is_not_an_invalid_loop() -> None:
+    from backend.experiments.run_trajectory import evaluate
+
+    path = ["validate", "solve", "validate", "END"]
+    item = {
+        "item_id": "TRJ-SCH-014",
+        "flow": "schedule",
+        "expected_path": path,
+        "acceptable_paths": [],
+        "forbidden_paths": [],
+        "steps": [],
+    }
+
+    assert evaluate(item, path, []).invalid_loop is False
+
+
+def test_knw006_fidelity_diagnostic_requires_negative_structured_fact() -> None:
+    from backend.experiments.run_trajectory import evaluate
+
+    item = {
+        "item_id": "TRJ-KNW-006",
+        "flow": "query",
+        "expected_path": ["END"],
+        "acceptable_paths": [],
+        "forbidden_paths": [],
+        "steps": [],
+    }
+
+    faithful = evaluate(
+        item,
+        ["END"],
+        [],
+        {"explanation": "何超不能排 missionC-1，因为缺 missionA-2。"},
+    )
+    flipped = evaluate(
+        item,
+        ["END"],
+        [],
+        {"explanation": "何超可以排 missionC-1，已经完成 missionA-2。"},
+    )
+
+    assert faithful.answer_fidelity_ok is True
+    assert flipped.answer_fidelity_ok is False
+
+
+def test_diagnosis_scoring_projects_upstream_planner_tools_but_keeps_raw_path() -> None:
+    """Diagnosis 只考察其自主探测工具；Planner 的真实调用仍完整留作审计。"""
+    from backend.experiments.run_trajectory import evaluate
+
+    expected = [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "human_gate",
+        "END",
+    ]
+    raw = [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "human_gate",
+        "END",
+    ]
+    item = {
+        "item_id": "TRJ-DIA-X",
+        "flow": "diagnosis",
+        "expected_path": expected,
+        "acceptable_paths": [],
+        "forbidden_paths": [],
+        "steps": [
+            {
+                "component": "diagnosis",
+                "tool": "min_conflict_set",
+                "params": {"iso_week": "2026W02"},
+                "optional": False,
+            }
+        ],
+    }
+    outcome = evaluate(
+        item,
+        raw,
+        [
+            ("planner", "resolve_week", {"surface": "本周"}),
+            ("planner", "propose_solve_intent", {"iso_week": "2026W02"}),
+            ("diagnosis", "min_conflict_set", {"iso_week": "2026W02"}),
+        ],
+    )
+
+    assert outcome.observed_path == raw
+    assert outcome.scored_path == expected
+    assert outcome.score_components == ["diagnosis"]
+    assert outcome.raw_observed_calls == 3
+    assert outcome.steps.observed_calls == 1
+    assert outcome.path_ok is True
+
+
+def test_component_projection_does_not_hide_focus_component_extra_tool() -> None:
+    """投影只去掉非焦点调用，Diagnosis 自己多调的工具仍会导致路径失败。"""
+    from backend.experiments.run_trajectory import evaluate
+
+    item = {
+        "item_id": "TRJ-DIA-X",
+        "flow": "diagnosis",
+        "expected_path": ["diagnosis", "tool:min_conflict_set", "human_gate", "END"],
+        "acceptable_paths": [],
+        "forbidden_paths": [],
+        "steps": [
+            {
+                "component": "diagnosis",
+                "tool": "min_conflict_set",
+                "params": {},
+                "optional": False,
+            }
+        ],
+    }
+    outcome = evaluate(
+        item,
+        [
+            "diagnosis",
+            "tool:min_conflict_set",
+            "tool:rank_relaxations",
+            "human_gate",
+            "END",
+        ],
+        [
+            ("diagnosis", "min_conflict_set", {}),
+            ("diagnosis", "rank_relaxations", {}),
+        ],
+    )
+
+    assert outcome.scored_path == outcome.observed_path
+    assert outcome.path_ok is False

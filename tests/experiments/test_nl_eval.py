@@ -26,6 +26,7 @@ def obs(**kw: Any) -> dict[str, Any]:
     base: dict[str, Any] = {
         "observed_intent": "schedule",
         "has_ambiguity": False,
+        "missing_required_info": False,
         "source": "rule",
         "confidence": 1.0,
         "planner_asked": False,
@@ -48,6 +49,13 @@ def test_unknown_intent_becomes_refuse_not_ask_clarify() -> None:
 
 def test_ambiguity_becomes_ask_clarify() -> None:
     assert action_at_threshold(obs(has_ambiguity=True), 0.75) == "ask_clarify"
+
+
+def test_missing_required_info_becomes_ask_clarify_even_for_rule_hit() -> None:
+    """规则命中只确定意图，缺周次等必需输入仍必须追问。"""
+    assert (
+        action_at_threshold(obs(missing_required_info=True, source="rule"), 0.75) == "ask_clarify"
+    )
 
 
 def test_below_threshold_never_applies_to_rule_hits() -> None:
@@ -196,6 +204,20 @@ def test_merge_keeps_model_value_when_it_is_a_real_surface() -> None:
     merged = merge_slots(_Slots(), _Slots(week="下周", persons=["何超"]))
     assert merged.week == "下周"
     assert merged.persons == ["何超"]
+
+
+def test_merge_drops_model_entity_not_present_in_original_text() -> None:
+    """模型把 IFR 幻觉成 missionI-1 时，不得制造一个人工歧义门禁。"""
+    from backend.routing.classify import _Slots, merge_slots
+
+    merged = merge_slots(
+        _Slots(persons=["吴鹏", "高超"], week="本周"),
+        _Slots(persons=["吴鹏", "高超"], missions=["missionI-1"], week="本周"),
+        raw_text="本周吴鹏和高超都请假，IFR 也关了",
+    )
+    assert merged.persons == ["吴鹏", "高超"]
+    assert merged.missions == []
+    assert merged.week == "本周"
 
 
 # ── Z-44 置信信号重建 ────────────────────────────────────────────────

@@ -21,7 +21,10 @@ def items() -> list[TrajectoryItem]:
 def test_approved_fixture_hash_is_frozen() -> None:
     """优化期间不得通过改期望路径或可选步骤移动实验五的量尺。"""
     manifest, _rows = load_eval_dataset("trajectory_100", require_approved=True)
-    assert manifest.sha256 == "8d9f29c9378201f004c0c4130eb5defc0ee065d3db8b16db2e3b920c156da3af"
+    # 2026-09-02 方案1确认：对称折叠自主探针重复次数；安全周次消解纳入
+    # acceptable；RSC-005 按权威 INFEASIBLE 回归改走 Diagnosis；I3/I4/I5
+    # 的 0 架次松弛按 v6 §12.3 记为升级人工，不再误标为可排序提案。
+    assert manifest.sha256 == "5874155aa6597b09f79c7f3e5656c2235f4335c2b68d0670566f7028319c3ab8"
 
 
 def test_committed_file_matches_builder(items: list[TrajectoryItem]) -> None:

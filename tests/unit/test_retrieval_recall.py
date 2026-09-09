@@ -12,6 +12,7 @@ from backend.retrieval.corpus import Corpus, CorpusDoc
 from backend.retrieval.documents import RetrievedDoc, dedupe, structured_doc
 from backend.retrieval.rerank import LexicalReranker, rerank
 from backend.retrieval.rrf import DEFAULT_RRF_K, fuse, rrf_score
+from backend.retrieval.structured import classify_question
 from backend.retrieval.vector import InMemoryIndex
 
 # ─────────────────────────────────────────────────────────────────────
@@ -21,6 +22,11 @@ STUDENT = "何超（P08）身份为学员，可飞机型 JL-8；资质：A类/�
 INSTRUCTOR = "高超（P02）身份为教员，可飞机型 JL-8、JL-9；资质：A类/教员"
 MISSION = "missionB-1（导航飞行）属 B 类，时长 52 分钟，先修 A类"
 RULE = "约束7·飞机排期冲突与周转时间：上一架次着陆到下一架次起飞的间隔不得小于周转时间"
+
+
+def test_eligibility_classifier_covers_can_schedule_question_shape() -> None:
+    """TRJ-KNW-006 的「能排…吗」不能漏出结构化事实通道。"""
+    assert "eligibility" in classify_question("何超现在能排 missionC-1 吗？")
 
 
 def corpus() -> Corpus:

@@ -1,0 +1,7335 @@
+{
+  "experiment": "experiment_5",
+  "current_replay_file": "reports/m9b/exp5_complete_20260906_final_replay.jsonl",
+  "current_record_file": "reports/m9b/exp5_complete_20260906_final_record.jsonl",
+  "baseline_file": "reports/m9b/exp5_complete_20260904_final_record.jsonl",
+  "wilson_note": "八项中的二项比例均给 Wilson 95%；路径相似度均值不适用。",
+  "metrics": {
+    "n_scored": 100,
+    "n_errored": 0,
+    "tool_selection": {
+      "point": 1.0,
+      "low": 0.9848667005045553,
+      "high": 0.9999999999999998,
+      "n": 250
+    },
+    "param_accuracy_diagnostic": {
+      "point": 0.6352941176470588,
+      "low": 0.5746123935414825,
+      "high": 0.6919600493522117,
+      "n": 255
+    },
+    "redundant_call_rate": {
+      "point": 0.09090909090909091,
+      "low": 0.06404237632409045,
+      "high": 0.1275112706164062,
+      "n": 319
+    },
+    "missing_call_rate": {
+      "point": 0.0,
+      "low": 3.469446951953614e-18,
+      "high": 0.037719990121680605,
+      "n": 98
+    },
+    "path_correct": {
+      "point": 0.99,
+      "low": 0.9455138038212946,
+      "high": 0.9982325679358593,
+      "n": 100
+    },
+    "invalid_loop_rate": {
+      "point": 0.0,
+      "low": 3.469446951953614e-18,
+      "high": 0.03699349820698568,
+      "n": 100
+    },
+    "revision_translation": {
+      "point": 0.9,
+      "low": 0.5958499732047615,
+      "high": 0.9821237869049271,
+      "n": 10
+    },
+    "revision_rollback": {
+      "point": 1.0,
+      "low": 0.20654931437723745,
+      "high": 1.0,
+      "n": 1
+    },
+    "answer_fidelity_diagnostic": {
+      "point": 1.0,
+      "low": 0.20654931437723745,
+      "high": 1.0,
+      "n": 1
+    },
+    "mean_path_similarity": 0.9390627878384563
+  },
+  "replay_metrics": {
+    "n_scored": 100,
+    "n_errored": 0,
+    "tool_selection": {
+      "point": 1.0,
+      "low": 0.9848667005045553,
+      "high": 0.9999999999999998,
+      "n": 250
+    },
+    "param_accuracy_diagnostic": {
+      "point": 0.6352941176470588,
+      "low": 0.5746123935414825,
+      "high": 0.6919600493522117,
+      "n": 255
+    },
+    "redundant_call_rate": {
+      "point": 0.09090909090909091,
+      "low": 0.06404237632409045,
+      "high": 0.1275112706164062,
+      "n": 319
+    },
+    "missing_call_rate": {
+      "point": 0.0,
+      "low": 3.469446951953614e-18,
+      "high": 0.037719990121680605,
+      "n": 98
+    },
+    "path_correct": {
+      "point": 0.99,
+      "low": 0.9455138038212946,
+      "high": 0.9982325679358593,
+      "n": 100
+    },
+    "invalid_loop_rate": {
+      "point": 0.0,
+      "low": 3.469446951953614e-18,
+      "high": 0.03699349820698568,
+      "n": 100
+    },
+    "revision_translation": {
+      "point": 0.9,
+      "low": 0.5958499732047615,
+      "high": 0.9821237869049271,
+      "n": 10
+    },
+    "revision_rollback": {
+      "point": 1.0,
+      "low": 0.20654931437723745,
+      "high": 1.0,
+      "n": 1
+    },
+    "answer_fidelity_diagnostic": {
+      "point": 1.0,
+      "low": 0.20654931437723745,
+      "high": 1.0,
+      "n": 1
+    },
+    "mean_path_similarity": 0.9390627878384563
+  },
+  "metrics_basis": "record（真机完整运行）；replay 仅用于一致性门禁",
+  "diagnostic_metrics_without_threshold": [
+    "param_accuracy_diagnostic",
+    "redundant_call_rate",
+    "missing_call_rate",
+    "invalid_loop_rate",
+    "answer_fidelity_diagnostic",
+    "mean_path_similarity"
+  ],
+  "baseline_metrics": {
+    "n_scored": 100,
+    "n_errored": 0,
+    "tool_selection": {
+      "point": 0.972,
+      "low": 0.9433422238771394,
+      "high": 0.9863719413991607,
+      "n": 250
+    },
+    "param_accuracy_diagnostic": {
+      "point": 0.6491935483870968,
+      "low": 0.5879345570328478,
+      "high": 0.7059010979324709,
+      "n": 248
+    },
+    "redundant_call_rate": {
+      "point": 0.09235668789808917,
+      "low": 0.06507460545528823,
+      "high": 0.12949239360816978,
+      "n": 314
+    },
+    "missing_call_rate": {
+      "point": 0.01020408163265306,
+      "low": 0.0018035477567974675,
+      "high": 0.055554809913420274,
+      "n": 98
+    },
+    "path_correct": {
+      "point": 0.97,
+      "low": 0.9154806357094724,
+      "high": 0.9897454759759611,
+      "n": 100
+    },
+    "invalid_loop_rate": {
+      "point": 0.0,
+      "low": 3.469446951953614e-18,
+      "high": 0.03699349820698568,
+      "n": 100
+    },
+    "revision_translation": {
+      "point": 0.9,
+      "low": 0.5958499732047615,
+      "high": 0.9821237869049271,
+      "n": 10
+    },
+    "revision_rollback": {
+      "point": 1.0,
+      "low": 0.20654931437723745,
+      "high": 1.0,
+      "n": 1
+    },
+    "answer_fidelity_diagnostic": {
+      "point": 1.0,
+      "low": 0.20654931437723745,
+      "high": 1.0,
+      "n": 1
+    },
+    "mean_path_similarity": 0.9391435570692255
+  },
+  "aggregate_point_changes": {
+    "tool_selection": 0.028000000000000025,
+    "param_accuracy_diagnostic": -0.013899430740037966,
+    "redundant_call_rate": -0.0014475969889982537,
+    "missing_call_rate": -0.01020408163265306,
+    "path_correct": 0.020000000000000018,
+    "invalid_loop_rate": 0.0,
+    "revision_translation": 0.0,
+    "revision_rollback": 0.0,
+    "answer_fidelity_diagnostic": 0.0
+  },
+  "metrics_by_flow": {
+    "diagnosis": {
+      "n_scored": 25,
+      "n_errored": 0,
+      "tool_selection": {
+        "point": 1.0,
+        "low": 0.9368611651470209,
+        "high": 0.9999999999999998,
+        "n": 57
+      },
+      "param_accuracy_diagnostic": {
+        "point": 0.8421052631578947,
+        "low": 0.7263682305936197,
+        "high": 0.9146420402964472,
+        "n": 57
+      },
+      "redundant_call_rate": {
+        "point": 0.0,
+        "low": 0.0,
+        "high": 0.05202306241026692,
+        "n": 70
+      },
+      "missing_call_rate": {
+        "point": 0.0,
+        "low": 1.3877787807814457e-17,
+        "high": 0.13797620467498017,
+        "n": 24
+      },
+      "path_correct": {
+        "point": 1.0,
+        "low": 0.8668077490609515,
+        "high": 0.9999999999999999,
+        "n": 25
+      },
+      "invalid_loop_rate": {
+        "point": 0.0,
+        "low": 1.3877787807814457e-17,
+        "high": 0.13319225093904846,
+        "n": 25
+      },
+      "revision_translation": null,
+      "revision_rollback": null,
+      "answer_fidelity_diagnostic": null,
+      "mean_path_similarity": 0.9678457012095456
+    },
+    "ingest": {
+      "n_scored": 10,
+      "n_errored": 0,
+      "tool_selection": {
+        "point": 1.0,
+        "low": 0.9552493763098998,
+        "high": 1.0,
+        "n": 82
+      },
+      "param_accuracy_diagnostic": {
+        "point": 1.0,
+        "low": 0.9552493763098998,
+        "high": 1.0,
+        "n": 82
+      },
+      "redundant_call_rate": {
+        "point": 0.0,
+        "low": 0.0,
+        "high": 0.04475062369010033,
+        "n": 82
+      },
+      "missing_call_rate": {
+        "point": 0.0,
+        "low": 0.0,
+        "high": 0.2775327998628892,
+        "n": 10
+      },
+      "path_correct": {
+        "point": 1.0,
+        "low": 0.7224672001371107,
+        "high": 0.9999999999999999,
+        "n": 10
+      },
+      "invalid_loop_rate": {
+        "point": 0.0,
+        "low": 0.0,
+        "high": 0.2775327998628892,
+        "n": 10
+      },
+      "revision_translation": null,
+      "revision_rollback": null,
+      "answer_fidelity_diagnostic": null,
+      "mean_path_similarity": 1.0
+    },
+    "query": {
+      "n_scored": 30,
+      "n_errored": 0,
+      "tool_selection": {
+        "point": 1.0,
+        "low": 0.9010990076755959,
+        "high": 0.9999999999999999,
+        "n": 35
+      },
+      "param_accuracy_diagnostic": {
+        "point": 0.3333333333333333,
+        "low": 0.20632956189598373,
+        "high": 0.4902260560065401,
+        "n": 39
+      },
+      "redundant_call_rate": {
+        "point": 0.35365853658536583,
+        "low": 0.25885568331347614,
+        "high": 0.4615591333763093,
+        "n": 82
+      },
+      "missing_call_rate": {
+        "point": 0.0,
+        "low": 0.0,
+        "high": 0.11351339317396876,
+        "n": 30
+      },
+      "path_correct": {
+        "point": 1.0,
+        "low": 0.8864866068260312,
+        "high": 0.9999999999999999,
+        "n": 30
+      },
+      "invalid_loop_rate": {
+        "point": 0.0,
+        "low": 0.0,
+        "high": 0.11351339317396876,
+        "n": 30
+      },
+      "revision_translation": null,
+      "revision_rollback": null,
+      "answer_fidelity_diagnostic": {
+        "point": 1.0,
+        "low": 0.20654931437723745,
+        "high": 1.0,
+        "n": 1
+      },
+      "mean_path_similarity": 0.8481155881155882
+    },
+    "reschedule": {
+      "n_scored": 10,
+      "n_errored": 0,
+      "tool_selection": {
+        "point": 1.0,
+        "low": 0.889744604539564,
+        "high": 1.0,
+        "n": 31
+      },
+      "param_accuracy_diagnostic": {
+        "point": 0.0967741935483871,
+        "low": 0.03346464416319736,
+        "high": 0.24899938443392836,
+        "n": 31
+      },
+      "redundant_call_rate": {
+        "point": 0.0,
+        "low": 0.0,
+        "high": 0.11025539546043596,
+        "n": 31
+      },
+      "missing_call_rate": {
+        "point": 0.0,
+        "low": 0.0,
+        "high": 0.2775327998628892,
+        "n": 10
+      },
+      "path_correct": {
+        "point": 1.0,
+        "low": 0.7224672001371107,
+        "high": 0.9999999999999999,
+        "n": 10
+      },
+      "invalid_loop_rate": {
+        "point": 0.0,
+        "low": 0.0,
+        "high": 0.2775327998628892,
+        "n": 10
+      },
+      "revision_translation": null,
+      "revision_rollback": null,
+      "answer_fidelity_diagnostic": null,
+      "mean_path_similarity": 1.0
+    },
+    "revision": {
+      "n_scored": 10,
+      "n_errored": 0,
+      "tool_selection": {
+        "point": 1.0,
+        "low": 0.7411670330319684,
+        "high": 1.0,
+        "n": 11
+      },
+      "param_accuracy_diagnostic": {
+        "point": 0.9090909090909091,
+        "low": 0.6226415635484043,
+        "high": 0.9837678271141151,
+        "n": 11
+      },
+      "redundant_call_rate": {
+        "point": 0.0,
+        "low": 0.0,
+        "high": 0.2588329669680317,
+        "n": 11
+      },
+      "missing_call_rate": {
+        "point": 0.0,
+        "low": 0.0,
+        "high": 0.2991450484195441,
+        "n": 9
+      },
+      "path_correct": {
+        "point": 0.9,
+        "low": 0.5958499732047615,
+        "high": 0.9821237869049271,
+        "n": 10
+      },
+      "invalid_loop_rate": {
+        "point": 0.0,
+        "low": 0.0,
+        "high": 0.2775327998628892,
+        "n": 10
+      },
+      "revision_translation": {
+        "point": 0.9,
+        "low": 0.5958499732047615,
+        "high": 0.9821237869049271,
+        "n": 10
+      },
+      "revision_rollback": {
+        "point": 1.0,
+        "low": 0.20654931437723745,
+        "high": 1.0,
+        "n": 1
+      },
+      "answer_fidelity_diagnostic": null,
+      "mean_path_similarity": 0.9625
+    },
+    "schedule": {
+      "n_scored": 15,
+      "n_errored": 0,
+      "tool_selection": {
+        "point": 1.0,
+        "low": 0.8984854458466761,
+        "high": 0.9999999999999999,
+        "n": 34
+      },
+      "param_accuracy_diagnostic": {
+        "point": 0.17142857142857143,
+        "low": 0.08102640053701589,
+        "high": 0.3268228229904496,
+        "n": 35
+      },
+      "redundant_call_rate": {
+        "point": 0.0,
+        "low": 0.0,
+        "high": 0.08200980322579117,
+        "n": 43
+      },
+      "missing_call_rate": {
+        "point": 0.0,
+        "low": 0.0,
+        "high": 0.20388330103584862,
+        "n": 15
+      },
+      "path_correct": {
+        "point": 1.0,
+        "low": 0.7961166989641515,
+        "high": 1.0,
+        "n": 15
+      },
+      "invalid_loop_rate": {
+        "point": 0.0,
+        "low": 0.0,
+        "high": 0.20388330103584862,
+        "n": 15
+      },
+      "revision_translation": null,
+      "revision_rollback": null,
+      "answer_fidelity_diagnostic": null,
+      "mean_path_similarity": 0.9761112406759586
+    }
+  },
+  "stopline_breaches_over_5pt": [],
+  "failures": [
+    {
+      "item_id": "TRJ-KNW-002",
+      "flow": "query",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 1,
+      "steps": {
+        "expected_steps": 1,
+        "observed_calls": 1,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "刘斌的仪表等级复训到期日是 2026-01-07。根据已核实的事实，刘斌（P04）持有 C 类资质，并且该资质的复训到期日为 2026-01-07。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-003",
+      "flow": "query",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "tool:bm25_search",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 1,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 1,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "上上周推迟 missionF-1 的原因是 SAB 空域当日占满。根据已核实的事实，missionF-1 属于 F 类课目，需要在 SAB 空域进行，因此当该空域被占用时，课程会被推迟到下周安排。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-004",
+      "flow": "query",
+      "reasons": [
+        "params",
+        "redundant"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后与 expected_path 相同",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 6,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 4,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "AC73 的机型是 JL-8。\n\n关于 AC73 这周是否能使用的问题，请参考具体排班和任务需求来确定。根据已核实的事实，AC73 是 JL-8 机型，符合执行相关课目的要求。如果有其他限制条件或特殊情况，请进一步确认详细信息。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-012",
+      "flow": "query",
+      "reasons": [
+        "params",
+        "redundant"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后与 expected_path 相同",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 1,
+        "observed_calls": 6,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 4,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "AC84 的机型是 JL-9。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-013",
+      "flow": "query",
+      "reasons": [
+        "params",
+        "redundant"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后与 expected_path 相同",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 5,
+      "steps": {
+        "expected_steps": 1,
+        "observed_calls": 5,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 3,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "missionE-2（空战机动）的飞行时长为 69 分钟。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-014",
+      "flow": "query",
+      "reasons": [
+        "params",
+        "redundant"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后与 expected_path 相同",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 1,
+        "observed_calls": 3,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 1,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "空域 IFR（IFR Route）的同时段容量为 1 架次。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-015",
+      "flow": "query",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 1,
+      "steps": {
+        "expected_steps": 1,
+        "observed_calls": 1,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "孙军（P01）的身份为教员，可操作飞机型号包括JL-8和JL-9；其资质涵盖A类至H类的所有类别，并且每个类别的身份均为教员。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-016",
+      "flow": "query",
+      "reasons": [
+        "params",
+        "redundant"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后与 expected_path 相同",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 1,
+        "observed_calls": 6,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 5,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "AC73 在 2026-01-09 全天有定检维护。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-017",
+      "flow": "query",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 1,
+      "steps": {
+        "expected_steps": 1,
+        "observed_calls": 1,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "罗磊（P05）已完成的课目包括 missionA-1、missionA-2、missionB-1、missionB-2 和 missionC-1。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-018",
+      "flow": "query",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "tool:bm25_search",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 1,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 1,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "AC73 在 2026-01-09 全天 有定检维护。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-019",
+      "flow": "query",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "tool:bm25_search",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 1,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 1,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "检索到以下相关内容：\n- 第 1 周方案由张主任批准，松弛档 Tier 0",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-020",
+      "flow": "query",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "tool:bm25_search",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 1,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 1,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "用户的问题中提到的是上一版计划里何超排了几个架次，但提供的已核实事实中并没有关于具体架次数的信息。因此，根据输入中的权威信息无法回答这个问题。\n\n如果需要进一步的信息，请参考其他相关文档或提供更详细的数据。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-021",
+      "flow": "query",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "tool:bm25_search",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 1,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 1,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "上周第1周排班会话中，共有7条阻塞项。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-022",
+      "flow": "query",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "tool:bm25_search",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 1,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 1,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "用户上次驳回的原因是带飞教员集中在孙军一人身上。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-024",
+      "flow": "query",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:prereq_cte",
+        "tool:vector_search",
+        "tool:rerank",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 10,
+      "steps": {
+        "expected_steps": 4,
+        "observed_calls": 10,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "根据排班会话，本周共有 13 架次飞行任务（8 带飞 / 5 单飞），且有 7 条阻塞项。机队中 AC27、AC10 和 AC34 的机型均为 JL-8，并可执行 missionF-1 等课目，满足本周的飞行需求。\n\n因此，这周的机队足够使用。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-026",
+      "flow": "query",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:prereq_cte",
+        "tool:vector_search",
+        "tool:rerank",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 4,
+      "steps": {
+        "expected_steps": 4,
+        "observed_calls": 4,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "根据检索到的相关内容，张勇（P06）和罗磊（P05）的身份均为学员，并且两人资质相同，可飞机型为 JL-8，包括 A类/单飞、B类/带飞、C类/带飞、F类/带飞。因此，从提供的信息来看，两人的进度没有明显的差异。\n\n约束3·角色配置（R2，结构+线性）规定：带飞架次由 1 教员 + 1 学员组成，单飞架次 1 人；每名学员每周至少飞 1 次 A 类课目。由于张勇和罗磊的资质相同，并且没有其他具体进度信息，无法判断两人在实际飞行训练中的具体差异。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-027",
+      "flow": "query",
+      "reasons": [
+        "params",
+        "redundant"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后与 expected_path 相同",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 6,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 4,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "AC49 的机型是 JL-8，周转时间为 30 分钟。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-028",
+      "flow": "query",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 1,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 1,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "何超（P08）身份为学员，可以驾驶的机型是JL-8。根据已核实的事实，他不能飞JL-9。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-029",
+      "flow": "query",
+      "reasons": [
+        "params",
+        "redundant"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后与 expected_path 相同",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 6,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 4,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "missionC-2 的先修是 missionC-1，飞行时长为 56 分钟。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-030",
+      "flow": "query",
+      "reasons": [
+        "params",
+        "redundant"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后与 expected_path 相同",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 7,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 7,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 4,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "空域 SAB（Small Area B）的同时段容量为 2 架次。\n\n用户的问题中并未提及具体绑定的课目信息，因此无法提供具体的课目绑定情况。根据已核实的事实，仅能确认 SAB 的同时段容量为 2 架次。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-DIA-001",
+      "flow": "diagnosis",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:blame_chain",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "diagnosis"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 4,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 2,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-DIA-005",
+      "flow": "diagnosis",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "diagnosis"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 2,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-DIA-006",
+      "flow": "diagnosis",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后与 expected_path 相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "diagnosis"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 2,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-DIA-007",
+      "flow": "diagnosis",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后与 expected_path 相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "diagnosis"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 2,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-DIA-011",
+      "flow": "diagnosis",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后与 expected_path 相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "diagnosis"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 2,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-DIA-012",
+      "flow": "diagnosis",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后与 expected_path 相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "diagnosis"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 2,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-DIA-014",
+      "flow": "diagnosis",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "diagnosis"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 2,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-DIA-015",
+      "flow": "diagnosis",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "diagnosis"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 2,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-DIA-023",
+      "flow": "diagnosis",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "diagnosis"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 2,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-001",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 1,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "本次飞行训练计划编号为 2026W03-4a9bb07277a3，涵盖 ISO 周 2026W03 的全部训练需求。该方案共安排了15个架次，其中带飞9个架次、单飞6个架次。以下是具体说明：\n\n### 阻塞项\n本周有7名学员因先修未满足而被排除在排班之外，具体阻塞原因已在区块4中详细列出。\n\n### 松弛与决策记录\n本次方案使用了Tier 0的松弛档位，即没有采用任何额外的松弛措施。所有硬约束均得到满足，无欠账产生（欠账条数为0）。由于本周有成熟飞行员到期资质转复训的情况，请在区块6中明确标注S-11授权改写声明。\n\n### 资源利用\n飞机、人员和空域资源的占用情况已在区块5中详细列出。本次方案未使用任何额外的松弛措施，因此不存在因资源不足导致排班失败的情况。\n\n### 松弛提案\n由于本次方案在Tier 0下已达到最优解，无需提出进一步的松弛建议。\n\n以上为本次飞行训练计划的主要说明，请参阅具体报告获取更多详细信息。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-002",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 2,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "本次飞行训练计划编号为 2026W02-fe81a41a61cb，涵盖 ISO 周 2026W02 的安排。根据校验结果，该方案满足所有硬约束条件，具体如下：\n\n- **架次总数**：共排定 5 架次飞行任务。\n- **带飞与单飞分布**：其中包含 2 次带飞和 3 次单飞。\n- **阻塞项情况**：有 5 组训练组合因先修未满足而被排除，具体原因已在报告中详细列出。\n- **欠账情况**：无任何欠账产生（欠账条数为 0）。\n- **松弛使用情况**：本次方案在 Tier 0 松弛档位下生成，无需额外的松弛措施。\n\n此外，根据业务方授权（2026-08-06 裁定），成熟飞行员到期资质转复训的 S-11 条款已纳入校验逻辑。这意味着如果某成熟飞行员的类别资质到期，则该学员将转入相应类别的复训状态，而非直接停止飞行训练。\n\n本次方案在求解过程中未遇到任何硬约束冲突，所有规则均通过验证（14/14 通过，0 条违规），确保了计划的可行性和最优性。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-003",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 2,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 2,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "### 方案说明\n\n**计划编号:** 2026W03-99ce97b045c5  \n**ISO 周:** 2026W03  \n\n本次排班方案如下：\n\n1. **架次总数**: 本周无任何架次安排，总计为 0 架次。\n   \n   - 由于没有学员符合飞行条件或资源不足等原因，本周未生成任何训练架次。\n\n2. **阻塞项与欠账**:\n   - 没有因先修未满足而被排除的组合（即无 BLOCKED 状态）。\n   - 同样地，也没有因为资源限制或其他硬约束导致的欠账情况出现。\n\n3. **资源利用**: \n   - 由于本周没有架次安排，因此飞机、人员及空域等资源均未使用。具体占用与利用率数据为空。\n\n4. **松弛与决策记录**:\n   - 松弛档位为 Tier 0，表示在不放宽任何硬约束的情况下进行排班。\n   - 排班过程中未启用任何额外的松弛措施或授权改写声明（如 S-11）。\n\n5. **总结**: \n   - 校验结果显示所有规则均通过，无违规情况发生。本次方案为最优解，用时 21.0 秒完成计算。\n   - 排班结果表明本周没有安排任何训练架次，且未出现因先修未满足或资源限制导致的阻塞项与欠账。\n\n以上即为本次排班方案的详细说明，请查阅。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-004",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 3,
+        "param_denominator": 2,
+        "param_hits": 1,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "### 方案说明\n\n**计划编号:** 2026W02-f1f3c24ad238  \n本周排班方案已生成，具体信息如下：\n\n- **ISO 周:** 2026W02  \n- **架次总数:** 14 架次（带飞9次，单飞5次）  \n- **阻塞项:** 共有7个学员因先修未满足而被排除排班。具体原因已在区块4中详细列出。\n- **欠账情况:** 当前方案无任何欠账条目。\n\n**校验结果:**\n所有14条约束均通过，没有违规记录。\n\n### 训练进度与欠账\n每个学员的训练进度已按规则要求推进，并未出现因频率限制导致的欠账。具体应排次数、实际排飞次数及欠账情况详见区块3表格。\n\n### 松弛与决策记录\n本次方案使用了Tier 0松弛档，无额外放宽措施。由于S-11授权改写开关开启，特此声明：成熟飞行员到期资质转复训，系对`rules.pdf`约束2字面语义的业务方授权改写（2026-08-06裁定），非校验器漏判。\n\n### 说明\n本次方案为最优解，未使用任何额外松弛措施。所有学员均按规则要求完成训练任务，无欠账情况出现。阻塞项详细信息已在区块4中列出，请查阅具体原因及处理建议。\n\n如有疑问或需要进一步解释，请联系系统支持团队。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-005",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 2,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 2,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "### 方案说明\n\n本次飞行训练排班方案基于2026年第3周的数据快照和当前规则集生成。以下是关键信息摘要：\n\n**计划编号:** 2026W03-c498e6c07704  \n**ISO 周:** 2026W03  \n**架次总数:** 1  \n**带飞 / 单飞:** 1 / 0  \n**阻塞项:** 无  \n**欠账:** 无  \n**松弛档位:** Tier 0  \n**校验结果:** 共有14条规则，全部通过，未发现违规情况。\n\n### 训练进度与欠账\n- **本周应排架次总数:** 1  \n- **实际已排架次总数:** 1  \n- **欠账架次数:** 无\n\n### 松弛与决策记录\n本次方案在Tier 0下生成，未使用任何松弛措施。所有硬约束均满足，无需额外授权。\n\n### 总结\n此次排班方案中，所有学员的训练需求均已安排妥当，没有出现先修未完成导致的阻塞项或资源不足的情况。系统校验结果显示无违规情况，且未产生欠账。本次方案为最优解，用时21.0秒。\n\n如有进一步疑问，请参考详细报告中的具体数据和记录。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-006",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_aircraft",
+        "tool:resolve_aircraft",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_aircraft",
+        "tool:resolve_aircraft",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_aircraft",
+        "tool:resolve_aircraft",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 4,
+      "steps": {
+        "expected_steps": 4,
+        "observed_calls": 4,
+        "param_denominator": 4,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 4,
+        "tool_hits": 4,
+        "unmatched_required": 0
+      },
+      "answer_text": "### 方案说明\n\n**计划编号:** 2026W02-e5428151c562  \n本周排班方案已生成，具体信息如下：\n\n- **架次总数:** 共有 4 架次。\n- **带飞 / 单飞:** 带飞 3 次，单飞 1 次。\n- **阻塞项:** 存在 1 条先修未满足的组合被排除（具体见区块 4）。\n- **欠账条数:** 当前无任何欠账情况。\n- **松弛档位:** 使用 Tier 0 的硬约束方案，无需额外放宽条件。\n\n**校验结果:**\n- 共有 14 条规则进行了校验，全部通过，未发现违规项。\n\n### 训练进度与欠账\n本周的训练计划已按要求完成，所有学员均无欠账情况。具体到每个课目的应排次数、实际排飞次数及欠账情况，请参考区块 3 的详细表格。\n\n### 阻塞项\n- **缺失先修:** missionA-2 未完成（具体见区块 4）。\n- 先修未满足的组合被排除，详见阻塞项列表。这些组合因先修条件未达成而无法安排训练任务，并非资源不足导致排不上。\n\n### 松弛与决策记录\n本次方案使用了 Tier 0 的硬约束档位，无需额外松弛措施。具体授权声明如下：\n\n> **S-11 授权声明:** 成熟飞行员到期资质转复训，系对 `rules.pdf` 约束2 字面语义的业务方授权改写（2026-08-06 裁定），非校验器漏判。\n\n### 其他说明\n本次方案未使用任何额外松弛措施。所有硬约束均满足，无资源冲突或时间安排上的问题。如有进一步疑问，请参考详细报告中的具体数据和表格信息。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-007",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 1,
+        "observed_calls": 3,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "本次飞行训练计划涵盖 ISO 周 2026W04 的全部训练需求。根据系统生成的结果，该周共安排了 15 架次的训练任务，其中包括带飞架次 9 次和单飞架次 6 次。\n\n在本周的排班中，有 7 组学员与课目的组合因先修未满足而被排除（BLOCKED），但没有出现任何资源不足导致无法安排的情况。所有硬约束均通过校验，无违规记录。\n\n此外，本次方案未使用任何松弛措施，处于 Tier 0 档位，确保了训练计划的严格遵循既定规则和标准。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-008",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 2,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 2,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "### 方案说明\n\n**计划编号:** 2026W02-c0d30a47086c  \n**ISO 周:** 2026W02  \n\n本次排班方案如下：\n\n1. **架次总数:** 0 架次。本周无任何飞行训练安排。\n   \n2. **阻塞项:** 无学员因先修未满足而被排除，所有符合条件的学员均已纳入考虑。\n\n3. **欠账情况:** 本周无任何课目进度欠账。\n\n4. **松弛档位:** 松弛档位为 Tier 0。系统在不使用任何额外松弛的情况下生成了方案。\n\n5. **校验结果:** 所有14条硬约束均通过，未发现违规项。\n\n6. **授权改写声明:**\n   > S-11：成熟飞行员到期资质转复训，系对 `rules.pdf` 约束2 字面语义的业务方授权改写（2026-08-06 裁定），非校验器漏判。\n\n本次方案为最优解，用时 21.0 秒。系统未发现任何硬约束冲突或不可满足的情况，所有学员均已按照规则安排飞行训练任务。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-009",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:translate_revision",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:translate_revision",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:translate_revision",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 4,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 4,
+        "param_denominator": 3,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "本周飞行训练计划编号为 2026W03-4a40b49a4b4c（涵盖 ISO 周 2026W03 的所有训练任务），共安排了 15 架次，其中包括带飞架次 9 次和单飞架次 6 次。本周有 7 组学员因先修未满足而被排除在排班之外，但没有产生任何欠账情况。校验结果显示所有 14 条规则均通过，无违规记录。松弛档位为 Tier 0，表示方案已达到最优解状态。\n\n具体到每日安排如下：\n- 周一：3 架次\n- 周四：2 架次\n\n此外，本周计划中包含了一项复训任务（P04），共安排了 1 次。其他详细信息如候选数、检查项总数等请调用相应工具按需获取。\n\n**阻塞项说明**：\n7 组学员因先修未满足而被排除在排班之外，具体原因已在区块 4 中列出，请查阅详细记录以了解每组学员的具体情况及排除原因。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-010",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:translate_revision",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:translate_revision",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:translate_revision",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 3,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "本次飞行训练计划涵盖 ISO 周 2026W02 的全部训练安排。以下是方案的具体说明：\n\n### 训练进度与欠账情况\n\n- **本周应排架次**：所有学员均已按照各自课目的频率要求推进，无任何课程的先修未完成导致被排除的情况。\n- **实际已排架次**：共生成 14 架次，其中带飞 9 次，单飞 5 次。本周没有出现欠账情况。\n\n### 阻塞项\n\n本次方案中存在 7 条阻塞项，具体为学员因先修未完成而被排除的组合。这些组合在排班时完全披露，并不影响整体最优解生成。\n\n### 资源利用情况\n\n- **飞机占用**：所有安排均符合资源可用性与空域容量要求。\n- **人员占用**：所有飞行任务均满足飞行员休息时间及单日飞行时长上限的要求，无任何超负荷使用的情况出现。\n- **跑道分配**：根据求解器的决策变量，JL-8 类型飞机的跑道已合理安排。JL-9 类型飞机固定在 RWY-1 跑道上执行任务。\n\n### 松弛与决策记录\n\n本次方案未启用任何松弛措施（Tier 0），因此无需额外授权或提案。所有硬约束均得到满足，无欠账产生。\n\n### 授权改写声明\n根据业务方授权（2026-08-06 裁定），成熟飞行员到期资质转复训的 S-11 条款已纳入校验逻辑。尽管本周未实际排出任何复训架次，但该条款仍需明确披露。\n\n### 总结\n本次方案为最优解，所有硬约束均得到满足，无欠账产生，且阻塞项完全披露。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-011",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 1,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "本次飞行训练计划编号为 2026W03-ede055c64f07，涵盖 ISO 周 2026W03 的全部训练需求。根据系统生成的结果，本周共安排了 5 架次的训练任务，其中包括 2 架带飞和 3 架单飞架次。\n\n在本次计划中，有 5 名学员因先修未满足而被排除在外（BLOCKED），但没有出现资源排不下的情况（INFEASIBLE）。所有硬约束均通过校验，无违规记录。此外，本周的训练安排未使用任何松弛措施，处于 Tier 0 档位。\n\n具体到训练进度方面，系统显示本周不存在欠账情况，即所有学员均已按照既定频率完成相应课目的飞行任务。详细信息请参考附带的约束校验结果、训练进度与欠账等区块内容。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-012",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 3,
+        "param_denominator": 2,
+        "param_hits": 1,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "### 方案说明\n\n**计划编号:** 2026W02-c0d30a47086c  \n**ISO 周:** 2026W02  \n\n本次排班方案如下：\n\n1. **架次总数**: 本周无任何架次安排，总计为 0 架次。\n   \n2. **约束校验结果**: 所有规则均通过校验，未发现违规情况。具体而言，共检查了 14 条硬约束，全部符合要求。\n\n3. **训练进度与欠账**: 没有任何学员存在先修未完成的情况或欠账问题，所有学员的课目进度均已达标。\n\n4. **阻塞项**: 本周无任何因先修未满足而被排除的组合。所有符合条件的飞行任务均已被纳入考虑范围。\n\n5. **松弛与决策记录**: 当前方案使用了 Tier 0 松弛档位，即没有采用任何额外的松弛措施来生成排班计划。因此，无需特别说明授权或冲突集信息。\n\n6. **资源利用情况**: 由于本周无实际架次安排，故所有飞机、人员及空域资源均未被占用，利用率均为零。\n\n7. **跑道与空域占用明细**: 由于本周无任何飞行任务，因此没有具体的跑道和空域分配记录。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-013",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_aircraft",
+        "tool:translate_revision",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_aircraft",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_aircraft",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 2,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 2,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "本次飞行训练计划编号为 2026W03-a54d75c4bc83，涵盖 ISO 周 2026W03 的一周时间。以下是方案的具体说明：\n\n1. **架次安排**：\n   - 总共排定 15 架次。\n   - 其中带飞（Pilot-In-Command, PIC）9 架次，单飞（Solo）6 架次。\n\n2. **阻塞项与欠账情况**：\n   - 存在 7 条阻塞项，具体原因详见区块 4 的详细说明。\n   - 欠账条数为 0，表示所有学员的训练计划均未出现排不下的情况。\n\n3. **松弛使用情况**：\n   - 当前方案处于 Tier 0，即没有使用任何松弛措施。审批人尚未批阅时，该字段显示为 `—`。\n   \n4. **校验结果**：\n   - 所有 14 条硬约束均通过校验，无违规记录。\n\n5. **特殊事项说明**：\n   - 根据业务方授权改写（2026-08-06 裁定），成熟飞行员到期资质转复训的规则 S-11 已经明确披露。尽管本周未实际排出复训架次，但该声明依然需要在区块 6 中体现。\n\n请参阅详细报告获取更多具体信息和数据统计。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-014",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 3,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "本次飞行训练计划编号为 2026W02-4d8d02baa0，涵盖 ISO 周 2026W02 的全部训练安排。该方案共包含 14 架次，其中带飞架次数为 9 次，单飞架次数为 5 次。\n\n在本次排班中，有 7 条阻塞项导致部分组合未被安排，但无任何欠账情况出现。所有硬约束均通过校验，方案处于最优解状态（Tier 0），无需使用松弛措施。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-015",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 3,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "本次飞行训练计划编号为 2026W03-1d6a9ee73910，涵盖 ISO 周 2026W03 的全部训练需求。方案中包含以下关键信息：\n\n- **架次总数**：共安排了 15 架次的飞行任务。\n- **带飞与单飞分布**：\n  - 带飞架次数为 9 次；\n  - 单飞架次数为 6 次。\n\n**阻塞项情况**：\n- 共有 7 条先修未满足而被排除的组合，具体见区块 4 的详细列表。\n- **欠账条数**：0 条，表示所有学员均已达到当前阶段的要求或安排合理，无额外欠账产生。\n\n**校验结果**：\n- 所有规则（14/14）均通过校验，未发现任何违规情况。\n\n**松弛使用情况**：\n- 本次方案在 Tier 0 档位下生成，表示没有使用任何松弛措施。\n- **授权改写声明**：S-11 授权成熟飞行员到期资质转复训（2026-08-06 裁定），非校验器漏判。\n\n以上为本次方案的主要事实与解释。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-RSC-001",
+      "flow": "reschedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_aircraft",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_aircraft",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_aircraft",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 4,
+      "steps": {
+        "expected_steps": 4,
+        "observed_calls": 4,
+        "param_denominator": 4,
+        "param_hits": 1,
+        "redundant": 0,
+        "required_steps": 4,
+        "tool_hits": 4,
+        "unmatched_required": 0
+      },
+      "answer_text": "### 方案说明\n\n**计划编号:** 2026W02-c0d30a47086c  \n**ISO 周:** 2026W02  \n\n本次排班方案如下：\n\n1. **架次总数**: 本周无任何架次安排，总计为 0 架次。\n   \n2. **约束校验结果**: 约束1 至 约束14 均已验证通过，无任何违反条文的情况出现。\n\n3. **训练进度与欠账情况**: 无任何课目进度欠账，总计为 0。所有学员的训练计划均符合当前规则要求，没有未完成的先修条件或频率要求导致的欠账问题。\n\n4. **阻塞项**: 本次方案中未出现因先修条件不满足而被排除的组合（阻塞项），总数为 0。\n\n5. **资源利用情况**: 由于本周无任何架次安排，因此飞机、人员及空域等资源均未使用。所有相关资源利用率均为 0%。\n\n6. **松弛与决策记录**: 松弛档位为 Tier 0，表示方案在不使用任何额外松弛的情况下生成，并且没有需要特别授权的调整措施。\n\n7. **跑道与空域占用明细**: 由于本周无架次安排，因此跑道和空域占用情况为空。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-RSC-002",
+      "flow": "reschedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "### 方案说明\n\n**计划编号:** 2026W02-c0d30a47086c  \n本周为 ISO 周 2026W02。\n\n1. **架次总数**: 本周无任何架次安排，总计为 0 架次。\n   \n2. **训练进度与欠账**:\n   - 没有任何学员有未完成的先修任务或欠账情况。所有学员均已满足当前课目的频率要求。\n   \n3. **约束校验结果**: \n   - 所有硬约束均通过，无违规记录。\n\n4. **松弛与决策**:\n   - 本次方案使用了 Tier 0 松弛档位，未启用任何额外的松弛措施。因此，没有产生欠账或需要特别授权的情况。\n   \n5. **授权改写声明**:\n   - 根据业务方授权（2026-08-06 裁定），成熟飞行员到期资质转复训 (S-11) 的规则已明确，但本次排班中未涉及任何此类情况。\n\n以上为本周飞行训练计划的详细说明。由于本周无架次安排，因此无需进一步解释阻塞项、资源利用等信息。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-RSC-003",
+      "flow": "reschedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_aircraft",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_aircraft",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_aircraft",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 1,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "### 方案说明\n\n**计划编号:** 2026W02-b6879bae9f1a  \n本周排班方案已生成，具体信息如下：\n\n- **架次总数:** 共有 14 架次。\n- **带飞 / 单飞:** 带飞 9 次，单飞 5 次。\n\n**阻塞项:**\n本周共有 7 条先修未满足的组合被排除：\n1. missionA-2 未完成：先修 A 类未达标\n2. missionC-1 未完成：先修 missionC-1 未完成\n3. missionD-2 未完成：先修 missionD-1 未完成\n4. missionE-1 未完成：先修 missionE-0 未完成\n5. missionF-1 未完成：先修 missionF-0 未完成\n6. missionG-3 未完成：先修 missionG-2 未完成\n7. missionH-4 未完成：先修 missionH-3 未完成\n\n**欠账情况:**\n本周无任何欠账，所有硬约束均满足。\n\n**松弛档位:** \n本次方案使用 Tier 0 松弛档，无需额外授权或调整。\n\n**校验结果:**\n14 条规则全部通过，无违规记录。\n\n### 授权改写声明\nS-11：成熟飞行员到期资质转复训，系对 `rules.pdf` 约束2 字面语义的业务方授权改写（2026-08-06 裁定），非校验器漏判。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-RSC-004",
+      "flow": "reschedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 2,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 2,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "本周飞行训练计划涵盖了 ISO 周 2026W03 的全部训练任务。具体方案如下：\n\n- **架次总数**：共安排了15个架次。\n- **带飞与单飞分布**：\n  - 带飞架次数：9 次\n  - 单飞架次数：6 次\n\n**阻塞项情况**：\n本周有7名学员因先修未满足而被排除，具体原因已在系统中详细记录。\n\n**欠账与松弛使用情况**：\n- **欠账条数**：0 条（无欠账）\n- **松弛档位**：Tier 0 （未使用任何松弛）\n\n**校验结果**：\n所有14项约束均通过校验，无违规现象。具体校验详情请调用相应工具按需获取。\n\n此外，请注意以下几点：\n- 成熟飞行员到期资质转复训的授权改写声明已记录在案（S-11）。\n- 本周未使用任何松弛措施，因此无需特别关注审批事项。\n\n如有疑问或需要进一步详细信息，请随时联系系统支持团队。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-RSC-005",
+      "flow": "reschedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "human_gate",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:probe_solve",
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 5,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 2,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-RSC-006",
+      "flow": "reschedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 2,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 2,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "本次飞行训练计划编号为 2026W03-902ee1fc66c1，涵盖 ISO 周 2026W03 的一周时间。本周共安排了 15 架次的训练任务，其中带飞架次数为 9 次，单飞架次数为 6 次。\n\n在本次计划中，有 7 条阻塞项导致某些组合未能被排上，但没有产生任何欠账。所有硬约束均通过校验，未发现违规情况。松弛档位使用的是 Tier 0，即系统在不放宽任何规则的情况下生成了最优解。\n\n具体到每日的安排如下：周一有 2 架次任务，周六则为 3 架次。此外，本周还特别标注了一些特定课目的架次数，如 P04 类别有 1 架次，P06 和 P07 分别各有 5 架次和 4 架次。\n\n请查阅详细报告以获取更多具体信息及训练进度情况。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-RSC-007",
+      "flow": "reschedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_aircraft",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_aircraft",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_aircraft",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 4,
+      "steps": {
+        "expected_steps": 4,
+        "observed_calls": 4,
+        "param_denominator": 4,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 4,
+        "tool_hits": 4,
+        "unmatched_required": 0
+      },
+      "answer_text": "### 方案说明\n\n**计划编号:** 2026W03-99ce97b045c5  \n本周为 ISO 周 2026W03。\n\n1. **架次总数**: 本周无任何架次安排，总计为 0 架次。\n   \n2. **带飞 / 单飞**: 本周没有带飞和单飞任务，均为 0。\n\n4. **欠账情况**: 由于本周没有安排任何架次，故不存在任何欠账情况（欠账为 0）。\n\n5. **松弛档位**: 当前方案使用的是 Tier 0 松弛策略，即未启用任何额外的松弛措施来满足硬约束条件。\n\n6. **校验结果**: 所有规则均通过校验，无违规记录。具体如下：\n   - 约束1 至 约束14 均已验证通过，共计 14 条规则全部符合要求。\n   \n本次方案为最优解，未使用任何松弛措施，并且所有硬约束条件均已满足。\n\n### 其他说明\n- **阻塞项**: 本周无任何因先修未完成而被排除的组合（阻塞项数量为 0）。\n- **资源利用情况**: 由于本周没有架次安排，因此飞机、人员及空域等资源均未使用。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-RSC-008",
+      "flow": "reschedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_person",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_person",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_person",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 4,
+      "steps": {
+        "expected_steps": 4,
+        "observed_calls": 4,
+        "param_denominator": 4,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 4,
+        "tool_hits": 4,
+        "unmatched_required": 0
+      },
+      "answer_text": "### 方案说明\n\n**计划编号:** 2026W02-c0d30a47086c  \n本周为 ISO 周 2026W02。\n\n1. **架次总数**: 本周无任何架次安排，总计为 0 架次。\n   \n2. **阻塞项**: 没有学员因先修未完成而被排除在排班之外（阻塞项数量为 0）。\n\n3. **欠账情况**: 无任何课目进度欠账记录（欠账总数为 0）。\n\n4. **松弛档位**: 当前方案使用的是 Tier 0 松弛策略，即未启用任何额外的松弛措施来满足硬约束条件。\n\n5. **校验结果**: 所有规则均通过校验，无违规情况出现。具体而言，14 条规则全部通过检查，没有发现任何违反硬约束的情况。\n\n以上为本次方案的主要事实总结，请调用相应工具按需获取更多详细信息。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-RSC-009",
+      "flow": "reschedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_aircraft",
+        "tool:resolve_aircraft",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_aircraft",
+        "tool:resolve_aircraft",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_aircraft",
+        "tool:resolve_aircraft",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 4,
+      "steps": {
+        "expected_steps": 4,
+        "observed_calls": 4,
+        "param_denominator": 4,
+        "param_hits": 1,
+        "redundant": 0,
+        "required_steps": 4,
+        "tool_hits": 4,
+        "unmatched_required": 0
+      },
+      "answer_text": "本次飞行训练计划编号为 2026W03-bfb275cf1fad，涵盖 ISO 周 2026W03 的全部训练需求。方案共安排了 15 架次，其中带飞架次 9 次，单飞架次 6 次。\n\n在本次排班中，有 7 组学员与课目组合因先修未满足而被排除（BLOCKED），但没有出现资源不足导致的 INFEASIBLE 情况。所有硬约束均通过校验，无违规记录。\n\n方案采用 Tier 0 松弛档位，即在不使用任何松弛手段的情况下生成最优解。由于本次排班中未产生欠账，因此无需进行额外的授权操作或提案调整。\n\n详细信息如下：\n- 架次总数：15\n- 带飞架次数：9\n- 单飞架次数：6\n- 阻塞项数（先修未满足）：7\n- 欠账条数：0\n\n请根据以上说明进行进一步的审核和确认。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-RSC-010",
+      "flow": "reschedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "### 方案说明\n\n**计划编号:** 2026W02-c0d30a47086c  \n**ISO 周:** 2026W02  \n\n本次排班方案如下：\n\n1. **架次总数:** 0 架次。本周没有安排任何飞行训练任务。\n   \n2. **阻塞项:** 无学员因先修未完成而被排除，所有符合条件的学员均已纳入考虑。\n\n3. **欠账:** 0 欠账。所有学员均已完成其当前阶段的所有课目要求，不存在进度滞后的情况。\n\n4. **松弛档位:** Tier 0。本次排班方案在不使用任何松弛策略的情况下生成，完全满足硬约束条件。\n\n5. **校验结果:** 所有14条规则均已通过校验，无违规情况发生。\n\n**授权改写声明:**\n> S-11：成熟飞行员到期资质转复训，系对 `rules.pdf` 约束2 字面语义的业务方授权改写（2026-08 裁定），非校验器漏判\n\n本次方案为最优解，未使用任何松弛策略。所有学员均已满足其当前阶段的所有训练要求，并且没有出现飞行资源冲突或时间安排上的问题。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-REV-002",
+      "flow": "revision",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "human_gate",
+        "planner",
+        "tool:translate_revision",
+        "human_gate",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "human_gate",
+        "planner",
+        "tool:translate_revision",
+        "human_gate",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "human_gate",
+        "planner",
+        "tool:translate_revision",
+        "human_gate",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 1,
+      "steps": {
+        "expected_steps": 1,
+        "observed_calls": 1,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "本次飞行训练计划编号为 2026W02-6103e356a554，涵盖 ISO 周 2026W02 的排班安排。以下是具体方案说明：\n\n### 训练进度与欠账情况\n\n本周共有 14 架次的训练任务，其中带飞架次数为 9 次，单飞架次数为 5 次。所有硬约束均通过校验，无违规记录。\n\n### 阻塞项\n本次排班中存在 7 条阻塞项，具体如下：\n- **缺失先修**：学员因未完成特定课目而被排除。\n- **阻塞原因**：详细列出每条阻塞项的具体原因（如“missionA-2 未完成”）。\n\n### 资源利用情况\n本次排班中，AC27 型飞机安排了 1 次训练任务。具体资源占用与利用率如下：\n- **飞机占用**: 共有 14 架次。\n- **人员占用**: 根据学员资质和时间安排进行合理分配。\n\n### 松弛与决策记录\n本次排班未使用任何松弛措施，所有硬约束均满足要求。授权改写声明如下：\n\n> S-11：成熟飞行员到期资质转复训，系对 `rules.pdf` 约束2 字面语义的业务方授权改写（2026-08-06 裁定），非校验器漏判。\n\n### 未使用的松弛提案\n本次方案在 Tier 0 下运行，无任何松弛措施使用。审批人尚未批准具体决策记录。\n\n以上为本次飞行训练计划的详细说明，请根据实际情况进行进一步调整和优化。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-REV-008",
+      "flow": "revision",
+      "reasons": [
+        "path"
+      ],
+      "path_reason": "既非期望路径也不在可接受集合内",
+      "expected_path": [
+        "human_gate",
+        "planner",
+        "tool:translate_revision",
+        "human_gate",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "human_gate",
+        "planner",
+        "tool:translate_revision",
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "human_gate",
+        "planner",
+        "tool:translate_revision",
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 1,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 1,
+        "param_denominator": 1,
+        "param_hits": 1,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "这句修订没能翻译成增量约束：「把刘斌的复训挪到周末」。请换一种说法，或直接指出要改的架次号与目标（如「S000117 换 AC49」）",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-REV-010",
+      "flow": "revision",
+      "reasons": [
+        "revision_translation"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "human_gate",
+        "END"
+      ],
+      "scored_path": [
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 0,
+      "steps": {
+        "expected_steps": 0,
+        "observed_calls": 0,
+        "param_denominator": 0,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 0,
+        "tool_hits": 0,
+        "unmatched_required": 0
+      },
+      "answer_text": "",
+      "error": ""
+    }
+  ],
+  "replay_failures": [
+    {
+      "item_id": "TRJ-KNW-002",
+      "flow": "query",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 1,
+      "steps": {
+        "expected_steps": 1,
+        "observed_calls": 1,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "刘斌的仪表等级复训到期日是 2026-01-07。根据已核实的事实，刘斌（P04）持有 C 类资质，并且该资质的复训到期日为 2026-01-07。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-003",
+      "flow": "query",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "tool:bm25_search",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 1,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 1,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "上上周推迟 missionF-1 的原因是 SAB 空域当日占满。根据已核实的事实，missionF-1 属于 F 类课目，需要在 SAB 空域进行，因此当该空域被占用时，课程会被推迟到下周安排。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-004",
+      "flow": "query",
+      "reasons": [
+        "params",
+        "redundant"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后与 expected_path 相同",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 6,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 4,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "AC73 的机型是 JL-8。\n\n关于 AC73 这周是否能使用的问题，请参考具体排班和任务需求来确定。根据已核实的事实，AC73 是 JL-8 机型，符合执行相关课目的要求。如果有其他限制条件或特殊情况，请进一步确认详细信息。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-012",
+      "flow": "query",
+      "reasons": [
+        "params",
+        "redundant"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后与 expected_path 相同",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 1,
+        "observed_calls": 6,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 4,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "AC84 的机型是 JL-9。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-013",
+      "flow": "query",
+      "reasons": [
+        "params",
+        "redundant"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后与 expected_path 相同",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 5,
+      "steps": {
+        "expected_steps": 1,
+        "observed_calls": 5,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 3,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "missionE-2（空战机动）的飞行时长为 69 分钟。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-014",
+      "flow": "query",
+      "reasons": [
+        "params",
+        "redundant"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后与 expected_path 相同",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 1,
+        "observed_calls": 3,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 1,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "空域 IFR（IFR Route）的同时段容量为 1 架次。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-015",
+      "flow": "query",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 1,
+      "steps": {
+        "expected_steps": 1,
+        "observed_calls": 1,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "孙军（P01）的身份为教员，可操作飞机型号包括JL-8和JL-9；其资质涵盖A类至H类的所有类别，并且每个类别的身份均为教员。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-016",
+      "flow": "query",
+      "reasons": [
+        "params",
+        "redundant"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后与 expected_path 相同",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 1,
+        "observed_calls": 6,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 5,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "AC73 在 2026-01-09 全天有定检维护。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-017",
+      "flow": "query",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 1,
+      "steps": {
+        "expected_steps": 1,
+        "observed_calls": 1,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "罗磊（P05）已完成的课目包括 missionA-1、missionA-2、missionB-1、missionB-2 和 missionC-1。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-018",
+      "flow": "query",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "tool:bm25_search",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 1,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 1,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "AC73 在 2026-01-09 全天 有定检维护。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-019",
+      "flow": "query",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "tool:bm25_search",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 1,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 1,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "检索到以下相关内容：\n- 第 1 周方案由张主任批准，松弛档 Tier 0",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-020",
+      "flow": "query",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "tool:bm25_search",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 1,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 1,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "用户的问题中提到的是上一版计划里何超排了几个架次，但提供的已核实事实中并没有关于具体架次数的信息。因此，根据输入中的权威信息无法回答这个问题。\n\n如果需要进一步的信息，请参考其他相关文档或提供更详细的数据。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-021",
+      "flow": "query",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "tool:bm25_search",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 1,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 1,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "上周第1周排班会话中，共有7条阻塞项。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-022",
+      "flow": "query",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "tool:bm25_search",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:memory.search",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 1,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 1,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "用户上次驳回的原因是带飞教员集中在孙军一人身上。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-024",
+      "flow": "query",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:prereq_cte",
+        "tool:vector_search",
+        "tool:rerank",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 10,
+      "steps": {
+        "expected_steps": 4,
+        "observed_calls": 10,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "根据排班会话，本周共有 13 架次飞行任务（8 带飞 / 5 单飞），且有 7 条阻塞项。机队中 AC27、AC10 和 AC34 的机型均为 JL-8，并可执行 missionF-1 等课目，满足本周的飞行需求。\n\n因此，这周的机队足够使用。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-026",
+      "flow": "query",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:prereq_cte",
+        "tool:vector_search",
+        "tool:rerank",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "tool:prereq_cte",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 4,
+      "steps": {
+        "expected_steps": 4,
+        "observed_calls": 4,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "根据检索到的相关内容，张勇（P06）和罗磊（P05）的身份均为学员，并且两人资质相同，可飞机型为 JL-8，包括 A类/单飞、B类/带飞、C类/带飞、F类/带飞。因此，从提供的信息来看，两人的进度没有明显的差异。\n\n约束3·角色配置（R2，结构+线性）规定：带飞架次由 1 教员 + 1 学员组成，单飞架次 1 人；每名学员每周至少飞 1 次 A 类课目。由于张勇和罗磊的资质相同，并且没有其他具体进度信息，无法判断两人在实际飞行训练中的具体差异。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-027",
+      "flow": "query",
+      "reasons": [
+        "params",
+        "redundant"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后与 expected_path 相同",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 6,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 4,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "AC49 的机型是 JL-8，周转时间为 30 分钟。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-028",
+      "flow": "query",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 1,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 1,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "何超（P08）身份为学员，可以驾驶的机型是JL-8。根据已核实的事实，他不能飞JL-9。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-029",
+      "flow": "query",
+      "reasons": [
+        "params",
+        "redundant"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后与 expected_path 相同",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 6,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 4,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "missionC-2 的先修是 missionC-1，飞行时长为 56 分钟。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-KNW-030",
+      "flow": "query",
+      "reasons": [
+        "params",
+        "redundant"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后与 expected_path 相同",
+      "expected_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "knowledge",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "tool:sql_query",
+        "END"
+      ],
+      "score_components": [
+        "knowledge"
+      ],
+      "raw_observed_calls": 7,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 7,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 4,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "空域 SAB（Small Area B）的同时段容量为 2 架次。\n\n用户的问题中并未提及具体绑定的课目信息，因此无法提供具体的课目绑定情况。根据已核实的事实，仅能确认 SAB 的同时段容量为 2 架次。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-DIA-001",
+      "flow": "diagnosis",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:blame_chain",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "diagnosis"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 4,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 2,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-DIA-005",
+      "flow": "diagnosis",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "diagnosis"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 2,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-DIA-006",
+      "flow": "diagnosis",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后与 expected_path 相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "diagnosis"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 2,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-DIA-007",
+      "flow": "diagnosis",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后与 expected_path 相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "diagnosis"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 2,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-DIA-011",
+      "flow": "diagnosis",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后与 expected_path 相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "diagnosis"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 2,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-DIA-012",
+      "flow": "diagnosis",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "折叠同工具的连续重复调用后与 expected_path 相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "diagnosis"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 2,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-DIA-014",
+      "flow": "diagnosis",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "diagnosis"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 2,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-DIA-015",
+      "flow": "diagnosis",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "diagnosis"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 2,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-DIA-023",
+      "flow": "diagnosis",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:rank_relaxations",
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "diagnosis"
+      ],
+      "raw_observed_calls": 6,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 2,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-001",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 1,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "本次飞行训练计划编号为 2026W03-4a9bb07277a3，涵盖 ISO 周 2026W03 的全部训练需求。该方案共安排了15个架次，其中带飞9个架次、单飞6个架次。以下是具体说明：\n\n### 阻塞项\n本周有7名学员因先修未满足而被排除在排班之外，具体阻塞原因已在区块4中详细列出。\n\n### 松弛与决策记录\n本次方案使用了Tier 0的松弛档位，即没有采用任何额外的松弛措施。所有硬约束均得到满足，无欠账产生（欠账条数为0）。由于本周有成熟飞行员到期资质转复训的情况，请在区块6中明确标注S-11授权改写声明。\n\n### 资源利用\n飞机、人员和空域资源的占用情况已在区块5中详细列出。本次方案未使用任何额外的松弛措施，因此不存在因资源不足导致排班失败的情况。\n\n### 松弛提案\n由于本次方案在Tier 0下已达到最优解，无需提出进一步的松弛建议。\n\n以上为本次飞行训练计划的主要说明，请参阅具体报告获取更多详细信息。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-002",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 2,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "本次飞行训练计划编号为 2026W02-fe81a41a61cb，涵盖 ISO 周 2026W02 的安排。根据校验结果，该方案满足所有硬约束条件，具体如下：\n\n- **架次总数**：共排定 5 架次飞行任务。\n- **带飞与单飞分布**：其中包含 2 次带飞和 3 次单飞。\n- **阻塞项情况**：有 5 组训练组合因先修未满足而被排除，具体原因已在报告中详细列出。\n- **欠账情况**：无任何欠账产生（欠账条数为 0）。\n- **松弛使用情况**：本次方案在 Tier 0 松弛档位下生成，无需额外的松弛措施。\n\n此外，根据业务方授权（2026-08-06 裁定），成熟飞行员到期资质转复训的 S-11 条款已纳入校验逻辑。这意味着如果某成熟飞行员的类别资质到期，则该学员将转入相应类别的复训状态，而非直接停止飞行训练。\n\n本次方案在求解过程中未遇到任何硬约束冲突，所有规则均通过验证（14/14 通过，0 条违规），确保了计划的可行性和最优性。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-003",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 2,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 2,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "### 方案说明\n\n**计划编号:** 2026W03-99ce97b045c5  \n**ISO 周:** 2026W03  \n\n本次排班方案如下：\n\n1. **架次总数**: 本周无任何架次安排，总计为 0 架次。\n   \n   - 由于没有学员符合飞行条件或资源不足等原因，本周未生成任何训练架次。\n\n2. **阻塞项与欠账**:\n   - 没有因先修未满足而被排除的组合（即无 BLOCKED 状态）。\n   - 同样地，也没有因为资源限制或其他硬约束导致的欠账情况出现。\n\n3. **资源利用**: \n   - 由于本周没有架次安排，因此飞机、人员及空域等资源均未使用。具体占用与利用率数据为空。\n\n4. **松弛与决策记录**:\n   - 松弛档位为 Tier 0，表示在不放宽任何硬约束的情况下进行排班。\n   - 排班过程中未启用任何额外的松弛措施或授权改写声明（如 S-11）。\n\n5. **总结**: \n   - 校验结果显示所有规则均通过，无违规情况发生。本次方案为最优解，用时 21.0 秒完成计算。\n   - 排班结果表明本周没有安排任何训练架次，且未出现因先修未满足或资源限制导致的阻塞项与欠账。\n\n以上即为本次排班方案的详细说明，请查阅。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-004",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 3,
+        "param_denominator": 2,
+        "param_hits": 1,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "### 方案说明\n\n**计划编号:** 2026W02-f1f3c24ad238  \n本周排班方案已生成，具体信息如下：\n\n- **ISO 周:** 2026W02  \n- **架次总数:** 14 架次（带飞9次，单飞5次）  \n- **阻塞项:** 共有7个学员因先修未满足而被排除排班。具体原因已在区块4中详细列出。\n- **欠账情况:** 当前方案无任何欠账条目。\n\n**校验结果:**\n所有14条约束均通过，没有违规记录。\n\n### 训练进度与欠账\n每个学员的训练进度已按规则要求推进，并未出现因频率限制导致的欠账。具体应排次数、实际排飞次数及欠账情况详见区块3表格。\n\n### 松弛与决策记录\n本次方案使用了Tier 0松弛档，无额外放宽措施。由于S-11授权改写开关开启，特此声明：成熟飞行员到期资质转复训，系对`rules.pdf`约束2字面语义的业务方授权改写（2026-08-06裁定），非校验器漏判。\n\n### 说明\n本次方案为最优解，未使用任何额外松弛措施。所有学员均按规则要求完成训练任务，无欠账情况出现。阻塞项详细信息已在区块4中列出，请查阅具体原因及处理建议。\n\n如有疑问或需要进一步解释，请联系系统支持团队。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-005",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 2,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 2,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "### 方案说明\n\n本次飞行训练排班方案基于2026年第3周的数据快照和当前规则集生成。以下是关键信息摘要：\n\n**计划编号:** 2026W03-c498e6c07704  \n**ISO 周:** 2026W03  \n**架次总数:** 1  \n**带飞 / 单飞:** 1 / 0  \n**阻塞项:** 无  \n**欠账:** 无  \n**松弛档位:** Tier 0  \n**校验结果:** 共有14条规则，全部通过，未发现违规情况。\n\n### 训练进度与欠账\n- **本周应排架次总数:** 1  \n- **实际已排架次总数:** 1  \n- **欠账架次数:** 无\n\n### 松弛与决策记录\n本次方案在Tier 0下生成，未使用任何松弛措施。所有硬约束均满足，无需额外授权。\n\n### 总结\n此次排班方案中，所有学员的训练需求均已安排妥当，没有出现先修未完成导致的阻塞项或资源不足的情况。系统校验结果显示无违规情况，且未产生欠账。本次方案为最优解，用时21.0秒。\n\n如有进一步疑问，请参考详细报告中的具体数据和记录。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-006",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_aircraft",
+        "tool:resolve_aircraft",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_aircraft",
+        "tool:resolve_aircraft",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_aircraft",
+        "tool:resolve_aircraft",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 4,
+      "steps": {
+        "expected_steps": 4,
+        "observed_calls": 4,
+        "param_denominator": 4,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 4,
+        "tool_hits": 4,
+        "unmatched_required": 0
+      },
+      "answer_text": "### 方案说明\n\n**计划编号:** 2026W02-e5428151c562  \n本周排班方案已生成，具体信息如下：\n\n- **架次总数:** 共有 4 架次。\n- **带飞 / 单飞:** 带飞 3 次，单飞 1 次。\n- **阻塞项:** 存在 1 条先修未满足的组合被排除（具体见区块 4）。\n- **欠账条数:** 当前无任何欠账情况。\n- **松弛档位:** 使用 Tier 0 的硬约束方案，无需额外放宽条件。\n\n**校验结果:**\n- 共有 14 条规则进行了校验，全部通过，未发现违规项。\n\n### 训练进度与欠账\n本周的训练计划已按要求完成，所有学员均无欠账情况。具体到每个课目的应排次数、实际排飞次数及欠账情况，请参考区块 3 的详细表格。\n\n### 阻塞项\n- **缺失先修:** missionA-2 未完成（具体见区块 4）。\n- 先修未满足的组合被排除，详见阻塞项列表。这些组合因先修条件未达成而无法安排训练任务，并非资源不足导致排不上。\n\n### 松弛与决策记录\n本次方案使用了 Tier 0 的硬约束档位，无需额外松弛措施。具体授权声明如下：\n\n> **S-11 授权声明:** 成熟飞行员到期资质转复训，系对 `rules.pdf` 约束2 字面语义的业务方授权改写（2026-08-06 裁定），非校验器漏判。\n\n### 其他说明\n本次方案未使用任何额外松弛措施。所有硬约束均满足，无资源冲突或时间安排上的问题。如有进一步疑问，请参考详细报告中的具体数据和表格信息。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-007",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 1,
+        "observed_calls": 3,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "本次飞行训练计划涵盖 ISO 周 2026W04 的全部训练需求。根据系统生成的结果，该周共安排了 15 架次的训练任务，其中包括带飞架次 9 次和单飞架次 6 次。\n\n在本周的排班中，有 7 组学员与课目的组合因先修未满足而被排除（BLOCKED），但没有出现任何资源不足导致无法安排的情况。所有硬约束均通过校验，无违规记录。\n\n此外，本次方案未使用任何松弛措施，处于 Tier 0 档位，确保了训练计划的严格遵循既定规则和标准。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-008",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 2,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 2,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "### 方案说明\n\n**计划编号:** 2026W02-c0d30a47086c  \n**ISO 周:** 2026W02  \n\n本次排班方案如下：\n\n1. **架次总数:** 0 架次。本周无任何飞行训练安排。\n   \n2. **阻塞项:** 无学员因先修未满足而被排除，所有符合条件的学员均已纳入考虑。\n\n3. **欠账情况:** 本周无任何课目进度欠账。\n\n4. **松弛档位:** 松弛档位为 Tier 0。系统在不使用任何额外松弛的情况下生成了方案。\n\n5. **校验结果:** 所有14条硬约束均通过，未发现违规项。\n\n6. **授权改写声明:**\n   > S-11：成熟飞行员到期资质转复训，系对 `rules.pdf` 约束2 字面语义的业务方授权改写（2026-08-06 裁定），非校验器漏判。\n\n本次方案为最优解，用时 21.0 秒。系统未发现任何硬约束冲突或不可满足的情况，所有学员均已按照规则安排飞行训练任务。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-009",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:translate_revision",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:translate_revision",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:translate_revision",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 4,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 4,
+        "param_denominator": 3,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "本周飞行训练计划编号为 2026W03-4a40b49a4b4c（涵盖 ISO 周 2026W03 的所有训练任务），共安排了 15 架次，其中包括带飞架次 9 次和单飞架次 6 次。本周有 7 组学员因先修未满足而被排除在排班之外，但没有产生任何欠账情况。校验结果显示所有 14 条规则均通过，无违规记录。松弛档位为 Tier 0，表示方案已达到最优解状态。\n\n具体到每日安排如下：\n- 周一：3 架次\n- 周四：2 架次\n\n此外，本周计划中包含了一项复训任务（P04），共安排了 1 次。其他详细信息如候选数、检查项总数等请调用相应工具按需获取。\n\n**阻塞项说明**：\n7 组学员因先修未满足而被排除在排班之外，具体原因已在区块 4 中列出，请查阅详细记录以了解每组学员的具体情况及排除原因。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-010",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:translate_revision",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:translate_revision",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:translate_revision",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 3,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "本次飞行训练计划涵盖 ISO 周 2026W02 的全部训练安排。以下是方案的具体说明：\n\n### 训练进度与欠账情况\n\n- **本周应排架次**：所有学员均已按照各自课目的频率要求推进，无任何课程的先修未完成导致被排除的情况。\n- **实际已排架次**：共生成 14 架次，其中带飞 9 次，单飞 5 次。本周没有出现欠账情况。\n\n### 阻塞项\n\n本次方案中存在 7 条阻塞项，具体为学员因先修未完成而被排除的组合。这些组合在排班时完全披露，并不影响整体最优解生成。\n\n### 资源利用情况\n\n- **飞机占用**：所有安排均符合资源可用性与空域容量要求。\n- **人员占用**：所有飞行任务均满足飞行员休息时间及单日飞行时长上限的要求，无任何超负荷使用的情况出现。\n- **跑道分配**：根据求解器的决策变量，JL-8 类型飞机的跑道已合理安排。JL-9 类型飞机固定在 RWY-1 跑道上执行任务。\n\n### 松弛与决策记录\n\n本次方案未启用任何松弛措施（Tier 0），因此无需额外授权或提案。所有硬约束均得到满足，无欠账产生。\n\n### 授权改写声明\n根据业务方授权（2026-08-06 裁定），成熟飞行员到期资质转复训的 S-11 条款已纳入校验逻辑。尽管本周未实际排出任何复训架次，但该条款仍需明确披露。\n\n### 总结\n本次方案为最优解，所有硬约束均得到满足，无欠账产生，且阻塞项完全披露。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-011",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_person",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 1,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "本次飞行训练计划编号为 2026W03-ede055c64f07，涵盖 ISO 周 2026W03 的全部训练需求。根据系统生成的结果，本周共安排了 5 架次的训练任务，其中包括 2 架带飞和 3 架单飞架次。\n\n在本次计划中，有 5 名学员因先修未满足而被排除在外（BLOCKED），但没有出现资源排不下的情况（INFEASIBLE）。所有硬约束均通过校验，无违规记录。此外，本周的训练安排未使用任何松弛措施，处于 Tier 0 档位。\n\n具体到训练进度方面，系统显示本周不存在欠账情况，即所有学员均已按照既定频率完成相应课目的飞行任务。详细信息请参考附带的约束校验结果、训练进度与欠账等区块内容。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-012",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 3,
+        "param_denominator": 2,
+        "param_hits": 1,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "### 方案说明\n\n**计划编号:** 2026W02-c0d30a47086c  \n**ISO 周:** 2026W02  \n\n本次排班方案如下：\n\n1. **架次总数**: 本周无任何架次安排，总计为 0 架次。\n   \n2. **约束校验结果**: 所有规则均通过校验，未发现违规情况。具体而言，共检查了 14 条硬约束，全部符合要求。\n\n3. **训练进度与欠账**: 没有任何学员存在先修未完成的情况或欠账问题，所有学员的课目进度均已达标。\n\n4. **阻塞项**: 本周无任何因先修未满足而被排除的组合。所有符合条件的飞行任务均已被纳入考虑范围。\n\n5. **松弛与决策记录**: 当前方案使用了 Tier 0 松弛档位，即没有采用任何额外的松弛措施来生成排班计划。因此，无需特别说明授权或冲突集信息。\n\n6. **资源利用情况**: 由于本周无实际架次安排，故所有飞机、人员及空域资源均未被占用，利用率均为零。\n\n7. **跑道与空域占用明细**: 由于本周无任何飞行任务，因此没有具体的跑道和空域分配记录。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-013",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_aircraft",
+        "tool:translate_revision",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_aircraft",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_aircraft",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 2,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 2,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "本次飞行训练计划编号为 2026W03-a54d75c4bc83，涵盖 ISO 周 2026W03 的一周时间。以下是方案的具体说明：\n\n1. **架次安排**：\n   - 总共排定 15 架次。\n   - 其中带飞（Pilot-In-Command, PIC）9 架次，单飞（Solo）6 架次。\n\n2. **阻塞项与欠账情况**：\n   - 存在 7 条阻塞项，具体原因详见区块 4 的详细说明。\n   - 欠账条数为 0，表示所有学员的训练计划均未出现排不下的情况。\n\n3. **松弛使用情况**：\n   - 当前方案处于 Tier 0，即没有使用任何松弛措施。审批人尚未批阅时，该字段显示为 `—`。\n   \n4. **校验结果**：\n   - 所有 14 条硬约束均通过校验，无违规记录。\n\n5. **特殊事项说明**：\n   - 根据业务方授权改写（2026-08-06 裁定），成熟飞行员到期资质转复训的规则 S-11 已经明确披露。尽管本周未实际排出复训架次，但该声明依然需要在区块 6 中体现。\n\n请参阅详细报告获取更多具体信息和数据统计。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-014",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 3,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "本次飞行训练计划编号为 2026W02-4d8d02baa0，涵盖 ISO 周 2026W02 的全部训练安排。该方案共包含 14 架次，其中带飞架次数为 9 次，单飞架次数为 5 次。\n\n在本次排班中，有 7 条阻塞项导致部分组合未被安排，但无任何欠账情况出现。所有硬约束均通过校验，方案处于最优解状态（Tier 0），无需使用松弛措施。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-SCH-015",
+      "flow": "schedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "命中 acceptable_path",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_week",
+        "tool:estimate_scope",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 3,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "本次飞行训练计划编号为 2026W03-1d6a9ee73910，涵盖 ISO 周 2026W03 的全部训练需求。方案中包含以下关键信息：\n\n- **架次总数**：共安排了 15 架次的飞行任务。\n- **带飞与单飞分布**：\n  - 带飞架次数为 9 次；\n  - 单飞架次数为 6 次。\n\n**阻塞项情况**：\n- 共有 7 条先修未满足而被排除的组合，具体见区块 4 的详细列表。\n- **欠账条数**：0 条，表示所有学员均已达到当前阶段的要求或安排合理，无额外欠账产生。\n\n**校验结果**：\n- 所有规则（14/14）均通过校验，未发现任何违规情况。\n\n**松弛使用情况**：\n- 本次方案在 Tier 0 档位下生成，表示没有使用任何松弛措施。\n- **授权改写声明**：S-11 授权成熟飞行员到期资质转复训（2026-08-06 裁定），非校验器漏判。\n\n以上为本次方案的主要事实与解释。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-RSC-001",
+      "flow": "reschedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_aircraft",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_aircraft",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_aircraft",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 4,
+      "steps": {
+        "expected_steps": 4,
+        "observed_calls": 4,
+        "param_denominator": 4,
+        "param_hits": 1,
+        "redundant": 0,
+        "required_steps": 4,
+        "tool_hits": 4,
+        "unmatched_required": 0
+      },
+      "answer_text": "### 方案说明\n\n**计划编号:** 2026W02-c0d30a47086c  \n**ISO 周:** 2026W02  \n\n本次排班方案如下：\n\n1. **架次总数**: 本周无任何架次安排，总计为 0 架次。\n   \n2. **约束校验结果**: 约束1 至 约束14 均已验证通过，无任何违反条文的情况出现。\n\n3. **训练进度与欠账情况**: 无任何课目进度欠账，总计为 0。所有学员的训练计划均符合当前规则要求，没有未完成的先修条件或频率要求导致的欠账问题。\n\n4. **阻塞项**: 本次方案中未出现因先修条件不满足而被排除的组合（阻塞项），总数为 0。\n\n5. **资源利用情况**: 由于本周无任何架次安排，因此飞机、人员及空域等资源均未使用。所有相关资源利用率均为 0%。\n\n6. **松弛与决策记录**: 松弛档位为 Tier 0，表示方案在不使用任何额外松弛的情况下生成，并且没有需要特别授权的调整措施。\n\n7. **跑道与空域占用明细**: 由于本周无架次安排，因此跑道和空域占用情况为空。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-RSC-002",
+      "flow": "reschedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "### 方案说明\n\n**计划编号:** 2026W02-c0d30a47086c  \n本周为 ISO 周 2026W02。\n\n1. **架次总数**: 本周无任何架次安排，总计为 0 架次。\n   \n2. **训练进度与欠账**:\n   - 没有任何学员有未完成的先修任务或欠账情况。所有学员均已满足当前课目的频率要求。\n   \n3. **约束校验结果**: \n   - 所有硬约束均通过，无违规记录。\n\n4. **松弛与决策**:\n   - 本次方案使用了 Tier 0 松弛档位，未启用任何额外的松弛措施。因此，没有产生欠账或需要特别授权的情况。\n   \n5. **授权改写声明**:\n   - 根据业务方授权（2026-08-06 裁定），成熟飞行员到期资质转复训 (S-11) 的规则已明确，但本次排班中未涉及任何此类情况。\n\n以上为本周飞行训练计划的详细说明。由于本周无架次安排，因此无需进一步解释阻塞项、资源利用等信息。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-RSC-003",
+      "flow": "reschedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_aircraft",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_aircraft",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_aircraft",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 1,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "### 方案说明\n\n**计划编号:** 2026W02-b6879bae9f1a  \n本周排班方案已生成，具体信息如下：\n\n- **架次总数:** 共有 14 架次。\n- **带飞 / 单飞:** 带飞 9 次，单飞 5 次。\n\n**阻塞项:**\n本周共有 7 条先修未满足的组合被排除：\n1. missionA-2 未完成：先修 A 类未达标\n2. missionC-1 未完成：先修 missionC-1 未完成\n3. missionD-2 未完成：先修 missionD-1 未完成\n4. missionE-1 未完成：先修 missionE-0 未完成\n5. missionF-1 未完成：先修 missionF-0 未完成\n6. missionG-3 未完成：先修 missionG-2 未完成\n7. missionH-4 未完成：先修 missionH-3 未完成\n\n**欠账情况:**\n本周无任何欠账，所有硬约束均满足。\n\n**松弛档位:** \n本次方案使用 Tier 0 松弛档，无需额外授权或调整。\n\n**校验结果:**\n14 条规则全部通过，无违规记录。\n\n### 授权改写声明\nS-11：成熟飞行员到期资质转复训，系对 `rules.pdf` 约束2 字面语义的业务方授权改写（2026-08-06 裁定），非校验器漏判。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-RSC-004",
+      "flow": "reschedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 2,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 2,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "本周飞行训练计划涵盖了 ISO 周 2026W03 的全部训练任务。具体方案如下：\n\n- **架次总数**：共安排了15个架次。\n- **带飞与单飞分布**：\n  - 带飞架次数：9 次\n  - 单飞架次数：6 次\n\n**阻塞项情况**：\n本周有7名学员因先修未满足而被排除，具体原因已在系统中详细记录。\n\n**欠账与松弛使用情况**：\n- **欠账条数**：0 条（无欠账）\n- **松弛档位**：Tier 0 （未使用任何松弛）\n\n**校验结果**：\n所有14项约束均通过校验，无违规现象。具体校验详情请调用相应工具按需获取。\n\n此外，请注意以下几点：\n- 成熟飞行员到期资质转复训的授权改写声明已记录在案（S-11）。\n- 本周未使用任何松弛措施，因此无需特别关注审批事项。\n\n如有疑问或需要进一步详细信息，请随时联系系统支持团队。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-RSC-005",
+      "flow": "reschedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "human_gate",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "diagnosis",
+        "tool:min_conflict_set",
+        "tool:probe_solve",
+        "tool:probe_solve",
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 5,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 2,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-RSC-006",
+      "flow": "reschedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 2,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 2,
+        "param_denominator": 2,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 2,
+        "tool_hits": 2,
+        "unmatched_required": 0
+      },
+      "answer_text": "本次飞行训练计划编号为 2026W03-902ee1fc66c1，涵盖 ISO 周 2026W03 的一周时间。本周共安排了 15 架次的训练任务，其中带飞架次数为 9 次，单飞架次数为 6 次。\n\n在本次计划中，有 7 条阻塞项导致某些组合未能被排上，但没有产生任何欠账。所有硬约束均通过校验，未发现违规情况。松弛档位使用的是 Tier 0，即系统在不放宽任何规则的情况下生成了最优解。\n\n具体到每日的安排如下：周一有 2 架次任务，周六则为 3 架次。此外，本周还特别标注了一些特定课目的架次数，如 P04 类别有 1 架次，P06 和 P07 分别各有 5 架次和 4 架次。\n\n请查阅详细报告以获取更多具体信息及训练进度情况。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-RSC-007",
+      "flow": "reschedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_aircraft",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_aircraft",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_aircraft",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 4,
+      "steps": {
+        "expected_steps": 4,
+        "observed_calls": 4,
+        "param_denominator": 4,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 4,
+        "tool_hits": 4,
+        "unmatched_required": 0
+      },
+      "answer_text": "### 方案说明\n\n**计划编号:** 2026W03-99ce97b045c5  \n本周为 ISO 周 2026W03。\n\n1. **架次总数**: 本周无任何架次安排，总计为 0 架次。\n   \n2. **带飞 / 单飞**: 本周没有带飞和单飞任务，均为 0。\n\n4. **欠账情况**: 由于本周没有安排任何架次，故不存在任何欠账情况（欠账为 0）。\n\n5. **松弛档位**: 当前方案使用的是 Tier 0 松弛策略，即未启用任何额外的松弛措施来满足硬约束条件。\n\n6. **校验结果**: 所有规则均通过校验，无违规记录。具体如下：\n   - 约束1 至 约束14 均已验证通过，共计 14 条规则全部符合要求。\n   \n本次方案为最优解，未使用任何松弛措施，并且所有硬约束条件均已满足。\n\n### 其他说明\n- **阻塞项**: 本周无任何因先修未完成而被排除的组合（阻塞项数量为 0）。\n- **资源利用情况**: 由于本周没有架次安排，因此飞机、人员及空域等资源均未使用。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-RSC-008",
+      "flow": "reschedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_person",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_person",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:resolve_person",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 4,
+      "steps": {
+        "expected_steps": 4,
+        "observed_calls": 4,
+        "param_denominator": 4,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 4,
+        "tool_hits": 4,
+        "unmatched_required": 0
+      },
+      "answer_text": "### 方案说明\n\n**计划编号:** 2026W02-c0d30a47086c  \n本周为 ISO 周 2026W02。\n\n1. **架次总数**: 本周无任何架次安排，总计为 0 架次。\n   \n2. **阻塞项**: 没有学员因先修未完成而被排除在排班之外（阻塞项数量为 0）。\n\n3. **欠账情况**: 无任何课目进度欠账记录（欠账总数为 0）。\n\n4. **松弛档位**: 当前方案使用的是 Tier 0 松弛策略，即未启用任何额外的松弛措施来满足硬约束条件。\n\n5. **校验结果**: 所有规则均通过校验，无违规情况出现。具体而言，14 条规则全部通过检查，没有发现任何违反硬约束的情况。\n\n以上为本次方案的主要事实总结，请调用相应工具按需获取更多详细信息。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-RSC-009",
+      "flow": "reschedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_aircraft",
+        "tool:resolve_aircraft",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_aircraft",
+        "tool:resolve_aircraft",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_aircraft",
+        "tool:resolve_aircraft",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 4,
+      "steps": {
+        "expected_steps": 4,
+        "observed_calls": 4,
+        "param_denominator": 4,
+        "param_hits": 1,
+        "redundant": 0,
+        "required_steps": 4,
+        "tool_hits": 4,
+        "unmatched_required": 0
+      },
+      "answer_text": "本次飞行训练计划编号为 2026W03-bfb275cf1fad，涵盖 ISO 周 2026W03 的全部训练需求。方案共安排了 15 架次，其中带飞架次 9 次，单飞架次 6 次。\n\n在本次排班中，有 7 组学员与课目组合因先修未满足而被排除（BLOCKED），但没有出现资源不足导致的 INFEASIBLE 情况。所有硬约束均通过校验，无违规记录。\n\n方案采用 Tier 0 松弛档位，即在不使用任何松弛手段的情况下生成最优解。由于本次排班中未产生欠账，因此无需进行额外的授权操作或提案调整。\n\n详细信息如下：\n- 架次总数：15\n- 带飞架次数：9\n- 单飞架次数：6\n- 阻塞项数（先修未满足）：7\n- 欠账条数：0\n\n请根据以上说明进行进一步的审核和确认。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-RSC-010",
+      "flow": "reschedule",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "route",
+        "planner",
+        "tool:resolve_person",
+        "tool:assess_disruption",
+        "tool:propose_solve_intent",
+        "compile_spec",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 3,
+      "steps": {
+        "expected_steps": 3,
+        "observed_calls": 3,
+        "param_denominator": 3,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 3,
+        "tool_hits": 3,
+        "unmatched_required": 0
+      },
+      "answer_text": "### 方案说明\n\n**计划编号:** 2026W02-c0d30a47086c  \n**ISO 周:** 2026W02  \n\n本次排班方案如下：\n\n1. **架次总数:** 0 架次。本周没有安排任何飞行训练任务。\n   \n2. **阻塞项:** 无学员因先修未完成而被排除，所有符合条件的学员均已纳入考虑。\n\n3. **欠账:** 0 欠账。所有学员均已完成其当前阶段的所有课目要求，不存在进度滞后的情况。\n\n4. **松弛档位:** Tier 0。本次排班方案在不使用任何松弛策略的情况下生成，完全满足硬约束条件。\n\n5. **校验结果:** 所有14条规则均已通过校验，无违规情况发生。\n\n**授权改写声明:**\n> S-11：成熟飞行员到期资质转复训，系对 `rules.pdf` 约束2 字面语义的业务方授权改写（2026-08 裁定），非校验器漏判\n\n本次方案为最优解，未使用任何松弛策略。所有学员均已满足其当前阶段的所有训练要求，并且没有出现飞行资源冲突或时间安排上的问题。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-REV-002",
+      "flow": "revision",
+      "reasons": [
+        "params"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "human_gate",
+        "planner",
+        "tool:translate_revision",
+        "human_gate",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "human_gate",
+        "planner",
+        "tool:translate_revision",
+        "human_gate",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "observed_path": [
+        "human_gate",
+        "planner",
+        "tool:translate_revision",
+        "human_gate",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 1,
+      "steps": {
+        "expected_steps": 1,
+        "observed_calls": 1,
+        "param_denominator": 1,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "本次飞行训练计划编号为 2026W02-6103e356a554，涵盖 ISO 周 2026W02 的排班安排。以下是具体方案说明：\n\n### 训练进度与欠账情况\n\n本周共有 14 架次的训练任务，其中带飞架次数为 9 次，单飞架次数为 5 次。所有硬约束均通过校验，无违规记录。\n\n### 阻塞项\n本次排班中存在 7 条阻塞项，具体如下：\n- **缺失先修**：学员因未完成特定课目而被排除。\n- **阻塞原因**：详细列出每条阻塞项的具体原因（如“missionA-2 未完成”）。\n\n### 资源利用情况\n本次排班中，AC27 型飞机安排了 1 次训练任务。具体资源占用与利用率如下：\n- **飞机占用**: 共有 14 架次。\n- **人员占用**: 根据学员资质和时间安排进行合理分配。\n\n### 松弛与决策记录\n本次排班未使用任何松弛措施，所有硬约束均满足要求。授权改写声明如下：\n\n> S-11：成熟飞行员到期资质转复训，系对 `rules.pdf` 约束2 字面语义的业务方授权改写（2026-08-06 裁定），非校验器漏判。\n\n### 未使用的松弛提案\n本次方案在 Tier 0 下运行，无任何松弛措施使用。审批人尚未批准具体决策记录。\n\n以上为本次飞行训练计划的详细说明，请根据实际情况进行进一步调整和优化。",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-REV-008",
+      "flow": "revision",
+      "reasons": [
+        "path"
+      ],
+      "path_reason": "既非期望路径也不在可接受集合内",
+      "expected_path": [
+        "human_gate",
+        "planner",
+        "tool:translate_revision",
+        "human_gate",
+        "solve",
+        "validate",
+        "explain",
+        "resume_guard",
+        "human_gate",
+        "commit_plan",
+        "END"
+      ],
+      "scored_path": [
+        "human_gate",
+        "planner",
+        "tool:translate_revision",
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "human_gate",
+        "planner",
+        "tool:translate_revision",
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 1,
+      "steps": {
+        "expected_steps": 2,
+        "observed_calls": 1,
+        "param_denominator": 1,
+        "param_hits": 1,
+        "redundant": 0,
+        "required_steps": 1,
+        "tool_hits": 1,
+        "unmatched_required": 0
+      },
+      "answer_text": "这句修订没能翻译成增量约束：「把刘斌的复训挪到周末」。请换一种说法，或直接指出要改的架次号与目标（如「S000117 换 AC49」）",
+      "error": ""
+    },
+    {
+      "item_id": "TRJ-REV-010",
+      "flow": "revision",
+      "reasons": [
+        "revision_translation"
+      ],
+      "path_reason": "与 expected_path 逐元素相同",
+      "expected_path": [
+        "human_gate",
+        "END"
+      ],
+      "scored_path": [
+        "human_gate",
+        "END"
+      ],
+      "observed_path": [
+        "human_gate",
+        "END"
+      ],
+      "score_components": [
+        "planner"
+      ],
+      "raw_observed_calls": 0,
+      "steps": {
+        "expected_steps": 0,
+        "observed_calls": 0,
+        "param_denominator": 0,
+        "param_hits": 0,
+        "redundant": 0,
+        "required_steps": 0,
+        "tool_hits": 0,
+        "unmatched_required": 0
+      },
+      "answer_text": "",
+      "error": ""
+    }
+  ],
+  "paired_before_after": {
+    "n_before": 100,
+    "n_after": 100,
+    "n_paired": 100,
+    "n_before_only": 0,
+    "n_after_only": 0,
+    "path": {
+      "improved": 3,
+      "regressed": 1,
+      "both_pass": 96,
+      "both_fail": 0,
+      "improved_keys": [
+        "TRJ-RSC-002",
+        "TRJ-RSC-009",
+        "TRJ-RSC-010"
+      ],
+      "regressed_keys": [
+        "TRJ-REV-008"
+      ]
+    },
+    "tools_present": {
+      "improved": 1,
+      "regressed": 0,
+      "both_pass": 99,
+      "both_fail": 0,
+      "improved_keys": [
+        "TRJ-RSC-009"
+      ],
+      "regressed_keys": []
+    },
+    "tool_steps": {
+      "improved": 3,
+      "regressed": 0,
+      "both_pass": 97,
+      "both_fail": 0,
+      "improved_keys": [
+        "TRJ-RSC-002",
+        "TRJ-RSC-009",
+        "TRJ-RSC-010"
+      ],
+      "regressed_keys": []
+    }
+  },
+  "record_replay": {
+    "n_record": 100,
+    "n_replay": 100,
+    "n_paired": 100,
+    "identical": true,
+    "gate_passed": true,
+    "mismatch_item_ids": []
+  }
+}

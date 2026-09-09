@@ -145,6 +145,17 @@ def test_replay_returns_recorded_response(tmp_path: Path) -> None:
     assert p.complete(MESSAGES) == '{"intent":"schedule"}'
 
 
+def test_replay_can_isolate_one_trace_file(tmp_path: Path) -> None:
+    wanted = tmp_path / "wanted.jsonl"
+    wanted.write_text(record_entry(MESSAGES, "wanted") + "\n", encoding="utf-8")
+    (tmp_path / "other.jsonl").write_text(record_entry(MESSAGES, "other") + "\n", encoding="utf-8")
+    cfg = Settings(_env_file=None, REPLAY_TRACE_DIR=wanted)  # type: ignore[call-arg]
+    provider = ReplayProvider(cfg)
+
+    assert provider.size == 1
+    assert provider.complete(MESSAGES) == "wanted"
+
+
 def test_replay_raises_on_miss_never_falls_back(tmp_path: Path) -> None:
     """§12.5.2 要求重放零 LLM 调用——查不到必须抛，绝不静默回退到真机。"""
     cfg = Settings(_env_file=None, REPLAY_TRACE_DIR=tmp_path)  # type: ignore[call-arg]

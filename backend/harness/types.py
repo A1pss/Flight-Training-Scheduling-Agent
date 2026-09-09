@@ -163,6 +163,9 @@ class AgentSpec(BaseModel):
     max_retries: int = Field(default=2, ge=0, le=2)
     #: 是否要求模型必须给出至少一个工具调用（纯生成型组件为 False）
     requires_tool_call: bool = True
+    #: 本次响应必须包含的收口工具。用于 Planner 这类“可以先消解实体，但最终
+    #: 必须产出结构化决策”的单轮组件；缺失时按契约失败回灌重试，不执行半截调用。
+    required_tools: tuple[str, ...] = ()
     #: `constrained_json` 模式下的目标 schema；为空时用工具表的联合 schema
     output_schema: dict[str, Any] | None = None
 

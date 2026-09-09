@@ -3,7 +3,7 @@
 | 项 | 值 |
 |---|---|
 | 版本 | `v1` |
-| 状态 | `approved` —— 业务方已确认，可用于实验 |
+| 状态 | `approved` —— 业务方已确认；**2026-09-06 起仅作研究留存，不用于交付训练或部署** |
 | 条数 | **123** |
 | 数据文件 | `items.jsonl` |
 | SHA256 | `58e8bbfdacb615fb30661d659057d04fc28d3593cad9af6a9a4464cf16669b4e` |
@@ -28,24 +28,24 @@
 
 | 键 | 值 |
 |---|---|
-| `pipeline_owner` | W12（M7 微调前的数据合成） |
+| `pipeline_owner` | 历史 W12（M7 第一阶段之后的研究留存） |
 | `ruleset_version` | 1.3.0 |
 | `sampling` | 每层步长 = len(pool) // 20，确定性 |
 | `semantics_version` | 1.1.0 |
 
 ## 规格依据
 
-- v6 §15.2
+- v6 §15（冻结模型与取消训练；本集作为研究留存）
 - v6 §1.1
 - v6 §1.3
 - v6 §12.2
 
 ## 已知局限
 
-1. **本集只是种子，不是训练样本。** §15.2 的六步合成管线（指令扩写 → 学生自采样 → 确定性过滤 → 教师补硬样本 → 程序化生成 → 难负例挖掘）是 W12 的交付物。
-2. 60 条需求表述与 nl_360 同源 —— 用它们合成的样本若拿去评 nl_360，会有**训练/评测同源**的问题。W12 合成时要么换池子、要么在报告里声明。
+1. **本集只是历史种子数据，不属于交付运行路径。**
+2. 60 条需求表述与 nl_360 同源 —— 这是历史研究复核时必须注意的**数据同源**风险；本集不进入当前交付运行路径。
 3. 规则与语义假设跟着 ruleset_version=1.3.0 / semantics_version=1.1.0 走：任一版本变动，本集的 sha256 必变、批准状态自动失效。
-4. 难负例（近音近形、歧义、注入）**不在种子里** —— §15.2 把它们放在第 ⑥ 步「难负例挖掘」，输入是 §12.5.1 的失败模式分布表，那要 W13 跑完才有。
+4. 难负例（近音近形、歧义、注入）**不在种子里**。失败模式分布仅用于定位实现问题。
 
 ## 怎么用
 
@@ -55,4 +55,4 @@ from backend.datasets.loader import load_eval_dataset
 manifest, items = load_eval_dataset("sft_seed", require_approved=True)
 ```
 
-加载路径会复核 SHA256、条数、分层分布与逐条 schema；任何一项不符即抛 `DatasetIntegrityError`。手工改过数据文件之后必须跑 `python -m backend.datasets.cli refresh sft_seed`。
+加载路径会复核 SHA256、条数、分层分布与逐条 schema；任何一项不符即抛 `DatasetIntegrityError`。本卡不授权改动数据文件；若未来仅为研究复核而获准改动，才运行 `python -m backend.datasets.cli refresh sft_seed`。

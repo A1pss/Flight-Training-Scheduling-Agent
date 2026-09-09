@@ -580,6 +580,43 @@ def min_hitting_count(day_sets: Sequence[tuple[int, ...]]) -> int:
     return len(picked)
 
 
+def recurrent_day_sets(
+    *,
+    since: date,
+    last_done: date | None,
+    week_start: date,
+    week_end: date,
+    window_days: int,
+    semantics: Semantics,
+) -> tuple[tuple[int, ...], ...]:
+    """S-11 跨周复训在本周形成的日期要求集。
+
+    首次复训没有 ``last_done_date`` 时，以 ``since - 1 天`` 作为跨周锚点：
+    这样复训自 ``since`` 起满 ``window_days`` 天到期；若该期限已落在上周，
+    D-4 通式会把本周首次执行截止压到第 0 天，而不是把整条要求跳过。
+
+    同时保留完全落在本周、且不早于复训起始日的滑窗。两者取交集正好覆盖
+    “跨周首执行截止 + 周内连续窗口”，与学员进度的频率口径一致。
+    """
+    if since > week_end:
+        return ()
+    anchor = max(since - timedelta(days=1), last_done) if last_done else since - timedelta(days=1)
+    deadline, _is_debt = frequency_deadline(
+        freq_days=window_days,
+        week_start=week_start,
+        last_done=anchor,
+        semantics=semantics,
+    )
+    day_sets = [
+        window
+        for window in sliding_windows(window_days)
+        if week_start + timedelta(days=window[0]) >= since
+    ]
+    if deadline <= WEEK_DAYS - 1:
+        day_sets.append(tuple(range(0, deadline + 1)))
+    return tuple(dict.fromkeys(day_sets))
+
+
 def build_requirements(
     data: ProblemData,
     spec: ConstraintSpec,
@@ -746,27 +783,30 @@ def build_requirements(
             ]
             last_done_dates = [p.last_done_date for p in progress_rows if p and p.last_done_date]
             anchor = max(last_done_dates) if last_done_dates else None
-            start = max(since, anchor + timedelta(days=1)) if anchor else since
-            deadline_date = start + timedelta(days=semantics.s11_window_days - 1)
-            if deadline_date > data.week_end or deadline_date < data.week_start:
-                continue  # 窗口跨出本周（基准周即此情形）→ 本周不强制，只落锚点
-            lo = max(0, data.day_index(start))
-            hi = data.day_index(deadline_date)
-            reqs.append(
-                Requirement(
-                    req_id=f"S11|{person_id}|{mission_class}",
-                    rule_id=13,
-                    kind="RECURRENT",
-                    person_id=person_id,
-                    mission_class=mission_class,
-                    days=tuple(range(lo, hi + 1)),
-                    weight=BASE_MISSION_WEIGHT,
-                    note=(
-                        f"S-11 复训：{mission_class} 类自 {start} 起 "
-                        f"{semantics.s11_window_days} 天滑窗内 ≥1 次"
-                    ),
-                )
+            recurrent_sets = recurrent_day_sets(
+                since=since,
+                last_done=anchor,
+                week_start=data.week_start,
+                week_end=data.week_end,
+                window_days=semantics.s11_window_days,
+                semantics=semantics,
             )
+            for idx, days in enumerate(recurrent_sets):
+                reqs.append(
+                    Requirement(
+                        req_id=f"S11|{person_id}|{mission_class}|w{idx}",
+                        rule_id=13,
+                        kind="RECURRENT",
+                        person_id=person_id,
+                        mission_class=mission_class,
+                        days=days,
+                        weight=BASE_MISSION_WEIGHT,
+                        note=(
+                            f"S-11 复训：{mission_class} 类自 {since} 起 "
+                            f"{semantics.s11_window_days} 天滑窗/跨周截止内 ≥1 次"
+                        ),
+                    )
+                )
 
     return tuple(reqs), tuple(basis)
 
@@ -796,5 +836,6 @@ __all__ = [
     "enumerate_candidates",
     "frequency_deadline",
     "min_hitting_count",
+    "recurrent_day_sets",
     "sliding_windows",
 ]

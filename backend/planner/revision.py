@@ -394,15 +394,36 @@ def to_solver_params(
     params = dict(constraint.params)
     out: dict[str, Any] = {}
 
-    if "day" in params:
-        index = _weekday_index(str(params["day"]))
+    day_value = params.get("day", params.get("weekday"))
+    if day_value is not None:
+        index = _weekday_index(str(day_value))
         if index is not None:
             out["day_index"] = index
+
+    # FORBID 也允许带课目/资源限定；这些限定必须和日期一起进入线格式，
+    # 否则修订会静默扩大成“整周禁掉该人全部架次”。
+    if constraint.kind == "FORBID":
+        mission = params.get("mission", params.get("mission_id"))
+        if mission is not None and str(mission):
+            out["mission"] = str(mission)
+        aircraft = params.get("aircraft_ids", params.get("aircraft_id", params.get("aircraft")))
+        if aircraft is not None:
+            if isinstance(aircraft, list):
+                out["aircraft_ids"] = sorted({str(value) for value in aircraft if str(value)})
+            elif str(aircraft):
+                out["aircraft_id"] = str(aircraft)
+        runway = params.get("runway_id", params.get("runway"))
+        if runway is not None and str(runway):
+            out["runway_id"] = str(runway)
 
     if constraint.kind == "PIN_RUNWAY":
         out["runway_id"] = str(params.get("runway", params.get("runway_id", "")))
     elif constraint.kind == "PIN_RESOURCE":
-        out["aircraft_id"] = str(params.get("aircraft", params.get("aircraft_id", "")))
+        aircraft = params.get("aircraft", params.get("aircraft_ids", params.get("aircraft_id", "")))
+        if isinstance(aircraft, list):
+            out["aircraft_ids"] = sorted({str(value) for value in aircraft if str(value)})
+        else:
+            out["aircraft_id"] = str(aircraft)
     elif constraint.kind == "PIN_TIME":
         minute = _clock_to_minutes(str(params.get("takeoff", "")), window_start=window_start)
         if minute is not None:
@@ -417,10 +438,13 @@ def to_solver_params(
             if minute is not None:
                 out["latest_minute"] = min(horizon_minutes, minute)
     elif constraint.kind == "REDUCE_DENSITY":
-        delta = int(params.get("delta", -1))
-        current = (day_counts or {}).get(int(out.get("day_index", -1)), None)
-        if current is not None:
-            out["max_takeoffs_per_day"] = max(0, current + delta)
+        if "max_per_day" in params:
+            out["max_takeoffs_per_day"] = max(0, int(params["max_per_day"]))
+        else:
+            delta = int(params.get("delta", -1))
+            current = (day_counts or {}).get(int(out.get("day_index", -1)), None)
+            if current is not None:
+                out["max_takeoffs_per_day"] = max(0, current + delta)
     return out
 
 
@@ -502,6 +526,10 @@ _RE_AIRCRAFT_SWAP = re.compile(r"(?:换成|改成|改用|换到)\s*(AC\d+|\d+\s*
 _RE_RUNWAY = re.compile(r"(?:走|用|改到)\s*(?:(RWY-\d+)|(\d+)\s*号跑道)", re.IGNORECASE)
 _RE_FORBID = re.compile(r"(别排|不排|不要排|别安排|不用排)")
 _RE_DENSITY = re.compile(r"(挤|太多|太满|太密)")
+_RE_MAX_PER_DAY = re.compile(
+    r"(?:每天|一天|每日)[^，。；、]{0,8}?最多[^，。；、]{0,8}?"
+    r"(\d+|一|两|三|四|五)\s*(?:个)?(?:架次|次)"
+)
 _RE_MOVE_N = re.compile(r"挪\s*(\d+|[一两二三四五六七八九十])\s*(?:个|架|班)?")
 _RE_TIME = re.compile(r"(\d{1,2})\s*[:：点]\s*(\d{0,2})")
 
@@ -579,6 +607,14 @@ def rule_translate(
         if day is not None:
             params["day"] = day
         return build("FORBID", persons, params)
+
+    max_per_day = _RE_MAX_PER_DAY.search(text)
+    if max_per_day is not None:
+        return build(
+            "REDUCE_DENSITY",
+            persons,
+            {"max_per_day": _cn_int(max_per_day.group(1)) or 1},
+        )
 
     if _RE_DENSITY.search(text) is not None or _RE_MOVE_N.search(text) is not None:
         moved = _RE_MOVE_N.search(text)
@@ -735,11 +771,18 @@ def translate_revision(
                 kind, surfaces, params = _parse_revision_payload(out.text)
                 targets, target_warnings = resolve_targets(surfaces, plan=plan, directory=directory)
                 warnings.extend(target_warnings)
-                constraint = IncrementalConstraint(
+                candidate = IncrementalConstraint(
                     kind=kind,
                     targets=targets or ["ALL"],
                     params=params,
                     origin_utterance=utterance,
+                    round_no=round_no,
+                )
+                constraint = _repair_shape_mismatch(
+                    candidate,
+                    utterance=utterance,
+                    plan=plan,
+                    directory=directory,
                     round_no=round_no,
                 )
                 source = "llm"
@@ -772,6 +815,31 @@ def translate_revision(
         warnings=tuple(warnings),
         llm_calls=llm_calls,
     )
+
+
+def _repair_shape_mismatch(
+    candidate: IncrementalConstraint,
+    *,
+    utterance: str,
+    plan: SchedulePlan | None,
+    directory: EntityDirectory | None,
+    round_no: int,
+) -> IncrementalConstraint:
+    """拦截 LLM 把密度上限误翻成 FORBID 的形状错误。
+
+    「最多 N 个架次」的语义是上限，不是禁飞；规则路径可完整恢复该形状，
+    因此不把一个可确定修复的模型错误交给求解器。
+    """
+    if candidate.kind == "FORBID" and _RE_MAX_PER_DAY.search(utterance) is not None:
+        repaired = rule_translate(
+            utterance,
+            round_no=round_no,
+            plan=plan,
+            directory=directory,
+        )
+        if repaired is not None and repaired.kind == "REDUCE_DENSITY":
+            return repaired
+    return candidate
 
 
 def _plan_summary(plan: SchedulePlan | None) -> str:

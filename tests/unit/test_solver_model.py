@@ -395,8 +395,41 @@ def test_incremental_forbid_removes_person() -> None:
     assert outcome.status == "INFEASIBLE"
 
 
+def test_incremental_forbid_closes_only_the_named_runway_on_the_named_day() -> None:
+    outcome = solve(_with_incremental("FORBID", ["ALL"], day_index=0, runway_id="RWY-8"))
+    assert outcome.plan is not None
+    assert all(
+        sortie.runway_id != "RWY-8" or sortie.weekday != "周一" for sortie in outcome.plan.sorties
+    )
+
+
 def test_incremental_pin_resource_forces_one_aircraft() -> None:
     outcome = solve(_with_incremental("PIN_RESOURCE", ["P402"], aircraft_id="AC702"))
+    assert outcome.plan is not None
+    assert {s.aircraft_id for s in outcome.plan.sorties} == {"AC702"}
+
+
+def test_incremental_pin_resource_accepts_allowed_aircraft_set_for_all_scope() -> None:
+    """确定性扫描器的 ``targets=ALL + aircraft=[...]`` 必须按允许集合编码。"""
+    outcome = solve(
+        _with_incremental(
+            "PIN_RESOURCE",
+            ["ALL"],
+            aircraft=["AC701", "AC702"],
+        )
+    )
+    assert outcome.plan is not None
+    assert {s.aircraft_id for s in outcome.plan.sorties} <= {"AC701", "AC702"}
+
+
+def test_incremental_pin_resource_allowed_set_excludes_other_aircraft() -> None:
+    outcome = solve(
+        _with_incremental(
+            "PIN_RESOURCE",
+            ["ALL"],
+            aircraft=["AC702"],
+        )
+    )
     assert outcome.plan is not None
     assert {s.aircraft_id for s in outcome.plan.sorties} == {"AC702"}
 

@@ -72,6 +72,8 @@ class NLObservation:
     source: str
     agreement: float
     has_ambiguity: bool
+    #: Route 已明确识别出排班必需输入缺失（与实体歧义、低置信度独立）。
+    missing_required_info: bool
     llm_calls: int
     #: 校准特征原样留档 —— §12.2 要「在这 360 条上**拟合**校准器」，
     #  而拟合要的是特征，不是 `confidence`（那是校准器的输出）。
@@ -155,6 +157,7 @@ def run_item(
             source="degraded",
             agreement=0.0,
             has_ambiguity=False,
+            missing_required_info=False,
             llm_calls=0,
             wall_s=time.monotonic() - started,
             error=f"{exc.__class__.__name__}: {exc}",
@@ -167,6 +170,7 @@ def run_item(
         source=result.source,
         agreement=result.agreement,
         has_ambiguity=bool(result.ambiguities),
+        missing_required_info=result.missing_required_info,
         llm_calls=result.llm_calls,
         calibration_features=dict(result.calibration_features),
         **obs_kwargs,
@@ -231,15 +235,19 @@ def action_at_threshold(obs: Mapping[str, Any], threshold: float) -> str:
 
     1. `unknown` → **refuse**。连是什么类型的请求都没定，系统不动手。
     2. 有歧义（「郝超」到底是谁）→ **ask_clarify**。
-    3. 二级路径且置信度低于阈值 → **ask_clarify**。⚠️ 规则命中的
+    3. Route 已知排班必需输入缺失 → **ask_clarify**。这与实体歧义和置信度
+       是三个独立信号，规则命中只代表意图确定，不代表输入已完整。
+    4. 二级路径且置信度低于阈值 → **ask_clarify**。⚠️ 规则命中的
        `confidence=1.0` 不受阈值管辖（`IntentResult.below_threshold` 的口径）。
-    4. 排班类：Planner 追问了 → **ask_clarify**，否则 solve / reschedule。
-    5. 其余意图各自的承接动作。
+    5. 排班类：Planner 追问了 → **ask_clarify**，否则 solve / reschedule。
+    6. 其余意图各自的承接动作。
     """
     intent = str(obs["observed_intent"])
     if intent == "unknown":
         return "refuse"
     if bool(obs["has_ambiguity"]):
+        return "ask_clarify"
+    if bool(obs.get("missing_required_info")):
         return "ask_clarify"
     if str(obs["source"]) != "rule" and float(obs["confidence"]) < threshold:
         return "ask_clarify"

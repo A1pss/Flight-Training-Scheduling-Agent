@@ -168,7 +168,7 @@ class Settings(BaseSettings):
     #: `explain` 的 Critic 重写轮数上限（v6 §7.2.3「重写（≤N 轮）」）
     EXPLAIN_MAX_REWRITES: int = Field(default=1, ge=0, le=3)
     #: DiagnosisAgent 的自主轮数上限（探针预算另由 §3.9.2 的独立池管）
-    DIAGNOSIS_MAX_ROUNDS: int = Field(default=3, ge=1)
+    DIAGNOSIS_MAX_ROUNDS: int = Field(default=4, ge=1)
 
     # ── 规则与语义（§1.1）───────────────────────────────────────────
     RULESET_PATH: Path = PROJECT_ROOT / "rules" / "ruleset_v1.3.yaml"

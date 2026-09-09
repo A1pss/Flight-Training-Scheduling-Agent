@@ -16,12 +16,13 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 
 import pytest
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from backend.agents.knowledge import KNOWLEDGE_MAX_STEPS, ask
+from backend.agents.knowledge import KNOWLEDGE_MAX_STEPS, ask, knowledge_tool_handlers
 from backend.core.db import session_scope
 from backend.retrieval.documents import RetrievedDoc, structured_doc
 from backend.retrieval.pipeline import RetrievalConfig, retrieve
@@ -112,6 +113,16 @@ def test_probe_m3_he_chao_cannot_take_mission_b1_missing_a2(
     assert "不能" in text
     assert "missionA-2" in text
     assert "S-01" in text, "理由要落在具体条款上"
+
+
+def test_trj_knw_006_exact_wording_cannot_flip_the_structured_verdict(
+    session: Session, snapshot: str, directory: EntityDirectory, rig: RetrievalRig
+) -> None:
+    """TRJ-KNW-006 原句：检索与生成都必须保留否定极性。"""
+    text = answer_of("何超现在能排 missionC-1 吗？", session, snapshot, directory, rig)
+    assert "不能" in text
+    assert "missionA-2" in text
+    assert "S-01" in text
 
 
 def test_probe_m4_students_fly_mission_a1_solo(
@@ -361,6 +372,25 @@ def test_without_a_harness_the_agent_still_answers_deterministically(
     assert outcome.steps == 0
     assert outcome.llm_calls == 0
     assert "JL-8" in outcome.text
+
+
+def test_bad_sql_is_rolled_back_to_a_savepoint(
+    session: Session, snapshot: str, rig: RetrievalRig
+) -> None:
+    """一条模型编错的 SQL 不得毒掉同一 KnowledgeAgent 的后续工具调用。"""
+    handlers = knowledge_tool_handlers(
+        session,
+        snapshot,
+        corpus=rig.corpus,
+        vector_index=rig.index,
+        at=datetime(2026, 1, 5, 23, 59, 59),
+    )
+
+    with pytest.raises(SQLAlchemyError, match="table_that_does_not_exist"):
+        handlers["sql_query"]({"sql": "SELECT * FROM table_that_does_not_exist"})
+
+    # 若前一次没有 SAVEPOINT，这里会是 InFailedSqlTransaction，而不是返回 1。
+    assert handlers["sql_query"]({"sql": "SELECT 1 AS value"}) == [{"value": 1}]
 
 
 def test_the_agent_is_reproducible(

@@ -64,10 +64,16 @@ class ReplayProvider:
     @staticmethod
     def _load(trace_dir: Path) -> tuple[ReplayEntry, ...]:
         entries: list[ReplayEntry] = []
-        if not trace_dir.is_dir():
+        paths: tuple[Path, ...]
+        if trace_dir.is_file():
+            paths = (trace_dir,)
+        elif trace_dir.is_dir():
+            paths = tuple(sorted(trace_dir.glob("*.jsonl")))
+        else:
             return ()
-        # 文件名排序，保证同一目录在任何机器上装载顺序一致（铁律 9）
-        for path in sorted(trace_dir.glob("*.jsonl")):
+        # 目录形态按文件名排序；文件形态只装载指定轨迹，避免实验批次中不同
+        # item 的同指纹请求互相串线（铁律 9 / §12.5.2）。
+        for path in paths:
             for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
                 if not line.strip():
                     continue

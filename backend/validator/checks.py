@@ -43,6 +43,7 @@ from backend.core.ruleset import (
     Ruleset,
     req_max_for,
 )
+from backend.schemas.intent import ConstraintSpec, IncrementalConstraint
 from backend.schemas.plan import CrewMember, SchedulePlan, Sortie
 from backend.schemas.validation import CheckResult, ValidationReport, Violation
 from backend.validator.context import (
@@ -804,7 +805,126 @@ def check_c08(plan: SchedulePlan, ctx: ValidationContext) -> CheckResult:
 # ─────────────────────────────────────────────────────────────────────
 # 约束9 · 起降密度（S-04 + S-05 + D-2）
 # ─────────────────────────────────────────────────────────────────────
-def check_c09(plan: SchedulePlan, ctx: ValidationContext) -> CheckResult:
+def _constraint_targets_sortie(constraint: IncrementalConstraint, sortie: Sortie) -> bool:
+    """增量约束是否作用于该架次。
+
+    ``IncrementalConstraint.targets`` 的冻结契约允许 sortie / 人员 / 飞机编号，
+    ``ALL`` 表示全体。校验侧自行按架次事实匹配，不能读取求解器侧的目标展开逻辑。
+    """
+    targets = frozenset(constraint.targets)
+    if "ALL" in targets:
+        return True
+    return bool(
+        targets
+        & {
+            sortie.sortie_id,
+            sortie.aircraft_id,
+            *(member.person_id for member in sortie.crew),
+        }
+    )
+
+
+def _check_forbid_runway_constraints(
+    plan: SchedulePlan,
+    ctx: ValidationContext,
+    constraint_spec: ConstraintSpec | None,
+) -> tuple[int, list[Violation]]:
+    """校验编译后 ``FORBID(day_index, runway_id)`` 约束。
+
+    这是一项用户确认后的排班输入，不是 C09 原有的密度限制；但它同样限定
+    架次可使用的跑道，故将违规附着到 C09，保持报告仍为规格规定的 14 条规则。
+    只处理同时出现 ``day_index`` 和 ``runway_id`` 的 FORBID，避免把既有
+    ``FORBID({"weekday": "周三"})`` 的其他语义误判为格式错误。
+    """
+    if constraint_spec is None:
+        return 0, []
+
+    checked = 0
+    violations: list[Violation] = []
+    ordered = _ordered(plan.sorties)
+    for constraint in constraint_spec.incremental_constraints:
+        if constraint.kind != "FORBID":
+            continue
+        params = constraint.params
+        is_runway_forbid = "day_index" in params and "runway_id" in params
+        if not is_runway_forbid:
+            continue
+
+        # 先计一次约束形状检查；即使目标没有命中架次，也不能显示为“未检查”。
+        checked += 1
+        raw_day_index = params.get("day_index")
+        raw_runway_id = params.get("runway_id")
+        if (
+            isinstance(raw_day_index, bool)
+            or not isinstance(raw_day_index, int)
+            or not 0 <= raw_day_index < WEEK_DAYS
+        ):
+            violations.append(
+                _v(
+                    "C09",
+                    [*constraint.targets],
+                    "FORBID 跑道约束的 day_index 必须是 0~6 的整数，"
+                    f"实际 {raw_day_index!r}（原话：{constraint.origin_utterance}）",
+                )
+            )
+            continue
+        if not isinstance(raw_runway_id, str) or not raw_runway_id:
+            violations.append(
+                _v(
+                    "C09",
+                    [*constraint.targets],
+                    "FORBID 跑道约束缺少非空 runway_id，"
+                    f"实际 {raw_runway_id!r}（原话：{constraint.origin_utterance}）",
+                )
+            )
+            continue
+        if raw_runway_id not in ctx.runways:
+            violations.append(
+                _v(
+                    "C09",
+                    [raw_runway_id, *constraint.targets],
+                    f"FORBID 跑道约束引用的跑道 {raw_runway_id} 不在当前快照，"
+                    f"无法核验（原话：{constraint.origin_utterance}）",
+                )
+            )
+            continue
+        if constraint_spec.week_start != ctx.week_start:
+            violations.append(
+                _v(
+                    "C09",
+                    [raw_runway_id, *constraint.targets],
+                    "FORBID 跑道约束的 ConstraintSpec.week_start="
+                    f"{constraint_spec.week_start} 与校验上下文周起点 {ctx.week_start} 不一致，"
+                    "拒绝把 day_index 映射到错误周次",
+                )
+            )
+            continue
+
+        weekday = WEEKDAY_LABELS[raw_day_index]
+        for sortie in ordered:
+            if not _constraint_targets_sortie(constraint, sortie):
+                continue
+            checked += 1
+            if ctx.day_offset(sortie.date) != raw_day_index or sortie.runway_id != raw_runway_id:
+                continue
+            violations.append(
+                _v(
+                    "C09",
+                    [sortie.sortie_id, raw_runway_id, *constraint.targets],
+                    f"{sortie.sortie_id} 在 {sortie.date}（{weekday}，day_index={raw_day_index}）"
+                    f"使用 {raw_runway_id}，违反第 {constraint.round_no} 轮 FORBID 跑道约束"
+                    f"（原话：{constraint.origin_utterance}）",
+                    f"改用其他可用跑道，或将 {sortie.sortie_id} 移出 {weekday}",
+                )
+            )
+    return checked, violations
+
+
+def check_c09(
+    plan: SchedulePlan,
+    ctx: ValidationContext,
+    constraint_spec: ConstraintSpec | None = None,
+) -> CheckResult:
     """20 分钟窗口按 **(日, 跑道)** 分组；7 分钟间隔 **全场按日**（D-2）。
 
     ⚠️ 两段循环刻意分开写，**不要合并成一个按跑道的循环** —— `rules.pdf` 约束9
@@ -837,6 +957,12 @@ def check_c09(plan: SchedulePlan, ctx: ValidationContext) -> CheckResult:
                     f"改用 {'/'.join(sorted(ctx.runways_for_type(aircraft.aircraft_type))) or '（无可用跑道）'}",
                 )
             )
+
+    constraint_checked, constraint_violations = _check_forbid_runway_constraints(
+        plan, ctx, constraint_spec
+    )
+    checked += constraint_checked
+    v.extend(constraint_violations)
 
     # ① 20 分钟窗口，按 (日, 跑道) 分组，半开 [t, t+20)
     for (day, rwy), group in group_by(ordered, lambda s: (s.date, s.runway_id)).items():
@@ -1011,9 +1137,13 @@ def _c13_deadline(origin_day: int, freq: int, last_done: date | None, week_start
       `gap = (week_monday − last_done).days`；等价于「`last_done + F` 那一天」
     """
     if last_done is None:
-        return origin_day + freq - 1
+        # S-12 normally starts at Monday (origin_day == 0), but an S-11
+        # recurrence can have started before this validation week.  Once that
+        # window is already overdue, the first execution is due on Monday,
+        # never on a negative day that cannot be represented by a plan.
+        return max(0, origin_day + freq - 1)
     gap = (week_start - last_done).days
-    return max(origin_day, freq - gap)
+    return max(0, origin_day, freq - gap)
 
 
 def check_c13(plan: SchedulePlan, ctx: ValidationContext) -> CheckResult:
@@ -1304,14 +1434,22 @@ ALL_CHECKS: tuple[CheckFn, ...] = (
 )
 
 
-def run_all_checks(plan: SchedulePlan, ctx: ValidationContext) -> ValidationReport:
+def run_all_checks(
+    plan: SchedulePlan,
+    ctx: ValidationContext,
+    *,
+    constraint_spec: ConstraintSpec | None = None,
+) -> ValidationReport:
     """闸门1：逐条跑完 14 条规则，返回带耗时与检查项数的报告。
 
     **不短路**：即使第一条就失败也把 14 条全跑完 —— 排班员需要一次看到全部问题，
     而 `missing_rules()` 非空即说明校验没跑全、不能宣称 100% 合规。
     """
     started = perf_counter()
-    results = [fn(plan, ctx) for fn in ALL_CHECKS]
+    results = [
+        check_c09(plan, ctx, constraint_spec=constraint_spec) if fn is check_c09 else fn(plan, ctx)
+        for fn in ALL_CHECKS
+    ]
     return ValidationReport(
         plan_id=plan.plan_id,
         ruleset_version=ctx.ruleset.version,
